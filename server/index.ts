@@ -3,7 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { extendStorageWithIcalSupport } from "./storage/icalExtensions";
 import { storage } from "./storage";
-import { connectDB } from './db';
 
 const app = express();
 app.use(express.json());
@@ -50,7 +49,7 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error('Error:', err);
   });
 
   // Create HTTP server
@@ -70,12 +69,8 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  connectDB().then(() => {
-    server.listen(port, '0.0.0.0', () => {
-      log(`serving on port ${port}`);
-    });
-  }).catch(error => {
-    console.error('Failed to connect to database:', error);
-    process.exit(1);
+  
+  server.listen(port, '0.0.0.0', () => {
+    log(`serving on port ${port}`);
   });
 })();
