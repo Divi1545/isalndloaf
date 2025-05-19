@@ -1,9 +1,17 @@
+
 import { MongoClient } from 'mongodb';
-import ws from "ws";
-import * as schema from "@shared/schema";
 
 const uri = "mongodb+srv://alcodeagency:AiKiZd5vzUeiOliZi@islandloaf0.f6gf5t.mongodb.net/?retryWrites=true&w=majority";
-const client = new MongoClient(uri);
+
+const client = new MongoClient(uri, {
+  minPoolSize: 0,
+  maxPoolSize: 10,
+  retryWrites: true,
+  retryReads: true,
+  maxIdleTimeMS: 120000,
+  connectTimeoutMS: 10000,
+  serverSelectionTimeoutMS: 10000,
+});
 
 export async function connectDB() {
   try {
