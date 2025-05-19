@@ -1,0 +1,91 @@
+// 📊 IslandLoaf Vendor Dashboard Overview
+
+/**
+ * This is the main structure for a powerful AI-integrated vendor dashboard.
+ * The dashboard is broken into several tabs/pages with modular API connections.
+ * Vendors can monitor their performance, manage bookings, sync calendars, and use AI tools.
+ */
+
+// --------- 🧩 Tabs & Features --------- //
+
+/**
+ * 1. Overview Dashboard
+ * - Revenue this month / all-time
+ * - Total bookings
+ * - Top product/service
+ * - Commission paid
+ * - Quick insights (last 7 days trend)
+ */
+
+/**
+ * 2. Booking Manager
+ * - View all upcoming/past bookings
+ * - Approve, reject, cancel, refund
+ * - Sync bookings with calendar (iCal)
+ * - Search by customer/date/service/type
+ */
+
+/**
+ * 3. Calendar Sync
+ * - Add new iCal URL (Google, Airbnb, Booking.com)
+ * - See all blocked dates
+ * - Manual sync button ("Sync Now")
+ * - Sync status per calendar (last synced)
+ */
+
+/**
+ * 4. Pricing Engine
+ * - Set base price per stay/vehicle/tour/hour
+ * - Add extra guest fees, weekend surcharges
+ * - Create promo codes
+ * - Configure minimum stay, blackout dates
+ */
+
+/**
+ * 5. AI Marketing
+ * - Generate Instagram captions, Facebook ads
+ * - SEO optimizer for product descriptions
+ * - Predict top-performing days to boost promotions
+ * - Export content
+ */
+
+/**
+ * 6. Analytics & Reports
+ * - Monthly revenue breakdown
+ * - Bookings by service type
+ * - Traffic & source of bookings (future feature)
+ * - Export reports as PDF/CSV
+ */
+
+/**
+ * 7. Vendor Profile Settings
+ * - Business name, logo, description
+ * - Connected calendars
+ * - Payout method
+ * - Support contact info
+ */
+
+/**
+ * 8. Notifications & Logs
+ * - View system alerts (failed payments, double bookings)
+ * - Audit log of changes (price edits, calendar changes)
+ */
+
+/**
+ * 9. Vendor AI Assistant (Sidebar)
+ * - Weekly business tips
+ * - Revenue goals
+ * - Growth score with gamified badge
+ * - Message prompt: "What can I improve this week?"
+ */
+
+// --------------------------------------- //
+// Connect these UI pages to routes like:
+// /vendor/dashboard
+// /vendor/bookings
+// /vendor/calendar
+// /vendor/pricing
+// /vendor/ai-tools
+// /vendor/analytics
+// /vendor/settings
+// /vendor/logs
