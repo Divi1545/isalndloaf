@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LoginPageProps {
-  onLoginSuccess: () => void;
+  onLoginSuccess: (role: string) => void;
 }
 
 const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('vendor');
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -20,18 +22,28 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
     setIsLoading(true);
 
     try {
-      // In a real application, this would make an API call
-      // For our demo purposes, we'll just do a simple check
-      if (email === 'vendor@islandloaf.com' && password === 'password123') {
+      // In a real application, this would make an API call to authenticate
+      // For our demo purposes, we'll use hardcoded credentials
+      if (activeTab === 'vendor' && email === 'vendor@islandloaf.com' && password === 'password123') {
         toast({
-          title: "Login successful",
+          title: "Vendor login successful",
           description: "Welcome to IslandLoaf Vendor Dashboard",
         });
-        onLoginSuccess();
+        onLoginSuccess('vendor');
+      } else if (activeTab === 'admin' && email === 'admin@islandloaf.com' && password === 'admin123') {
+        toast({
+          title: "Admin login successful",
+          description: "Welcome to IslandLoaf Admin Dashboard",
+        });
+        onLoginSuccess('admin');
       } else {
+        const credentials = activeTab === 'vendor' 
+          ? "'vendor@islandloaf.com' and 'password123'"
+          : "'admin@islandloaf.com' and 'admin123'";
+        
         toast({
           title: "Login failed",
-          description: "Invalid email or password. Try 'vendor@islandloaf.com' and 'password123'",
+          description: `Invalid email or password. Try ${credentials}`,
           variant: "destructive",
         });
       }
@@ -55,15 +67,26 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
           </div>
           <h1 className="text-3xl font-bold text-slate-800">IslandLoaf</h1>
         </div>
-        <p className="text-slate-600">Vendor Dashboard Login</p>
+        <p className="text-slate-600">Tourism Management Platform</p>
       </div>
 
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Sign in to your account</CardTitle>
           <CardDescription>
-            Enter your credentials to access your vendor dashboard
+            Enter your credentials to access your dashboard
           </CardDescription>
+          <Tabs 
+            defaultValue="vendor" 
+            value={activeTab} 
+            onValueChange={setActiveTab}
+            className="w-full mt-4"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="vendor">Vendor Login</TabsTrigger>
+              <TabsTrigger value="admin">Admin Login</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
@@ -72,7 +95,7 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="vendor@islandloaf.com" 
+                placeholder={activeTab === 'vendor' ? "vendor@islandloaf.com" : "admin@islandloaf.com"} 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -106,7 +129,11 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full bg-emerald-600 hover:bg-emerald-700" type="submit" disabled={isLoading}>
+            <Button 
+              className={`w-full ${activeTab === 'vendor' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-purple-600 hover:bg-purple-700'}`} 
+              type="submit" 
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -123,7 +150,10 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
 
       <div className="mt-6 text-center text-sm text-slate-600">
         <div className="mb-2">Demo credentials:</div>
-        <code className="bg-slate-200 px-2 py-1 rounded">vendor@islandloaf.com / password123</code>
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
+          <code className="bg-slate-200 px-2 py-1 rounded">vendor@islandloaf.com / password123</code>
+          <code className="bg-slate-200 px-2 py-1 rounded">admin@islandloaf.com / admin123</code>
+        </div>
       </div>
     </div>
   );

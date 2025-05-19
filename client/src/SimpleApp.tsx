@@ -32,9 +32,10 @@ const mockUser = {
 interface SidebarProps {
   activeLink: string;
   setActiveLink: (link: string) => void;
+  onLogout?: () => void;
 }
 
-const Sidebar = ({ activeLink, setActiveLink }: SidebarProps) => {
+const Sidebar = ({ activeLink, setActiveLink, onLogout }: SidebarProps) => {
   const links = [
     { id: "overview", label: "Overview", icon: "ri-dashboard-line" },
     { id: "bookings", label: "Booking Manager", icon: "ri-calendar-check-line" },
@@ -100,7 +101,7 @@ const Sidebar = ({ activeLink, setActiveLink }: SidebarProps) => {
       <div className="mt-auto border-t border-slate-700 px-4 py-4">
         <button 
           className="flex items-center px-3 py-2 text-slate-300 hover:bg-slate-700 hover:text-white rounded-md w-full"
-          onClick={handleLogout}
+          onClick={onLogout}
         >
           <i className="ri-logout-box-line mr-3"></i>
           <span>Logout</span>
@@ -213,13 +214,15 @@ const AiAssistant = () => {
   );
 };
 
-// Import the login page
+// Import the login page and admin dashboard
 import LoginPage from "@/pages/LoginPage";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
 
 // Main App Component
 const SimpleApp = () => {
   const [activeLink, setActiveLink] = useState("overview");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string>('');
   
   // Set page title based on active link
   const getPageTitle = () => {
@@ -284,17 +287,111 @@ const SimpleApp = () => {
   // Handle logout
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setUserRole('');
+  };
+  
+  // Handle successful login
+  const handleLoginSuccess = (role: string) => {
+    setIsLoggedIn(true);
+    setUserRole(role);
   };
   
   // If not logged in, show the login page
   if (!isLoggedIn) {
-    return <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />;
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
   
-  // Otherwise show the dashboard
+  // Show admin dashboard for admin users
+  if (userRole === 'admin') {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="fixed inset-y-0 left-0 z-10 w-64 bg-slate-800 text-white">
+          <div className="p-4 flex items-center">
+            <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+              <span className="font-bold text-sm">IL</span>
+            </div>
+            <div>
+              <div className="font-bold">IslandLoaf</div>
+              <div className="text-xs text-slate-400">Admin Portal</div>
+            </div>
+          </div>
+          
+          <nav className="mt-8">
+            <div className="px-4 mb-2 text-xs font-semibold text-slate-400">ADMINISTRATION</div>
+            {[
+              { label: "Dashboard", icon: "grid" },
+              { label: "Vendors", icon: "users" },
+              { label: "Bookings", icon: "calendar" },
+              { label: "Revenue", icon: "dollar-sign" },
+              { label: "Settings", icon: "settings" },
+            ].map((item, index) => (
+              <a
+                key={index}
+                href="#"
+                className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                <i className={`ri-${item.icon}-line mr-3`}></i>
+                <span>{item.label}</span>
+              </a>
+            ))}
+
+            <div className="px-4 mt-6 mb-2 text-xs font-semibold text-slate-400">MANAGEMENT</div>
+            {[
+              { label: "Marketing", icon: "megaphone" },
+              { label: "Analytics", icon: "line-chart" },
+              { label: "Transactions", icon: "exchange-funds" },
+              { label: "Support", icon: "customer-service-2" },
+            ].map((item, index) => (
+              <a
+                key={index}
+                href="#"
+                className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                <i className={`ri-${item.icon}-line mr-3`}></i>
+                <span>{item.label}</span>
+              </a>
+            ))}
+          </nav>
+          
+          <div className="mt-auto border-t border-slate-700 px-4 py-4">
+            <button 
+              className="flex items-center px-3 py-2 text-slate-300 hover:bg-slate-700 hover:text-white rounded-md w-full"
+              onClick={handleLogout}
+            >
+              <i className="ri-logout-box-line mr-3"></i>
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+        
+        <div className="md:ml-64 pt-16 pb-12 px-6">
+          <header className="fixed top-0 right-0 left-64 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10">
+            <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+            <div className="flex items-center">
+              <button className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-4">
+                <i className="ri-notification-3-line"></i>
+              </button>
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center mr-2">
+                  <span className="text-sm font-medium text-purple-600">A</span>
+                </div>
+                <span className="font-medium text-sm">Admin</span>
+              </div>
+            </div>
+          </header>
+          
+          <main>
+            <AdminDashboard />
+          </main>
+        </div>
+      </div>
+    );
+  }
+  
+  // Otherwise show the vendor dashboard
   return (
     <div className="min-h-screen bg-slate-50">
-      <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} />
+      <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} onLogout={handleLogout} />
       <div className="md:ml-64">
         <Header pageTitle={getPageTitle()} />
         <main className="pt-16">
