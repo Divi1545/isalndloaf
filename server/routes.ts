@@ -188,8 +188,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const id = parseInt(req.params.id);
       
-      // In a real application, this would sync with external calendar sources
-      // For now, just update the lastSynced date
+      // Check if our extended iCal sync functionality is available
+      if ((storage as any).syncCalendarFromUrl) {
+        // Use the iCal sync functionality
+        const result = await (storage as any).syncCalendarFromUrl(id);
+        return res.status(result.success ? 200 : 400).json(result);
+      }
+      
+      // Fallback to simple lastSynced update if iCal sync is not available
       const source = await storage.updateCalendarSource(id, { lastSynced: new Date() });
       
       if (!source) {
@@ -202,6 +208,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         lastSynced: source.lastSynced
       });
     } catch (error) {
+      console.error("Error syncing calendar:", error);
       res.status(500).json({ error: "Failed to sync calendar" });
     }
   });
