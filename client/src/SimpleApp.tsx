@@ -100,6 +100,7 @@ const Sidebar = ({ activeLink, setActiveLink }: SidebarProps) => {
       <div className="mt-auto border-t border-slate-700 px-4 py-4">
         <button 
           className="flex items-center px-3 py-2 text-slate-300 hover:bg-slate-700 hover:text-white rounded-md w-full"
+          onClick={handleLogout}
         >
           <i className="ri-logout-box-line mr-3"></i>
           <span>Logout</span>
@@ -212,9 +213,13 @@ const AiAssistant = () => {
   );
 };
 
+// Import the login page
+import LoginPage from "@/pages/LoginPage";
+
 // Main App Component
 const SimpleApp = () => {
   const [activeLink, setActiveLink] = useState("overview");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   // Set page title based on active link
   const getPageTitle = () => {
@@ -276,6 +281,17 @@ const SimpleApp = () => {
     }
   };
   
+  // Handle logout
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+  
+  // If not logged in, show the login page
+  if (!isLoggedIn) {
+    return <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />;
+  }
+  
+  // Otherwise show the dashboard
   return (
     <div className="min-h-screen bg-slate-50">
       <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} />
