@@ -1,0 +1,81 @@
+// server/index.ts
+import express from 'express';
+import { extendStorageWithIcalSupport } from './storage/icalExtensions';
+import { MemStorage } from './storage';
+
+const app = express();
+const storage = new MemStorage();
+
+// 🔧 Attach iCal support if available
+extendStorageWithIcalSupport(storage);
+
+app.use(express.json());
+// Register your routes here...
+
+export default app;
+
+/*
+IslandLoaf Vendor Dashboard Pages - Feature Breakdown for Replit
+
+1. Overview Page
+- Welcome message with vendor's business name
+- Summary cards: Total Revenue, Total Bookings, Avg. Rating, Conversion Rate
+- Monthly Revenue Trend chart
+- Service Breakdown pie chart (Stays, Transport, Tours, Tickets, Wellness)
+
+2. Booking Manager Page
+- Table showing recent bookings
+- Filters: status, category, date range
+- Booking status update actions (approve, cancel, mark complete)
+- Search bar for customer name or booking ID
+
+3. Calendar Sync Page
+- List of connected external calendars
+- Input to add new iCal URL
+- Button: 'Sync Now' for manual refresh
+- Calendar view with blocked/available dates
+- Error and sync status indicators
+
+4. Pricing Engine Page
+- Table of current pricing for each service/listing
+- Inputs to update:
+  - Base price per night/session
+  - Taxes
+  - Guest-based pricing
+  - Board type pricing (Bed & Breakfast, Half Board, Full Board)
+  - Minimum stay logic
+  - Early bird and last-minute deal discounts
+  - Extra guest fees and service add-ons
+- Add/Edit/Delete pricing plans per room or service
+
+5. AI Marketing Page
+- AI content generator form: generate ad caption, SEO description, email copy
+- Options: platform (Instagram, Facebook, Blog), tone (funny, formal, luxury)
+- Button: 'Generate Content' + preview area
+- Social share preview + download/copy options
+
+6. Analytics & Reports Page
+- Revenue trend graphs with time filter (weekly, monthly, custom)
+- Booking funnel: Inquiries → Confirmed → Cancelled
+- Customer demographics chart
+- Export to CSV option
+- Commission earned and top performing services
+
+7. Profile Settings Page
+- Form: edit business name, description, logo
+- Update business category and services
+- Manage connected payment providers (WebxPay, Stripe)
+- Enable/disable chatbot visibility
+
+8. Notifications & Logs Page
+- List of recent events: new booking, cancellation, payment success/failure
+- System alerts: sync errors, rating thresholds
+- Filters by category and date
+
+9. Chatbot API Tester Page (for QA)
+- Form to simulate chatbot query: input check-in/check-out dates
+- Output: availability result, matching listings
+- Buttons to simulate 'Book Now', 'Sync Calendars'
+- Output console/log view of API responses
+
+*/
