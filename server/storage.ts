@@ -94,8 +94,8 @@ export class MemStorage implements IStorage {
     
     // Initialize with default admin user
     this.createUser({
-      username: "admin",
-      password: "password",
+      username: "admin", 
+      password: "admin123",
       email: "admin@islandloaf.com",
       fullName: "Admin User",
       businessName: "IslandLoaf",
@@ -106,7 +106,7 @@ export class MemStorage implements IStorage {
     // Initialize with default vendor
     this.createUser({
       username: "vendor",
-      password: "password",
+      password: "vendor123",
       email: "vendor@beachsidevillas.com",
       fullName: "John Smith",
       businessName: "Beachside Villas",
