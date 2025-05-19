@@ -1,6 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
+import React from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
-interface BookingSourcesProps {
+interface BookingSourceProps {
   sources: {
     name: string;
     percentage: number;
@@ -8,29 +9,39 @@ interface BookingSourcesProps {
   }[];
 }
 
-export default function BookingSources({ sources }: BookingSourcesProps) {
+const BookingSources = ({ sources }: BookingSourceProps) => {
   return (
-    <Card className="shadow-sm">
-      <CardContent className="p-5">
-        <h3 className="font-semibold text-lg mb-4">Booking Sources</h3>
-        
-        <div className="space-y-3">
-          {sources.map((source, index) => (
-            <div key={index}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm text-neutral-700">{source.name}</span>
-                <span className="text-sm font-medium">{source.percentage}%</span>
-              </div>
-              <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full ${source.color} rounded-full`} 
-                  style={{ width: `${source.percentage}%` }}
-                ></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="h-64">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={sources}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            outerRadius={80}
+            innerRadius={40}
+            fill="#8884d8"
+            dataKey="percentage"
+            nameKey="name"
+            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+          >
+            {sources.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip 
+            formatter={(value) => [`${value}%`, 'Percentage']}
+            contentStyle={{
+              borderRadius: '8px',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   );
-}
+};
+
+export default BookingSources;

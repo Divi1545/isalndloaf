@@ -1,7 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter";
-import { cn } from "@/lib/utils";
+import React from 'react';
 
 interface CalendarDayProps {
   day: number;
@@ -11,93 +8,101 @@ interface CalendarDayProps {
 function CalendarDay({ day, status }: CalendarDayProps) {
   return (
     <div 
-      className={cn(
-        "calendar-day",
-        status === "booked" && "booked",
-        status === "available" && "available",
-        status === "pending" && "pending"
-      )}
+      className={`
+        h-10 w-10 flex items-center justify-center rounded-full
+        ${status === "available" ? "bg-green-100 text-green-700" : 
+          status === "booked" ? "bg-red-100 text-red-700" : 
+          status === "pending" ? "bg-amber-100 text-amber-700" : 
+          "bg-transparent"}
+      `}
     >
       {day}
     </div>
   );
 }
 
-export default function CalendarOverview() {
-  const [, navigate] = useLocation();
+const CalendarOverview = () => {
+  const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+  const currentYear = new Date().getFullYear();
   
-  // In a real app, this would be fetched from an API
-  const month = "January 2023";
-  const weekDays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  // Generate days in month - this is a simplified version
+  const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
   
-  // Sample calendar data for display
-  const calendarDays: CalendarDayProps[] = [
-    { day: 1 },
-    { day: 2 },
-    { day: 3 },
-    { day: 4 },
-    { day: 5 },
-    { day: 6 },
-    { day: 7 },
-    { day: 8 },
-    { day: 9 },
-    { day: 10, status: "pending" },
-    { day: 11, status: "pending" },
-    { day: 12, status: "booked" },
-    { day: 13, status: "booked" },
-    { day: 14, status: "booked" },
-    { day: 15, status: "booked" },
-    { day: 16, status: "booked" },
-    { day: 17, status: "available" },
-    { day: 18, status: "available" },
-    { day: 19, status: "available" },
-    { day: 20, status: "available" },
-    { day: 21, status: "available" },
-  ];
-
+  // Sample availability data - in a real app, this would come from API
+  const availability = {
+    // format: day: status
+    1: "available",
+    2: "available",
+    3: "available",
+    4: "booked",
+    5: "booked",
+    6: "booked",
+    7: "available",
+    8: "available",
+    9: "available",
+    10: "available",
+    11: "available",
+    12: "available",
+    13: "pending",
+    14: "pending",
+    15: "available",
+    16: "available",
+    17: "available",
+    18: "booked",
+    19: "booked",
+    20: "booked",
+    21: "booked",
+    22: "available",
+    23: "available",
+    24: "available",
+    25: "available",
+    26: "available",
+    27: "available",
+    28: "available",
+    29: "booked",
+    30: "booked",
+    31: "booked",
+  };
+  
   return (
-    <Card className="shadow-sm">
-      <CardContent className="p-5">
-        <h3 className="font-semibold text-lg mb-4">Calendar Overview</h3>
-        
-        <div className="mb-3">
-          <p className="text-sm text-neutral-700 mb-2">{month}</p>
-          <div className="grid grid-cols-7 gap-1 text-center">
-            {weekDays.map((day, index) => (
-              <div key={index} className="text-xs text-neutral-500">{day}</div>
-            ))}
-            
-            {calendarDays.map((day, index) => (
-              <CalendarDay key={index} {...day} />
-            ))}
-          </div>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-medium">{currentMonth} {currentYear}</h4>
+        <div className="flex items-center space-x-2">
+          <button className="p-1 rounded hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+          </button>
+          <button className="p-1 rounded hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          </button>
         </div>
-        
-        <div className="flex justify-between text-sm mt-4">
-          <div className="flex items-center">
-            <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
-            <span>Available</span>
+      </div>
+      
+      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+          <div key={day} className="text-xs font-medium text-muted-foreground py-1">
+            {day}
           </div>
-          <div className="flex items-center">
-            <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span>
-            <span>Booked</span>
+        ))}
+      </div>
+      
+      <div className="grid grid-cols-7 gap-1">
+        {/* First day offset - for simplicity assuming month starts on Sunday */}
+        {daysInMonth.map((day) => (
+          <div key={day} className="flex justify-center py-1">
+            <CalendarDay 
+              day={day} 
+              status={availability[day] as CalendarDayProps['status']}
+            />
           </div>
-          <div className="flex items-center">
-            <span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-1"></span>
-            <span>Pending</span>
-          </div>
-        </div>
-        
-        <div className="mt-3 text-center">
-          <Button
-            variant="ghost"
-            className="text-primary hover:text-primary-700 text-sm font-medium"
-            onClick={() => navigate("/dashboard/calendar")}
-          >
-            View full calendar
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        ))}
+      </div>
+    </div>
   );
-}
+};
+
+export default CalendarOverview;
