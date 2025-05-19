@@ -1,0 +1,162 @@
+// server/index.ts
+import express from 'express';
+import { extendStorageWithIcalSupport } from './storage/icalExtensions';
+import { MemStorage } from './storage';
+
+const app = express();
+const storage = new MemStorage();
+
+// 🔧 Attach iCal support if available
+extendStorageWithIcalSupport(storage);
+
+app.use(express.json());
+// Register your routes here...
+
+export default app;
+
+/*
+IslandLoaf Vendor Dashboard Pages - Feature Breakdown for Replit
+
+1. Overview Page
+- Welcome message with vendor's business name
+- Summary cards: Total Revenue, Total Bookings, Avg. Rating, Conversion Rate
+- Monthly Revenue Trend chart
+- Service Breakdown pie chart (Stays, Transport, Tours, Tickets, Wellness)
+
+2. Booking Manager Page
+- Table showing recent bookings
+- Filters: status, category, date range
+- Booking status update actions (approve, cancel, mark complete)
+- Search bar for customer name or booking ID
+
+3. Calendar Sync Page
+- List of connected external calendars
+- Input to add new iCal URL
+- Button: 'Sync Now' for manual refresh
+- Calendar view with blocked/available dates
+- Error and sync status indicators
+
+4. Pricing Engine Page
+- Table of current pricing for each service/listing
+- Inputs to update:
+  - Base price per night/session
+  - Taxes
+  - Guest-based pricing
+  - Board type pricing (Bed & Breakfast, Half Board, Full Board)
+  - Minimum stay logic
+  - Early bird and last-minute deal discounts
+  - Extra guest fees and service add-ons
+- Add/Edit/Delete pricing plans per room or service
+- Preview of total price calculation logic
+- Enable seasonal pricing / weekday vs weekend rate toggles
+
+5. AI Marketing Page
+- AI content generator form: generate ad caption, SEO description, email copy
+- Options: platform (Instagram, Facebook, Blog), tone (funny, formal, luxury)
+- Button: 'Generate Content' + preview area
+- Social share preview + download/copy options
+- Tips for promotions, campaign suggestions based on service type
+- Campaign Templates for recurring promotions
+- A/B Testing content generation
+
+6. Analytics & Reports Page
+- Revenue trend graphs with time filter (weekly, monthly, custom)
+- Booking funnel: Inquiries → Confirmed → Cancelled
+- Customer demographics chart
+- Export to CSV option
+- Commission earned and top performing services
+- Average duration of stay or session
+- Vendor comparison to category benchmark
+
+7. Profile Settings Page
+- Form: edit business name, description, logo
+- Update business category and services
+- Manage connected payment providers (WebxPay, Stripe)
+- Enable/disable chatbot visibility
+- Link to Google Business Profile or social media
+- Service availability hours and contact preferences
+
+8. Notifications & Logs Page
+- List of recent events: new booking, cancellation, payment success/failure
+- System alerts: sync errors, rating thresholds
+- Filters by category and date
+- Export activity logs
+- Notification preference settings (email, app alert)
+
+9. Chatbot API Tester Page (for QA)
+- Form to simulate chatbot query: input check-in/check-out dates
+- Output: availability result, matching listings
+- Buttons to simulate 'Book Now', 'Sync Calendars'
+- Output console/log view of API responses
+- Add test scenarios for different languages (Sinhala, Tamil, English)
+- Display JSON preview of backend payloads
+
+10. Admin AI Assistant Page
+- Real-time dashboard assistant powered by OpenAI or custom LLM
+- Ask anything about the platform: “What’s our revenue trend this month?”, “Which vendors are underperforming?”
+- Summarize recent bookings, cancellations, disputes
+- Recommend actions: increase commission, feature vendor, resolve ticket
+- Answer technical questions: “Why did Stripe fail for vendor X?”
+- Export summaries or insights as reports
+- Understand natural language (English/Sinhala/Tamil)
+- Display data visually when asked: pie charts, bar graphs, KPIs
+
+---
+IslandLoaf Admin Dashboard Pages - Feature Breakdown for Replit
+
+1. Admin Overview Page
+- Total Platform Revenue, Vendor Count, Total Users
+- Booking Trend Charts (Daily, Weekly, Monthly)
+- Service Category Breakdown (Stays, Tours, Rentals, Tickets)
+- Top Performing Vendors and Listings
+- Platform Conversion Rate and Monthly Growth Indicator
+
+2. Vendor Management Page
+- List of Registered Vendors with search & filters
+- Actions: View, Approve, Disable, Flag
+- Vendor Performance Metrics
+- Join Date, Services Offered, Revenue, Ratings
+- Verification badge control and notes section
+
+3. User Management Page
+- List of all users (travelers/customers)
+- Filters: Country, Bookings Made, Joined Date
+- Ban/Unban buttons, account status updates
+- Export users to CSV or Mailchimp sync
+
+4. Booking Oversight Page
+- View bookings across all vendors
+- Filter by category, date range, vendor name, amount
+- Action: Refund, Reassign, Flag for review
+- Booking Audit Trail view
+
+5. Payment Gateway Monitor Page
+- Stripe/WebxPay integration health check
+- Recent payment logs
+- Failed Transactions + retry option
+- Commission breakdown and payout summaries
+
+6. AI Reports & Insights Page
+- Revenue Predictions (next 30/60/90 days)
+- Churn Risk Vendors + Suggested Interventions
+- Booking Trends by Region
+- AI-generated Vendor Performance Alerts
+
+7. Feedback & Disputes Page
+- User/vendor submitted tickets
+- Tags: Urgent, Resolved, Needs Review
+- Internal Notes per case
+- Assign to staff, escalate status, archive option
+
+8. CMS & Blog Page
+- Post management: create/edit/delete
+- Categorization: Travel Tips, Destination Guides, Vendor Announcements
+- Scheduled publishing and drafts
+- Image upload + SEO fields
+
+9. Settings & API Access Page
+- Set global platform settings (commission %, limits)
+- Manage API Keys for partners
+- App settings: branding, email sender, support contact
+- Role & permission settings for internal team
+*/
