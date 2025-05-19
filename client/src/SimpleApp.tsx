@@ -214,9 +214,12 @@ const AiAssistant = () => {
   );
 };
 
-// Import the login page and admin dashboard
+// Import the login page and admin components
 import LoginPage from "@/pages/LoginPage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
+import VendorManagement from "@/pages/admin/VendorManagement";
+import BookingManagement from "@/pages/admin/BookingManagement";
+import RevenueManagement from "@/pages/admin/RevenueManagement";
 
 // Main App Component
 const SimpleApp = () => {
@@ -303,6 +306,64 @@ const SimpleApp = () => {
   
   // Show admin dashboard for admin users
   if (userRole === 'admin') {
+    // Admin page state
+    const [activeAdminTab, setActiveAdminTab] = useState("dashboard");
+    
+    // Get page title based on active tab
+    const getAdminPageTitle = () => {
+      const titles: Record<string, string> = {
+        dashboard: "Admin Dashboard",
+        vendors: "Vendor Management",
+        bookings: "Booking Management",
+        revenue: "Revenue Management",
+        settings: "Platform Settings",
+        marketing: "Marketing Campaigns",
+        analytics: "Analytics & Reports",
+        transactions: "Transaction History",
+        support: "Support Dashboard"
+      };
+      
+      return titles[activeAdminTab] || "Admin Portal";
+    };
+    
+    // Render content based on active tab
+    const renderAdminContent = () => {
+      switch (activeAdminTab) {
+        case "dashboard":
+          return <AdminDashboard />;
+        case "vendors":
+          return <VendorManagement />;
+        case "bookings":
+          return <BookingManagement />;
+        case "revenue":
+          return <RevenueManagement />;
+        case "settings":
+          return (
+            <div className="py-20 px-4 md:px-6">
+              <div className="flex flex-col items-center justify-center text-center py-16">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                  <i className="ri-settings-3-line text-3xl text-slate-500"></i>
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Platform Settings</h2>
+                <p className="text-slate-500 max-w-lg mb-6">
+                  Configure global platform settings, user permissions, and notification preferences.
+                </p>
+                <div className="flex gap-4">
+                  <button className="px-4 py-2 bg-purple-600 text-white rounded-md">
+                    General Settings
+                  </button>
+                  <button className="px-4 py-2 bg-white border border-slate-200 rounded-md">
+                    User Management
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        default:
+          return <AdminDashboard />;
+      }
+    };
+    
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="fixed inset-y-0 left-0 z-10 w-64 bg-slate-800 text-white">
@@ -319,16 +380,22 @@ const SimpleApp = () => {
           <nav className="mt-8">
             <div className="px-4 mb-2 text-xs font-semibold text-slate-400">ADMINISTRATION</div>
             {[
-              { label: "Dashboard", icon: "grid" },
-              { label: "Vendors", icon: "users" },
-              { label: "Bookings", icon: "calendar" },
-              { label: "Revenue", icon: "dollar-sign" },
-              { label: "Settings", icon: "settings" },
-            ].map((item, index) => (
+              { id: "dashboard", label: "Dashboard", icon: "dashboard" },
+              { id: "vendors", label: "Vendors", icon: "user" },
+              { id: "bookings", label: "Bookings", icon: "calendar" },
+              { id: "revenue", label: "Revenue", icon: "money-dollar-circle" },
+              { id: "settings", label: "Settings", icon: "settings" },
+            ].map((item) => (
               <a
-                key={index}
+                key={item.id}
                 href="#"
-                className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white"
+                className={`flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white ${
+                  activeAdminTab === item.id ? 'bg-slate-700 text-white' : ''
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveAdminTab(item.id);
+                }}
               >
                 <i className={`ri-${item.icon}-line mr-3`}></i>
                 <span>{item.label}</span>
@@ -337,15 +404,21 @@ const SimpleApp = () => {
 
             <div className="px-4 mt-6 mb-2 text-xs font-semibold text-slate-400">MANAGEMENT</div>
             {[
-              { label: "Marketing", icon: "megaphone" },
-              { label: "Analytics", icon: "line-chart" },
-              { label: "Transactions", icon: "exchange-funds" },
-              { label: "Support", icon: "customer-service-2" },
-            ].map((item, index) => (
+              { id: "marketing", label: "Marketing", icon: "megaphone" },
+              { id: "analytics", label: "Analytics", icon: "line-chart" },
+              { id: "transactions", label: "Transactions", icon: "exchange-funds" },
+              { id: "support", label: "Support", icon: "customer-service-2" },
+            ].map((item) => (
               <a
-                key={index}
+                key={item.id}
                 href="#"
-                className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white"
+                className={`flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white ${
+                  activeAdminTab === item.id ? 'bg-slate-700 text-white' : ''
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveAdminTab(item.id);
+                }}
               >
                 <i className={`ri-${item.icon}-line mr-3`}></i>
                 <span>{item.label}</span>
@@ -366,7 +439,7 @@ const SimpleApp = () => {
         
         <div className="md:ml-64 pt-16 pb-12 px-6">
           <header className="fixed top-0 right-0 left-64 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10">
-            <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+            <h1 className="text-lg font-semibold">{getAdminPageTitle()}</h1>
             <div className="flex items-center">
               <button className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-4">
                 <i className="ri-notification-3-line"></i>
@@ -381,7 +454,7 @@ const SimpleApp = () => {
           </header>
           
           <main>
-            <AdminDashboard />
+            {renderAdminContent()}
           </main>
         </div>
       </div>
