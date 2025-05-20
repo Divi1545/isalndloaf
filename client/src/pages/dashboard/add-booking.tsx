@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 import StayBookingForm from '../../components/forms/StayBookingForm';
 import VehicleBookingForm from '../../components/forms/VehicleBookingForm';
 import TicketBookingForm from '../../components/forms/TicketBookingForm';
@@ -47,11 +48,13 @@ const AddBooking = () => {
     setIsLoading(false);
   }, []);
 
+  const [_, setLocation] = useLocation();
+  
   const handleBack = () => {
     if (category) {
       setCategory("");
     } else {
-      window.location.href = "/dashboard/bookings";
+      setLocation("/dashboard/bookings");
     }
   };
 
@@ -63,7 +66,7 @@ const AddBooking = () => {
     
     // Redirect to booking manager after successful creation
     setTimeout(() => {
-      window.location.href = "/dashboard/bookings";
+      setLocation("/dashboard/bookings");
     }, 1500);
   };
 
