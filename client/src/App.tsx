@@ -8,7 +8,7 @@ import Login from "@/pages/login";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard";
 import BookingManager from "@/pages/dashboard/booking-manager";
-import AddBooking from "@/pages/dashboard/add-booking";
+import AddBooking from "./pages/dashboard/add-booking";
 import CalendarSync from "@/pages/dashboard/calendar-sync";
 import PricingEngine from "@/pages/dashboard/pricing-engine";
 import AiMarketing from "@/pages/dashboard/ai-marketing";

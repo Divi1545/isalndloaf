@@ -15,10 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Search, Calendar, Filter } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 export default function BookingManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [bookingTab, setBookingTab] = useState("upcoming");
+  const [_, setLocation] = useLocation();
   
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['/api/bookings'],
@@ -156,7 +158,11 @@ export default function BookingManager() {
                 <Filter className="mr-2 h-4 w-4" />
                 Filter
               </Button>
-              <Button variant="default" size="sm">
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => setLocation("/dashboard/add-booking")}
+              >
                 + New Booking
               </Button>
             </div>

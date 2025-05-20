@@ -54,7 +54,7 @@ const AddBooking = () => {
     if (category) {
       setCategory("");
     } else {
-      setLocation("/dashboard/bookings");
+      setLocation("/dashboard/booking-manager");
     }
   };
 
@@ -110,7 +110,12 @@ const AddBooking = () => {
                       size="sm"
                       onClick={() => {
                         localStorage.setItem("userEmail", "vendor@islandloaf.com");
-                        window.location.reload();
+                        // Update vendor state directly instead of reloading
+                        setVendor({
+                          email: "vendor@islandloaf.com",
+                          role: "vendor",
+                          categories_allowed: ["stay", "vehicle", "tickets", "wellness"]
+                        });
                       }}
                       className={vendor.email === "vendor@islandloaf.com" ? "bg-emerald-50 border-emerald-200" : ""}
                     >
@@ -121,7 +126,12 @@ const AddBooking = () => {
                       size="sm"
                       onClick={() => {
                         localStorage.setItem("userEmail", "srilankadrives@gmail.com");
-                        window.location.reload();
+                        // Update vendor state directly instead of reloading
+                        setVendor({
+                          email: "srilankadrives@gmail.com",
+                          role: "vendor",
+                          categories_allowed: ["vehicle"]
+                        });
                       }}
                       className={vendor.email === "srilankadrives@gmail.com" ? "bg-emerald-50 border-emerald-200" : ""}
                     >
@@ -132,7 +142,12 @@ const AddBooking = () => {
                       size="sm"
                       onClick={() => {
                         localStorage.setItem("userEmail", "beachstayz@islandloaf.com");
-                        window.location.reload();
+                        // Update vendor state directly instead of reloading
+                        setVendor({
+                          email: "beachstayz@islandloaf.com",
+                          role: "vendor",
+                          categories_allowed: ["stay"]
+                        });
                       }}
                       className={vendor.email === "beachstayz@islandloaf.com" ? "bg-emerald-50 border-emerald-200" : ""}
                     >
