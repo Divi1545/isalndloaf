@@ -195,7 +195,7 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
               value={formData.vehicleType} 
               onValueChange={(value) => handleChange('vehicleType', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={errors.vehicleType ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select vehicle type" />
               </SelectTrigger>
               <SelectContent>
@@ -208,6 +208,7 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
                 <SelectItem value="boat">Boat</SelectItem>
               </SelectContent>
             </Select>
+            {errors.vehicleType && <p className="text-red-500 text-sm mt-1">{errors.vehicleType}</p>}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -252,7 +253,9 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
               value={formData.pickupLocation} 
               onChange={(e) => handleChange('pickupLocation', e.target.value)}
               placeholder="e.g. Colombo"
+              className={errors.pickupLocation ? "border-red-500" : ""}
             />
+            {errors.pickupLocation && <p className="text-red-500 text-sm mt-1">{errors.pickupLocation}</p>}
           </div>
           
           <div>
@@ -262,7 +265,9 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
               value={formData.dropoffLocation} 
               onChange={(e) => handleChange('dropoffLocation', e.target.value)}
               placeholder="e.g. Galle"
+              className={errors.dropoffLocation ? "border-red-500" : ""}
             />
+            {errors.dropoffLocation && <p className="text-red-500 text-sm mt-1">{errors.dropoffLocation}</p>}
           </div>
           
           <div className="flex items-center space-x-2">
@@ -284,7 +289,9 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
                 type="date" 
                 value={formData.pickupDate} 
                 onChange={(e) => handleChange('pickupDate', e.target.value)}
+                className={errors.pickupDate ? "border-red-500" : ""}
               />
+              {errors.pickupDate && <p className="text-red-500 text-sm mt-1">{errors.pickupDate}</p>}
             </div>
             <div>
               <Label htmlFor="dropoffDate">Drop-off Date</Label>
@@ -293,7 +300,9 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
                 type="date" 
                 value={formData.dropoffDate} 
                 onChange={(e) => handleChange('dropoffDate', e.target.value)}
+                className={errors.dropoffDate ? "border-red-500" : ""}
               />
+              {errors.dropoffDate && <p className="text-red-500 text-sm mt-1">{errors.dropoffDate}</p>}
             </div>
           </div>
           
@@ -304,11 +313,12 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
               <Input 
                 id="pricePerDay" 
                 type="text" 
-                className="pl-9" 
+                className={`pl-9 ${errors.pricePerDay ? "border-red-500" : ""}`}
                 value={formData.pricePerDay} 
                 onChange={(e) => handleChange('pricePerDay', e.target.value)}
               />
             </div>
+            {errors.pricePerDay && <p className="text-red-500 text-sm mt-1">{errors.pricePerDay}</p>}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
