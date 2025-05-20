@@ -176,7 +176,7 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
               value={formData.serviceType} 
               onValueChange={(value) => handleChange('serviceType', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={errors.serviceType ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select service type" />
               </SelectTrigger>
               <SelectContent>
@@ -188,6 +188,7 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
                 <SelectItem value="Wellness Consultation">Wellness Consultation</SelectItem>
               </SelectContent>
             </Select>
+            {errors.serviceType && <p className="text-red-500 text-sm mt-1">{errors.serviceType}</p>}
           </div>
           
           <div>
@@ -248,11 +249,12 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
               <Input 
                 id="pricePerSession" 
                 type="text" 
-                className="pl-9" 
+                className={`pl-9 ${errors.pricePerSession ? "border-red-500" : ""}`}
                 value={formData.pricePerSession} 
                 onChange={(e) => handleChange('pricePerSession', e.target.value)}
               />
             </div>
+            {errors.pricePerSession && <p className="text-red-500 text-sm mt-1">{errors.pricePerSession}</p>}
           </div>
           
           <div>

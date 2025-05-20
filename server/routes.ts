@@ -137,6 +137,51 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  app.post("/api/bookings", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { type, details, status } = req.body;
+      
+      // Validate booking type
+      if (!['stay', 'vehicle', 'ticket', 'wellness'].includes(type)) {
+        return res.status(400).json({ error: "Invalid booking type" });
+      }
+      
+      // Validate booking status
+      if (!bookingStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid booking status" });
+      }
+      
+      // Create booking with user ID from session
+      const booking = await storage.createBooking({
+        type,
+        details: JSON.stringify(details),
+        status,
+        vendorId: req.session.user.userId,
+        customerName: details.customerName || "Guest", // Default name if not provided
+        customerEmail: details.customerEmail || null,
+        customerPhone: details.customerPhone || null,
+        totalAmount: details.totalPrice || 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      // Create a notification for new booking
+      await storage.createNotification({
+        userId: req.session.user.userId,
+        title: `New ${type} booking created`,
+        content: `A new ${type} booking has been created with status: ${status}`,
+        type: "booking",
+        read: false,
+        createdAt: new Date()
+      });
+      
+      res.status(201).json(booking);
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      res.status(500).json({ error: "Failed to create booking" });
+    }
+  });
+
   app.patch("/api/bookings/:id/status", requireAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);

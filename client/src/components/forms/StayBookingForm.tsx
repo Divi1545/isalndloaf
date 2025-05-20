@@ -24,6 +24,7 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const [formData, setFormData] = useState({
+    // Booking details
     stayType: '',
     propertyType: '',
     propertySpace: 'Entire Place',
@@ -45,7 +46,11 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
     },
     source: 'direct',
     notes: '',
-    status: 'pending'
+    status: 'pending',
+    // Customer information
+    customerName: '',
+    customerEmail: '',
+    customerPhone: ''
   });
 
   type FormDataKey = keyof typeof formData;
@@ -130,6 +135,15 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
     // Required fields validation
     if (!formData.stayType) newErrors.stayType = "Stay type is required";
     if (!formData.propertyType) newErrors.propertyType = "Property type is required";
+    
+    // Customer information validation
+    if (!formData.customerName) newErrors.customerName = "Guest name is required";
+    if (formData.customerEmail && !/^\S+@\S+\.\S+$/.test(formData.customerEmail)) {
+      newErrors.customerEmail = "Please enter a valid email address";
+    }
+    if (formData.customerPhone && !/^[\d\s\+\-\(\)]{7,15}$/.test(formData.customerPhone)) {
+      newErrors.customerPhone = "Please enter a valid phone number";
+    }
     
     // Date validation
     const checkIn = new Date(formData.checkInDate);
@@ -495,8 +509,48 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
         </div>
       </div>
       
+      <div className="mb-6 border p-4 rounded-md bg-muted/30">
+        <h3 className="text-md font-medium mb-4">Guest Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="customerName">Guest Name</Label>
+            <Input 
+              id="customerName" 
+              value={formData.customerName} 
+              onChange={(e) => handleChange('customerName', e.target.value)}
+              placeholder="John Doe"
+              className={errors.customerName ? "border-red-500" : ""}
+            />
+            {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
+          </div>
+          <div>
+            <Label htmlFor="customerEmail">Email Address</Label>
+            <Input 
+              id="customerEmail" 
+              type="email" 
+              value={formData.customerEmail} 
+              onChange={(e) => handleChange('customerEmail', e.target.value)}
+              placeholder="johndoe@example.com"
+              className={errors.customerEmail ? "border-red-500" : ""}
+            />
+            {errors.customerEmail && <p className="text-red-500 text-sm mt-1">{errors.customerEmail}</p>}
+          </div>
+          <div>
+            <Label htmlFor="customerPhone">Phone Number</Label>
+            <Input 
+              id="customerPhone" 
+              value={formData.customerPhone} 
+              onChange={(e) => handleChange('customerPhone', e.target.value)}
+              placeholder="+94 71 234 5678"
+              className={errors.customerPhone ? "border-red-500" : ""}
+            />
+            {errors.customerPhone && <p className="text-red-500 text-sm mt-1">{errors.customerPhone}</p>}
+          </div>
+        </div>
+      </div>
+      
       <div className="mb-6">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">Special Requests or Notes</Label>
         <Textarea 
           id="notes" 
           placeholder="Add any special requests or notes here" 
