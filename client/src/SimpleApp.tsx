@@ -226,8 +226,9 @@ const SimpleApp = () => {
   const [activeLink, setActiveLink] = useState("overview");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
+  const [activeAdminTab, setActiveAdminTab] = useState("dashboard");
   
-  // Set page title based on active link
+  // Set page title based on active link (for vendor)
   const getPageTitle = () => {
     const titles: Record<string, string> = {
       overview: "Dashboard Overview",
@@ -243,7 +244,24 @@ const SimpleApp = () => {
     return titles[activeLink] || "Vendor Dashboard";
   };
   
-  // Render content based on active link
+  // Get page title based on active tab (for admin)
+  const getAdminPageTitle = () => {
+    const titles: Record<string, string> = {
+      dashboard: "Admin Dashboard",
+      vendors: "Vendor Management",
+      bookings: "Booking Management",
+      revenue: "Revenue Management",
+      settings: "Platform Settings",
+      marketing: "Marketing Campaigns",
+      analytics: "Analytics & Reports",
+      transactions: "Transaction History",
+      support: "Support Dashboard"
+    };
+    
+    return titles[activeAdminTab] || "Admin Portal";
+  };
+  
+  // Render content based on active link (for vendor)
   const renderContent = () => {
     switch (activeLink) {
       case "overview":
@@ -287,6 +305,44 @@ const SimpleApp = () => {
     }
   };
   
+  // Render content based on active tab (for admin)
+  const renderAdminContent = () => {
+    switch (activeAdminTab) {
+      case "dashboard":
+        return <AdminDashboard />;
+      case "vendors":
+        return <VendorManagement />;
+      case "bookings":
+        return <BookingManagement />;
+      case "revenue":
+        return <RevenueManagement />;
+      case "settings":
+        return (
+          <div className="py-20 px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center text-center py-16">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                <i className="ri-settings-3-line text-3xl text-slate-500"></i>
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Platform Settings</h2>
+              <p className="text-slate-500 max-w-lg mb-6">
+                Configure global platform settings, user permissions, and notification preferences.
+              </p>
+              <div className="flex gap-4">
+                <button className="px-4 py-2 bg-purple-600 text-white rounded-md">
+                  General Settings
+                </button>
+                <button className="px-4 py-2 bg-white border border-slate-200 rounded-md">
+                  User Management
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return <AdminDashboard />;
+    }
+  };
+  
   // Handle logout
   const handleLogout = () => {
     setIsLoggedIn(false);
@@ -306,64 +362,6 @@ const SimpleApp = () => {
   
   // Show admin dashboard for admin users
   if (userRole === 'admin') {
-    // Admin page state
-    const [activeAdminTab, setActiveAdminTab] = useState("dashboard");
-    
-    // Get page title based on active tab
-    const getAdminPageTitle = () => {
-      const titles: Record<string, string> = {
-        dashboard: "Admin Dashboard",
-        vendors: "Vendor Management",
-        bookings: "Booking Management",
-        revenue: "Revenue Management",
-        settings: "Platform Settings",
-        marketing: "Marketing Campaigns",
-        analytics: "Analytics & Reports",
-        transactions: "Transaction History",
-        support: "Support Dashboard"
-      };
-      
-      return titles[activeAdminTab] || "Admin Portal";
-    };
-    
-    // Render content based on active tab
-    const renderAdminContent = () => {
-      switch (activeAdminTab) {
-        case "dashboard":
-          return <AdminDashboard />;
-        case "vendors":
-          return <VendorManagement />;
-        case "bookings":
-          return <BookingManagement />;
-        case "revenue":
-          return <RevenueManagement />;
-        case "settings":
-          return (
-            <div className="py-20 px-4 md:px-6">
-              <div className="flex flex-col items-center justify-center text-center py-16">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                  <i className="ri-settings-3-line text-3xl text-slate-500"></i>
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Platform Settings</h2>
-                <p className="text-slate-500 max-w-lg mb-6">
-                  Configure global platform settings, user permissions, and notification preferences.
-                </p>
-                <div className="flex gap-4">
-                  <button className="px-4 py-2 bg-purple-600 text-white rounded-md">
-                    General Settings
-                  </button>
-                  <button className="px-4 py-2 bg-white border border-slate-200 rounded-md">
-                    User Management
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        default:
-          return <AdminDashboard />;
-      }
-    };
-    
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="fixed inset-y-0 left-0 z-10 w-64 bg-slate-800 text-white">
