@@ -8,6 +8,7 @@ import Login from "@/pages/login";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard";
 import BookingManager from "@/pages/dashboard/booking-manager";
+import AddBooking from "@/pages/dashboard/add-booking";
 import CalendarSync from "@/pages/dashboard/calendar-sync";
 import PricingEngine from "@/pages/dashboard/pricing-engine";
 import AiMarketing from "@/pages/dashboard/ai-marketing";
@@ -50,6 +51,7 @@ function Router() {
             <Switch>
               <Route path="/dashboard" component={Dashboard} />
               <Route path="/dashboard/bookings" component={BookingManager} />
+              <Route path="/dashboard/add-booking" component={AddBooking} />
               <Route path="/dashboard/calendar" component={CalendarSync} />
               <Route path="/dashboard/pricing" component={PricingEngine} />
               <Route path="/dashboard/ai-marketing" component={AiMarketing} />
