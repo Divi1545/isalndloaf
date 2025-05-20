@@ -66,7 +66,7 @@ const AddBooking = () => {
     
     // Redirect to booking manager after successful creation
     setTimeout(() => {
-      setLocation("/dashboard/bookings");
+      setLocation("/dashboard/booking-manager");
     }, 1500);
   };
 
