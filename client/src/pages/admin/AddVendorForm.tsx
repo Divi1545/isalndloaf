@@ -83,7 +83,7 @@ const AddVendorForm = () => {
     
     // Redirect back to admin dashboard after a short delay
     setTimeout(() => {
-      setLocation("/admin/dashboard");
+      window.location.href = "/dashboard";
     }, 1500);
   };
   
@@ -93,7 +93,7 @@ const AddVendorForm = () => {
         <Button 
           variant="ghost" 
           className="mr-4 p-0 h-auto" 
-          onClick={() => setLocation("/admin/dashboard")}
+          onClick={() => window.location.href = "/dashboard"}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>

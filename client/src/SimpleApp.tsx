@@ -311,12 +311,17 @@ const SimpleApp = () => {
   
   // Render content based on active tab (for admin)
   const renderAdminContent = () => {
-    // Handle special paths for admin
-    if (currentAdminPath === "/admin/add-vendor") {
+    // Check for stored admin action
+    const adminAction = localStorage.getItem("adminAction");
+    
+    // Handle special admin actions
+    if (adminAction === "addVendor") {
+      // Clear the action after handling it
+      localStorage.removeItem("adminAction");
       return <AddVendorForm />;
     }
     
-    // Otherwise show regular tab content
+    // Otherwise show regular tab content based on active tab
     switch (activeAdminTab) {
       case "dashboard":
         return <AdminDashboard />;
