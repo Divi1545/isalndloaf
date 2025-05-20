@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import StatCard from "@/components/dashboard/stat-card";
@@ -228,6 +229,8 @@ const SimpleApp = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
   const [activeAdminTab, setActiveAdminTab] = useState("dashboard");
+  const [currentAdminPath, setCurrentAdminPath] = useState<string | null>(null);
+  const [_, setLocation] = useLocation();
   
   // Set page title based on active link (for vendor)
   const getPageTitle = () => {
@@ -308,6 +311,12 @@ const SimpleApp = () => {
   
   // Render content based on active tab (for admin)
   const renderAdminContent = () => {
+    // Handle special paths for admin
+    if (currentAdminPath === "/admin/add-vendor") {
+      return <AddVendorForm />;
+    }
+    
+    // Otherwise show regular tab content
     switch (activeAdminTab) {
       case "dashboard":
         return <AdminDashboard />;
@@ -350,10 +359,20 @@ const SimpleApp = () => {
     setUserRole('');
   };
   
+  // Route navigation helper for admin
+  const goToAdminPath = (path: string) => {
+    setCurrentAdminPath(path);
+    // Clear the path when we navigate to a main tab
+    if (path === null) {
+      setActiveAdminTab("dashboard");
+    }
+  };
+  
   // Handle successful login
   const handleLoginSuccess = (role: string) => {
     setIsLoggedIn(true);
     setUserRole(role);
+    setCurrentAdminPath(null);
   };
   
   // If not logged in, show the login page
