@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface StayBookingFormProps {
   onSuccess: () => void;
+}
+
+interface GuestCount {
+  adults: number;
+  children: number;
+  infants: number;
 }
 
 const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
@@ -15,12 +22,23 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
   const [formData, setFormData] = useState({
     stayType: '',
     propertyType: '',
-    checkInDate: '2025-06-01',
-    checkOutDate: '2025-06-05',
-    guests: 2,
-    basePrice: '150',
+    propertySpace: 'Entire Place',
+    themes: [] as string[],
+    checkInDate: '2025-05-21',
+    checkOutDate: '2025-05-23',
+    guestCount: {
+      adults: 2,
+      children: 1,
+      infants: 0
+    } as GuestCount,
+    amenities: [] as string[],
+    basePrice: '25000',
     taxRate: '10',
-    discount: '0',
+    cleaningFee: '2000',
+    discounts: {
+      earlyBird: '1000',
+      longStay: '3000'
+    },
     source: 'direct',
     notes: '',
     status: 'pending'
@@ -33,18 +51,47 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
     });
   };
 
+  const handleNestedChange = (parent: string, field: string, value: any) => {
+    setFormData({
+      ...formData,
+      [parent]: {
+        ...formData[parent],
+        [field]: value
+      }
+    });
+  };
+
+  const handleArrayToggle = (field: string, value: string) => {
+    const array = formData[field] as string[];
+    const newArray = array.includes(value)
+      ? array.filter(item => item !== value)
+      : [...array, value];
+
+    setFormData({
+      ...formData,
+      [field]: newArray
+    });
+  };
+
   const calculateTotal = () => {
-    const basePrice = parseFloat(formData.basePrice) || 0;
-    const taxRate = parseFloat(formData.taxRate) || 0;
-    const discount = parseFloat(formData.discount) || 0;
+    const basePrice = parseInt(formData.basePrice) || 0;
+    const taxRate = parseInt(formData.taxRate) || 0;
+    const cleaningFee = parseInt(formData.cleaningFee) || 0;
+    const earlyBirdDiscount = parseInt(formData.discounts.earlyBird) || 0;
+    const longStayDiscount = parseInt(formData.discounts.longStay) || 0;
     
-    const days = 4; // For demonstration, would calculate from dates
-    const subtotal = basePrice * days;
+    // Calculate nights (sample calculation)
+    const checkIn = new Date(formData.checkInDate);
+    const checkOut = new Date(formData.checkOutDate);
+    const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
+    
+    const subtotal = basePrice * nights;
     const taxAmount = (subtotal * taxRate) / 100;
-    const discountAmount = (subtotal * discount) / 100;
-    const total = subtotal + taxAmount - discountAmount;
+    const totalDiscounts = earlyBirdDiscount + longStayDiscount;
     
-    return total.toFixed(2);
+    const total = subtotal + taxAmount + cleaningFee - totalDiscounts;
+    
+    return total.toLocaleString();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -94,9 +141,47 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
                 <SelectItem value="standard">Standard</SelectItem>
                 <SelectItem value="deluxe">Deluxe</SelectItem>
                 <SelectItem value="premium">Premium</SelectItem>
-                <SelectItem value="suite">Suite</SelectItem>
+                <SelectItem value="apartment">Apartment</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="propertySpace">Property Space</Label>
+            <Select 
+              value={formData.propertySpace} 
+              onValueChange={(value) => handleChange('propertySpace', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select property space" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="entire">Entire Place</SelectItem>
+                <SelectItem value="private">Private Room</SelectItem>
+                <SelectItem value="shared">Shared Room</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label className="mb-2 block">Themes</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {['Beachfront', 'Nature Retreat', 'City Center', 'Mountain View', 'Heritage'].map((theme) => (
+                <div key={theme} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`theme-${theme}`} 
+                    checked={formData.themes.includes(theme)}
+                    onCheckedChange={() => handleArrayToggle('themes', theme)}
+                  />
+                  <label 
+                    htmlFor={`theme-${theme}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {theme}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -121,26 +206,72 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
           </div>
           
           <div>
-            <Label htmlFor="guests">Number of Guests</Label>
-            <Input 
-              id="guests" 
-              type="number" 
-              min="1" 
-              value={formData.guests} 
-              onChange={(e) => handleChange('guests', parseInt(e.target.value))}
-            />
+            <Label className="mb-2 block">Guest Count</Label>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label htmlFor="adults" className="text-xs">Adults</Label>
+                <Input 
+                  id="adults" 
+                  type="number" 
+                  min="1" 
+                  value={formData.guestCount.adults} 
+                  onChange={(e) => handleNestedChange('guestCount', 'adults', parseInt(e.target.value))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="children" className="text-xs">Children</Label>
+                <Input 
+                  id="children" 
+                  type="number" 
+                  min="0" 
+                  value={formData.guestCount.children} 
+                  onChange={(e) => handleNestedChange('guestCount', 'children', parseInt(e.target.value))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="infants" className="text-xs">Infants</Label>
+                <Input 
+                  id="infants" 
+                  type="number" 
+                  min="0" 
+                  value={formData.guestCount.infants} 
+                  onChange={(e) => handleNestedChange('guestCount', 'infants', parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <Label className="mb-2 block">Amenities</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {['Wi-Fi', 'A/C', 'Kitchen', 'Pool', 'Parking', 'TV', 'Hot Water', 'Laundry'].map((amenity) => (
+                <div key={amenity} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`amenity-${amenity}`} 
+                    checked={formData.amenities.includes(amenity)}
+                    onCheckedChange={() => handleArrayToggle('amenities', amenity)}
+                  />
+                  <label 
+                    htmlFor={`amenity-${amenity}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {amenity}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="basePrice">Base Price (per night)</Label>
+            <Label htmlFor="basePrice">Base Price</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
               <Input 
                 id="basePrice" 
                 type="text" 
-                className="pl-7" 
+                className="pl-9" 
                 value={formData.basePrice} 
                 onChange={(e) => handleChange('basePrice', e.target.value)}
               />
@@ -161,15 +292,48 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
               </div>
             </div>
             <div>
-              <Label htmlFor="discount">Discount (%)</Label>
+              <Label htmlFor="cleaningFee">Cleaning Fee</Label>
               <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
                 <Input 
-                  id="discount" 
+                  id="cleaningFee" 
                   type="text" 
-                  value={formData.discount} 
-                  onChange={(e) => handleChange('discount', e.target.value)}
+                  className="pl-9" 
+                  value={formData.cleaningFee} 
+                  onChange={(e) => handleChange('cleaningFee', e.target.value)}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <Label className="mb-2 block">Discounts</Label>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="earlyBirdDiscount" className="text-xs">Early Bird Discount</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
+                  <Input 
+                    id="earlyBirdDiscount" 
+                    type="text" 
+                    className="pl-9" 
+                    value={formData.discounts.earlyBird} 
+                    onChange={(e) => handleNestedChange('discounts', 'earlyBird', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="longStayDiscount" className="text-xs">Long Stay Discount</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
+                  <Input 
+                    id="longStayDiscount" 
+                    type="text" 
+                    className="pl-9" 
+                    value={formData.discounts.longStay} 
+                    onChange={(e) => handleNestedChange('discounts', 'longStay', e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -228,9 +392,9 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-medium">Total Price</h3>
-              <p className="text-sm text-muted-foreground">Including taxes and discounts</p>
+              <p className="text-sm text-muted-foreground">Including taxes, fees and discounts</p>
             </div>
-            <div className="text-xl font-bold">${calculateTotal()}</div>
+            <div className="text-xl font-bold">Rs. {calculateTotal()}</div>
           </div>
         </CardContent>
       </Card>

@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
-import StayBookingForm from '@/components/forms/StayBookingForm';
-import VehicleBookingForm from '@/components/forms/VehicleBookingForm';
-import TicketBookingForm from '@/components/forms/TicketBookingForm';
-import WellnessBookingForm from '@/components/forms/WellnessBookingForm';
+import StayBookingForm from '../../components/forms/StayBookingForm';
+import VehicleBookingForm from '../../components/forms/VehicleBookingForm';
+import TicketBookingForm from '../../components/forms/TicketBookingForm';
+import WellnessBookingForm from '../../components/forms/WellnessBookingForm';
 
 const AddBooking = () => {
   const [category, setCategory] = useState<string>("");

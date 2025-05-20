@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface WellnessBookingFormProps {
   onSuccess: () => void;
@@ -13,15 +14,14 @@ interface WellnessBookingFormProps {
 const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    serviceName: '',
-    practitionerName: '',
-    sessionDate: '2025-06-10',
-    sessionTime: '10:00',
-    sessionDuration: '60', // in minutes
-    pricePerSession: '75',
-    taxRate: '5',
-    discount: '0',
-    source: 'direct',
+    serviceType: '',
+    duration: 60,
+    sessionDate: '2025-05-25',
+    time: '15:00',
+    practitioner: '',
+    pricePerSession: '6000',
+    addOns: [] as string[],
+    taxPercent: '10',
     notes: '',
     status: 'pending'
   });
@@ -33,17 +33,32 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
     });
   };
 
+  const handleArrayToggle = (field: string, value: string) => {
+    const array = formData[field] as string[];
+    const newArray = array.includes(value)
+      ? array.filter(item => item !== value)
+      : [...array, value];
+
+    setFormData({
+      ...formData,
+      [field]: newArray
+    });
+  };
+
   const calculateTotal = () => {
-    const pricePerSession = parseFloat(formData.pricePerSession) || 0;
-    const taxRate = parseFloat(formData.taxRate) || 0;
-    const discount = parseFloat(formData.discount) || 0;
+    const pricePerSession = parseInt(formData.pricePerSession) || 0;
+    const taxPercent = parseInt(formData.taxPercent) || 0;
     
-    const taxAmount = (pricePerSession * taxRate) / 100;
-    const discountAmount = (pricePerSession * discount) / 100;
+    // Calculate add-on costs (assuming each add-on is Rs. 1500)
+    const addOnPrice = 1500;
+    const addOnTotal = formData.addOns.length * addOnPrice;
     
-    const total = pricePerSession + taxAmount - discountAmount;
+    const subtotal = pricePerSession + addOnTotal;
+    const taxAmount = (subtotal * taxPercent) / 100;
     
-    return total.toFixed(2);
+    const total = subtotal + taxAmount;
+    
+    return total.toLocaleString();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,33 +77,41 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-4">
           <div>
-            <Label htmlFor="serviceName">Service Name</Label>
+            <Label htmlFor="serviceType">Service Type</Label>
             <Select 
-              value={formData.serviceName} 
-              onValueChange={(value) => handleChange('serviceName', value)}
+              value={formData.serviceType} 
+              onValueChange={(value) => handleChange('serviceType', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select service" />
+                <SelectValue placeholder="Select service type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="massage">Massage Therapy</SelectItem>
-                <SelectItem value="facial">Facial Treatment</SelectItem>
-                <SelectItem value="yoga">Yoga Session</SelectItem>
-                <SelectItem value="meditation">Meditation Class</SelectItem>
-                <SelectItem value="ayurveda">Ayurvedic Treatment</SelectItem>
-                <SelectItem value="spa">Spa Package</SelectItem>
+                <SelectItem value="Massage">Massage</SelectItem>
+                <SelectItem value="Ayurvedic Treatment">Ayurvedic Treatment</SelectItem>
+                <SelectItem value="Yoga Session">Yoga Session</SelectItem>
+                <SelectItem value="Meditation">Meditation</SelectItem>
+                <SelectItem value="Spa Package">Spa Package</SelectItem>
+                <SelectItem value="Wellness Consultation">Wellness Consultation</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div>
-            <Label htmlFor="practitionerName">Practitioner Name (Optional)</Label>
-            <Input 
-              id="practitionerName" 
-              value={formData.practitionerName} 
-              onChange={(e) => handleChange('practitionerName', e.target.value)}
-              placeholder="Enter practitioner name if any"
-            />
+            <Label htmlFor="duration">Duration (minutes)</Label>
+            <Select 
+              value={formData.duration.toString()} 
+              onValueChange={(value) => handleChange('duration', parseInt(value))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">30 minutes</SelectItem>
+                <SelectItem value="60">60 minutes</SelectItem>
+                <SelectItem value="90">90 minutes</SelectItem>
+                <SelectItem value="120">120 minutes</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -102,93 +125,74 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
               />
             </div>
             <div>
-              <Label htmlFor="sessionTime">Session Time</Label>
+              <Label htmlFor="time">Time</Label>
               <Input 
-                id="sessionTime" 
+                id="time" 
                 type="time" 
-                value={formData.sessionTime} 
-                onChange={(e) => handleChange('sessionTime', e.target.value)}
+                value={formData.time} 
+                onChange={(e) => handleChange('time', e.target.value)}
               />
             </div>
           </div>
           
           <div>
-            <Label htmlFor="sessionDuration">Session Duration (minutes)</Label>
-            <Select 
-              value={formData.sessionDuration} 
-              onValueChange={(value) => handleChange('sessionDuration', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select duration" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="60">60 minutes</SelectItem>
-                <SelectItem value="90">90 minutes</SelectItem>
-                <SelectItem value="120">120 minutes</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="practitioner">Preferred Practitioner (Optional)</Label>
+            <Input 
+              id="practitioner" 
+              value={formData.practitioner} 
+              onChange={(e) => handleChange('practitioner', e.target.value)}
+              placeholder="Enter name if you have a preference"
+            />
           </div>
         </div>
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="pricePerSession">Price Per Session</Label>
+            <Label htmlFor="pricePerSession">Price per Session</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
               <Input 
                 id="pricePerSession" 
                 type="text" 
-                className="pl-7" 
+                className="pl-9" 
                 value={formData.pricePerSession} 
                 onChange={(e) => handleChange('pricePerSession', e.target.value)}
               />
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="taxRate">Tax Rate (%)</Label>
-              <div className="relative">
-                <Input 
-                  id="taxRate" 
-                  type="text" 
-                  value={formData.taxRate} 
-                  onChange={(e) => handleChange('taxRate', e.target.value)}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="discount">Discount (%)</Label>
-              <div className="relative">
-                <Input 
-                  id="discount" 
-                  type="text" 
-                  value={formData.discount} 
-                  onChange={(e) => handleChange('discount', e.target.value)}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-              </div>
+          <div>
+            <Label className="mb-2 block">Add-ons (Rs. 1,500 each)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {['Herbal Pack', 'Aromatherapy', 'Hot Stone', 'Refreshments', 'Private Room'].map((addOn) => (
+                <div key={addOn} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`add-on-${addOn}`} 
+                    checked={formData.addOns.includes(addOn)}
+                    onCheckedChange={() => handleArrayToggle('addOns', addOn)}
+                  />
+                  <label 
+                    htmlFor={`add-on-${addOn}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {addOn}
+                  </label>
+                </div>
+              ))}
             </div>
           </div>
           
           <div>
-            <Label htmlFor="source">Booking Source</Label>
-            <Select 
-              value={formData.source} 
-              onValueChange={(value) => handleChange('source', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select booking source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="direct">Direct (Website/Phone)</SelectItem>
-                <SelectItem value="partner">Partner Referral</SelectItem>
-                <SelectItem value="walkin">Walk-in</SelectItem>
-                <SelectItem value="online">Online Booking Platform</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="taxPercent">Tax (%)</Label>
+            <div className="relative">
+              <Input 
+                id="taxPercent" 
+                type="text" 
+                value={formData.taxPercent} 
+                onChange={(e) => handleChange('taxPercent', e.target.value)}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+            </div>
           </div>
           
           <div>
@@ -211,10 +215,10 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
       </div>
       
       <div className="mb-6">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">Special Requests or Health Information</Label>
         <Textarea 
           id="notes" 
-          placeholder="Add any special requests or notes here" 
+          placeholder="Add any special requests, health concerns, or preferences here" 
           value={formData.notes} 
           onChange={(e) => handleChange('notes', e.target.value)}
         />
@@ -225,11 +229,9 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-medium">Total Price</h3>
-              <p className="text-sm text-muted-foreground">
-                {formData.sessionDuration} minute session including taxes and discounts
-              </p>
+              <p className="text-sm text-muted-foreground">Including add-ons and taxes</p>
             </div>
-            <div className="text-xl font-bold">${calculateTotal()}</div>
+            <div className="text-xl font-bold">Rs. {calculateTotal()}</div>
           </div>
         </CardContent>
       </Card>

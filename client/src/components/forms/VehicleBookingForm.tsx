@@ -15,15 +15,19 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     vehicleType: '',
+    transmission: 'Automatic',
+    fuelType: 'Petrol',
     pickupLocation: '',
-    pickupDate: '2025-06-01',
-    returnDate: '2025-06-03',
-    withDriver: false,
-    priceRate: 'day', // 'hour' or 'day'
-    basePrice: '50',
-    taxRate: '8',
-    discount: '0',
-    source: 'direct',
+    dropoffLocation: '',
+    withDriver: true,
+    pickupDate: '2025-05-21',
+    dropoffDate: '2025-05-24',
+    pricePerDay: '8000',
+    taxPercent: '8',
+    extraKMCharge: '50',
+    discounts: {
+      longRental: '1000'
+    },
     notes: '',
     status: 'pending'
   });
@@ -34,26 +38,36 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
       [field]: value
     });
   };
+  
+  const handleNestedChange = (parent: string, field: string, value: any) => {
+    setFormData({
+      ...formData,
+      [parent]: {
+        ...formData[parent],
+        [field]: value
+      }
+    });
+  };
 
   const calculateTotal = () => {
-    const basePrice = parseFloat(formData.basePrice) || 0;
-    const taxRate = parseFloat(formData.taxRate) || 0;
-    const discount = parseFloat(formData.discount) || 0;
+    const pricePerDay = parseInt(formData.pricePerDay) || 0;
+    const taxPercent = parseInt(formData.taxPercent) || 0;
+    const longRentalDiscount = parseInt(formData.discounts.longRental) || 0;
     
-    // For demo, we'll use a fixed duration of 2 days / 48 hours
-    const units = formData.priceRate === 'day' ? 2 : 48;
-    const subtotal = basePrice * units;
+    // Calculate days (sample calculation)
+    const pickup = new Date(formData.pickupDate);
+    const dropoff = new Date(formData.dropoffDate);
+    const days = Math.max(1, Math.ceil((dropoff.getTime() - pickup.getTime()) / (1000 * 3600 * 24)));
     
-    // Add driver fee if applicable (20% extra for this example)
-    const driverFee = formData.withDriver ? subtotal * 0.2 : 0;
+    const subtotal = pricePerDay * days;
+    const taxAmount = (subtotal * taxPercent) / 100;
     
-    const baseSubtotal = subtotal + driverFee;
-    const taxAmount = (baseSubtotal * taxRate) / 100;
-    const discountAmount = (baseSubtotal * discount) / 100;
+    // Apply discount only for rentals of 3+ days
+    const discountAmount = days >= 3 ? longRentalDiscount : 0;
     
-    const total = baseSubtotal + taxAmount - discountAmount;
+    const total = subtotal + taxAmount - discountAmount;
     
-    return total.toFixed(2);
+    return total.toLocaleString();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -81,14 +95,50 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
                 <SelectValue placeholder="Select vehicle type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="car">Car</SelectItem>
+                <SelectItem value="sedan">Sedan</SelectItem>
+                <SelectItem value="suv">SUV</SelectItem>
                 <SelectItem value="van">Van</SelectItem>
+                <SelectItem value="tuktuk">Tuk Tuk</SelectItem>
                 <SelectItem value="motorcycle">Motorcycle</SelectItem>
                 <SelectItem value="scooter">Scooter</SelectItem>
                 <SelectItem value="boat">Boat</SelectItem>
-                <SelectItem value="jetski">Jet Ski</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="transmission">Transmission</Label>
+              <Select 
+                value={formData.transmission} 
+                onValueChange={(value) => handleChange('transmission', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select transmission" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Automatic">Automatic</SelectItem>
+                  <SelectItem value="Manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="fuelType">Fuel Type</Label>
+              <Select 
+                value={formData.fuelType} 
+                onValueChange={(value) => handleChange('fuelType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select fuel type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Petrol">Petrol</SelectItem>
+                  <SelectItem value="Diesel">Diesel</SelectItem>
+                  <SelectItem value="Electric">Electric</SelectItem>
+                  <SelectItem value="Hybrid">Hybrid</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           <div>
@@ -97,10 +147,31 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
               id="pickupLocation" 
               value={formData.pickupLocation} 
               onChange={(e) => handleChange('pickupLocation', e.target.value)}
-              placeholder="Enter pickup location"
+              placeholder="e.g. Colombo"
             />
           </div>
           
+          <div>
+            <Label htmlFor="dropoffLocation">Drop-off Location</Label>
+            <Input 
+              id="dropoffLocation" 
+              value={formData.dropoffLocation} 
+              onChange={(e) => handleChange('dropoffLocation', e.target.value)}
+              placeholder="e.g. Galle"
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="withDriver" 
+              checked={formData.withDriver} 
+              onCheckedChange={(checked) => handleChange('withDriver', checked)}
+            />
+            <Label htmlFor="withDriver">Include Driver</Label>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="pickupDate">Pickup Date</Label>
@@ -112,100 +183,70 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
               />
             </div>
             <div>
-              <Label htmlFor="returnDate">Return Date</Label>
+              <Label htmlFor="dropoffDate">Drop-off Date</Label>
               <Input 
-                id="returnDate" 
+                id="dropoffDate" 
                 type="date" 
-                value={formData.returnDate} 
-                onChange={(e) => handleChange('returnDate', e.target.value)}
+                value={formData.dropoffDate} 
+                onChange={(e) => handleChange('dropoffDate', e.target.value)}
               />
             </div>
           </div>
           
-          <div className="flex items-center justify-between">
-            <Label htmlFor="withDriver">With Driver</Label>
-            <Switch 
-              id="withDriver"
-              checked={formData.withDriver}
-              onCheckedChange={(checked) => handleChange('withDriver', checked)}
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-4">
           <div>
-            <Label htmlFor="priceRate">Price Rate</Label>
-            <Select 
-              value={formData.priceRate} 
-              onValueChange={(value) => handleChange('priceRate', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select price rate" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hour">Per Hour</SelectItem>
-                <SelectItem value="day">Per Day</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        
-          <div>
-            <Label htmlFor="basePrice">Base Price (per {formData.priceRate})</Label>
+            <Label htmlFor="pricePerDay">Price per Day</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
               <Input 
-                id="basePrice" 
+                id="pricePerDay" 
                 type="text" 
-                className="pl-7" 
-                value={formData.basePrice} 
-                onChange={(e) => handleChange('basePrice', e.target.value)}
+                className="pl-9" 
+                value={formData.pricePerDay} 
+                onChange={(e) => handleChange('pricePerDay', e.target.value)}
               />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="taxRate">Tax Rate (%)</Label>
+              <Label htmlFor="taxPercent">Tax (%)</Label>
               <div className="relative">
                 <Input 
-                  id="taxRate" 
+                  id="taxPercent" 
                   type="text" 
-                  value={formData.taxRate} 
-                  onChange={(e) => handleChange('taxRate', e.target.value)}
+                  value={formData.taxPercent} 
+                  onChange={(e) => handleChange('taxPercent', e.target.value)}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
               </div>
             </div>
             <div>
-              <Label htmlFor="discount">Discount (%)</Label>
+              <Label htmlFor="extraKMCharge">Extra KM Charge</Label>
               <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
                 <Input 
-                  id="discount" 
+                  id="extraKMCharge" 
                   type="text" 
-                  value={formData.discount} 
-                  onChange={(e) => handleChange('discount', e.target.value)}
+                  className="pl-9" 
+                  value={formData.extraKMCharge} 
+                  onChange={(e) => handleChange('extraKMCharge', e.target.value)}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
               </div>
             </div>
           </div>
           
           <div>
-            <Label htmlFor="source">Booking Source</Label>
-            <Select 
-              value={formData.source} 
-              onValueChange={(value) => handleChange('source', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select booking source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="direct">Direct (Website/Phone)</SelectItem>
-                <SelectItem value="partner">Partner Agency</SelectItem>
-                <SelectItem value="walkin">Walk-in</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="longRentalDiscount">Long Rental Discount (3+ days)</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
+              <Input 
+                id="longRentalDiscount" 
+                type="text" 
+                className="pl-9" 
+                value={formData.discounts.longRental} 
+                onChange={(e) => handleNestedChange('discounts', 'longRental', e.target.value)}
+              />
+            </div>
           </div>
           
           <div>
@@ -242,11 +283,9 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-medium">Total Price</h3>
-              <p className="text-sm text-muted-foreground">
-                Including taxes, discounts, and {formData.withDriver ? 'driver fee' : 'no driver'}
-              </p>
+              <p className="text-sm text-muted-foreground">Including taxes and discounts</p>
             </div>
-            <div className="text-xl font-bold">${calculateTotal()}</div>
+            <div className="text-xl font-bold">Rs. {calculateTotal()}</div>
           </div>
         </CardContent>
       </Card>

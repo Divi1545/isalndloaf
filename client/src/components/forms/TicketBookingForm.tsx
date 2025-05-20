@@ -14,12 +14,12 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     ticketType: '',
-    eventDate: '2025-06-15',
-    pricePerPerson: '25',
-    groupSize: 2,
-    taxRate: '5',
-    discount: '0',
-    source: 'direct',
+    location: '',
+    eventDate: '2025-06-01',
+    time: '09:00',
+    guestCount: 3,
+    pricePerPerson: '4500',
+    groupDiscount: '500',
     notes: '',
     status: 'pending'
   });
@@ -32,18 +32,18 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
   };
 
   const calculateTotal = () => {
-    const pricePerPerson = parseFloat(formData.pricePerPerson) || 0;
-    const groupSize = parseInt(formData.groupSize.toString()) || 0;
-    const taxRate = parseFloat(formData.taxRate) || 0;
-    const discount = parseFloat(formData.discount) || 0;
+    const pricePerPerson = parseInt(formData.pricePerPerson) || 0;
+    const groupDiscount = parseInt(formData.groupDiscount) || 0;
+    const guestCount = formData.guestCount || 1;
     
-    const subtotal = pricePerPerson * groupSize;
-    const taxAmount = (subtotal * taxRate) / 100;
-    const discountAmount = (subtotal * discount) / 100;
+    const subtotal = pricePerPerson * guestCount;
     
-    const total = subtotal + taxAmount - discountAmount;
+    // Apply group discount only for groups of 3 or more
+    const discountAmount = guestCount >= 3 ? groupDiscount * guestCount : 0;
     
-    return total.toFixed(2);
+    const total = subtotal - discountAmount;
+    
+    return total.toLocaleString();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -71,95 +71,88 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
                 <SelectValue placeholder="Select ticket type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="tour">Guided Tour</SelectItem>
-                <SelectItem value="attraction">Attraction Entry</SelectItem>
-                <SelectItem value="event">Special Event</SelectItem>
-                <SelectItem value="workshop">Workshop</SelectItem>
-                <SelectItem value="adventure">Adventure Activity</SelectItem>
+                <SelectItem value="Day Tour">Day Tour</SelectItem>
+                <SelectItem value="Heritage Site">Heritage Site</SelectItem>
+                <SelectItem value="Cultural Show">Cultural Show</SelectItem>
+                <SelectItem value="Adventure Activity">Adventure Activity</SelectItem>
+                <SelectItem value="Wildlife Safari">Wildlife Safari</SelectItem>
+                <SelectItem value="Boat Tour">Boat Tour</SelectItem>
+                <SelectItem value="Museum">Museum</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div>
-            <Label htmlFor="eventDate">Event Date</Label>
+            <Label htmlFor="location">Location</Label>
             <Input 
-              id="eventDate" 
-              type="date" 
-              value={formData.eventDate} 
-              onChange={(e) => handleChange('eventDate', e.target.value)}
+              id="location" 
+              value={formData.location} 
+              onChange={(e) => handleChange('location', e.target.value)}
+              placeholder="e.g. Sigiriya"
             />
           </div>
           
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="eventDate">Event Date</Label>
+              <Input 
+                id="eventDate" 
+                type="date" 
+                value={formData.eventDate} 
+                onChange={(e) => handleChange('eventDate', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="time">Time</Label>
+              <Input 
+                id="time" 
+                type="time" 
+                value={formData.time} 
+                onChange={(e) => handleChange('time', e.target.value)}
+              />
+            </div>
+          </div>
+          
           <div>
-            <Label htmlFor="groupSize">Group Size</Label>
+            <Label htmlFor="guestCount">Number of Guests</Label>
             <Input 
-              id="groupSize" 
+              id="guestCount" 
               type="number" 
               min="1" 
-              value={formData.groupSize} 
-              onChange={(e) => handleChange('groupSize', parseInt(e.target.value))}
+              value={formData.guestCount} 
+              onChange={(e) => handleChange('guestCount', parseInt(e.target.value))}
             />
           </div>
         </div>
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="pricePerPerson">Price Per Person</Label>
+            <Label htmlFor="pricePerPerson">Price per Person</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
               <Input 
                 id="pricePerPerson" 
                 type="text" 
-                className="pl-7" 
+                className="pl-9" 
                 value={formData.pricePerPerson} 
                 onChange={(e) => handleChange('pricePerPerson', e.target.value)}
               />
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="taxRate">Tax Rate (%)</Label>
-              <div className="relative">
-                <Input 
-                  id="taxRate" 
-                  type="text" 
-                  value={formData.taxRate} 
-                  onChange={(e) => handleChange('taxRate', e.target.value)}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="discount">Discount (%)</Label>
-              <div className="relative">
-                <Input 
-                  id="discount" 
-                  type="text" 
-                  value={formData.discount} 
-                  onChange={(e) => handleChange('discount', e.target.value)}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-              </div>
-            </div>
-          </div>
-          
           <div>
-            <Label htmlFor="source">Booking Source</Label>
-            <Select 
-              value={formData.source} 
-              onValueChange={(value) => handleChange('source', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select booking source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="direct">Direct (Website/Phone)</SelectItem>
-                <SelectItem value="partner">Partner Agency</SelectItem>
-                <SelectItem value="walkin">Walk-in</SelectItem>
-                <SelectItem value="online">Online Aggregator</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="groupDiscount">Group Discount (per person)</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
+              <Input 
+                id="groupDiscount" 
+                type="text" 
+                className="pl-9" 
+                value={formData.groupDiscount} 
+                onChange={(e) => handleChange('groupDiscount', e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Applied for groups of 3 or more</p>
+            </div>
           </div>
           
           <div>
@@ -196,11 +189,9 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-medium">Total Price</h3>
-              <p className="text-sm text-muted-foreground">
-                {formData.groupSize} {parseInt(formData.groupSize.toString()) === 1 ? 'person' : 'people'} including taxes and discounts
-              </p>
+              <p className="text-sm text-muted-foreground">Including group discounts</p>
             </div>
-            <div className="text-xl font-bold">${calculateTotal()}</div>
+            <div className="text-xl font-bold">Rs. {calculateTotal()}</div>
           </div>
         </CardContent>
       </Card>
