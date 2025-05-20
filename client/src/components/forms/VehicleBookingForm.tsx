@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface VehicleBookingFormProps {
   onSuccess: () => void;
@@ -13,6 +15,8 @@ interface VehicleBookingFormProps {
 
 const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     vehicleType: '',
     transmission: 'Automatic',
@@ -32,14 +36,24 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
     status: 'pending'
   });
 
-  const handleChange = (field: string, value: any) => {
+  type FormDataKey = keyof typeof formData;
+  type NestedKey = 'discounts';
+
+  const handleChange = (field: FormDataKey, value: any) => {
     setFormData({
       ...formData,
       [field]: value
     });
+    // Clear any error for this field
+    if (errors[field]) {
+      setErrors({
+        ...errors,
+        [field]: ''
+      });
+    }
   };
   
-  const handleNestedChange = (parent: string, field: string, value: any) => {
+  const handleNestedChange = (parent: NestedKey, field: string, value: any) => {
     setFormData({
       ...formData,
       [parent]: {
@@ -47,6 +61,14 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
         [field]: value
       }
     });
+    // Clear any error for this nested field
+    const errorKey = `${parent}.${field}`;
+    if (errors[errorKey]) {
+      setErrors({
+        ...errors,
+        [errorKey]: ''
+      });
+    }
   };
 
   const calculateTotal = () => {
@@ -70,19 +92,101 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
     return total.toLocaleString();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields validation
+    if (!formData.vehicleType) newErrors.vehicleType = "Vehicle type is required";
+    if (!formData.pickupLocation) newErrors.pickupLocation = "Pickup location is required";
+    if (!formData.dropoffLocation) newErrors.dropoffLocation = "Drop-off location is required";
+    
+    // Date validation
+    const pickup = new Date(formData.pickupDate);
+    const dropoff = new Date(formData.dropoffDate);
+    
+    if (dropoff <= pickup) {
+      newErrors.dropoffDate = "Drop-off date must be after pickup date";
+    }
+    
+    // Price validation
+    if (!formData.pricePerDay || parseFloat(formData.pricePerDay) <= 0) {
+      newErrors.pricePerDay = "Price per day must be greater than zero";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast({
+        title: "Form Error",
+        description: "Please fix the errors before submitting",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    // In a real app, this would submit to an API
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Calculate total price for submission
+      const totalPrice = parseInt(calculateTotal().replace(/,/g, ''));
+      
+      // Prepare booking data
+      const bookingData = {
+        type: 'vehicle',
+        details: {
+          ...formData,
+          totalPrice
+        },
+        userId: 1, // This would come from auth context in a real app
+        status: formData.status
+      };
+      
+      // API submission
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create booking');
+      }
+      
+      toast({
+        title: "Success!",
+        description: "Vehicle booking has been created successfully",
+        variant: "default"
+      });
+      
       onSuccess();
-    }, 1000);
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create booking. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      {Object.keys(errors).length > 0 && (
+        <Alert className="mb-6 border-red-500 bg-red-50">
+          <AlertDescription>
+            Please fix the validation errors before submitting.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-4">
           <div>

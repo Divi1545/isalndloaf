@@ -211,6 +211,13 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
 
   return (
     <form onSubmit={handleSubmit}>
+      {Object.keys(errors).length > 0 && (
+        <Alert className="mb-6 border-red-500 bg-red-50">
+          <AlertDescription>
+            Please fix the validation errors before submitting.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-4">
           <div>
@@ -219,7 +226,7 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
               value={formData.stayType} 
               onValueChange={(value) => handleChange('stayType', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={errors.stayType ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select stay type" />
               </SelectTrigger>
               <SelectContent>
@@ -230,6 +237,7 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
                 <SelectItem value="resort">Resort</SelectItem>
               </SelectContent>
             </Select>
+            {errors.stayType && <p className="text-red-500 text-sm mt-1">{errors.stayType}</p>}
           </div>
           
           <div>
@@ -238,7 +246,7 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
               value={formData.propertyType} 
               onValueChange={(value) => handleChange('propertyType', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={errors.propertyType ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select property type" />
               </SelectTrigger>
               <SelectContent>
@@ -248,6 +256,7 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
                 <SelectItem value="apartment">Apartment</SelectItem>
               </SelectContent>
             </Select>
+            {errors.propertyType && <p className="text-red-500 text-sm mt-1">{errors.propertyType}</p>}
           </div>
           
           <div>
@@ -296,7 +305,9 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
                 type="date" 
                 value={formData.checkInDate} 
                 onChange={(e) => handleChange('checkInDate', e.target.value)}
+                className={errors.checkInDate ? "border-red-500" : ""}
               />
+              {errors.checkInDate && <p className="text-red-500 text-sm mt-1">{errors.checkInDate}</p>}
             </div>
             <div>
               <Label htmlFor="checkOutDate">Check-out Date</Label>
@@ -305,7 +316,9 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
                 type="date" 
                 value={formData.checkOutDate} 
                 onChange={(e) => handleChange('checkOutDate', e.target.value)}
+                className={errors.checkOutDate ? "border-red-500" : ""}
               />
+              {errors.checkOutDate && <p className="text-red-500 text-sm mt-1">{errors.checkOutDate}</p>}
             </div>
           </div>
           
@@ -375,11 +388,12 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
               <Input 
                 id="basePrice" 
                 type="text" 
-                className="pl-9" 
+                className={`pl-9 ${errors.basePrice ? "border-red-500" : ""}`}
                 value={formData.basePrice} 
                 onChange={(e) => handleChange('basePrice', e.target.value)}
               />
             </div>
+            {errors.basePrice && <p className="text-red-500 text-sm mt-1">{errors.basePrice}</p>}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
