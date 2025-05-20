@@ -159,7 +159,7 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
               value={formData.ticketType} 
               onValueChange={(value) => handleChange('ticketType', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={errors.ticketType ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select ticket type" />
               </SelectTrigger>
               <SelectContent>
@@ -172,6 +172,7 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
                 <SelectItem value="Museum">Museum</SelectItem>
               </SelectContent>
             </Select>
+            {errors.ticketType && <p className="text-red-500 text-sm mt-1">{errors.ticketType}</p>}
           </div>
           
           <div>
@@ -181,7 +182,9 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
               value={formData.location} 
               onChange={(e) => handleChange('location', e.target.value)}
               placeholder="e.g. Sigiriya"
+              className={errors.location ? "border-red-500" : ""}
             />
+            {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -213,7 +216,9 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
               min="1" 
               value={formData.guestCount} 
               onChange={(e) => handleChange('guestCount', parseInt(e.target.value))}
+              className={errors.guestCount ? "border-red-500" : ""}
             />
+            {errors.guestCount && <p className="text-red-500 text-sm mt-1">{errors.guestCount}</p>}
           </div>
         </div>
         
@@ -225,11 +230,12 @@ const TicketBookingForm = ({ onSuccess }: TicketBookingFormProps) => {
               <Input 
                 id="pricePerPerson" 
                 type="text" 
-                className="pl-9" 
+                className={`pl-9 ${errors.pricePerPerson ? "border-red-500" : ""}`}
                 value={formData.pricePerPerson} 
                 onChange={(e) => handleChange('pricePerPerson', e.target.value)}
               />
             </div>
+            {errors.pricePerPerson && <p className="text-red-500 text-sm mt-1">{errors.pricePerPerson}</p>}
           </div>
           
           <div>

@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface WellnessBookingFormProps {
   onSuccess: () => void;
@@ -13,6 +15,8 @@ interface WellnessBookingFormProps {
 
 const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     serviceType: '',
     duration: 60,
@@ -26,15 +30,25 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
     status: 'pending'
   });
 
-  const handleChange = (field: string, value: any) => {
+  type FormDataKey = keyof typeof formData;
+  
+  const handleChange = (field: FormDataKey, value: any) => {
     setFormData({
       ...formData,
       [field]: value
     });
+    
+    // Clear any error for this field
+    if (errors[field]) {
+      setErrors({
+        ...errors,
+        [field]: ''
+      });
+    }
   };
 
-  const handleArrayToggle = (field: string, value: string) => {
-    const array = formData[field] as string[];
+  const handleArrayToggle = (field: 'addOns', value: string) => {
+    const array = formData[field];
     const newArray = array.includes(value)
       ? array.filter(item => item !== value)
       : [...array, value];
@@ -43,6 +57,14 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
       ...formData,
       [field]: newArray
     });
+    
+    // Clear any error for this field
+    if (errors[field]) {
+      setErrors({
+        ...errors,
+        [field]: ''
+      });
+    }
   };
 
   const calculateTotal = () => {
@@ -61,19 +83,91 @@ const WellnessBookingForm = ({ onSuccess }: WellnessBookingFormProps) => {
     return total.toLocaleString();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields validation
+    if (!formData.serviceType) newErrors.serviceType = "Service type is required";
+    
+    // Price validation
+    if (!formData.pricePerSession || parseFloat(formData.pricePerSession) <= 0) {
+      newErrors.pricePerSession = "Price per session must be greater than zero";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast({
+        title: "Form Error",
+        description: "Please fix the errors before submitting",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    // In a real app, this would submit to an API
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Calculate total price for submission
+      const totalPrice = parseInt(calculateTotal().replace(/,/g, ''));
+      
+      // Prepare booking data
+      const bookingData = {
+        type: 'wellness',
+        details: {
+          ...formData,
+          totalPrice
+        },
+        userId: 1, // This would come from auth context in a real app
+        status: formData.status
+      };
+      
+      // API submission
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create booking');
+      }
+      
+      toast({
+        title: "Success!",
+        description: "Wellness booking has been created successfully",
+        variant: "default"
+      });
+      
       onSuccess();
-    }, 1000);
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create booking. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      {Object.keys(errors).length > 0 && (
+        <Alert className="mb-6 border-red-500 bg-red-50">
+          <AlertDescription>
+            Please fix the validation errors before submitting.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-4">
           <div>
