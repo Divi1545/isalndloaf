@@ -1,0 +1,125 @@
+// ✅ ADMIN DASHBOARD REPAIR CHECKLIST (FULL PAGE IMPLEMENTATION)
+
+// 1. 🔁 Assign Unique Functions to Similar Pages
+// - Keep all top-level admin pages: Dashboard, Marketing, Analytics, Transactions, Support
+// - Assign each a unique use case:
+//   • Dashboard → Show total bookings, vendor count, monthly revenue, system alerts
+//   • Marketing → Send email campaigns, manage discount codes, trigger promos
+//   • Analytics → Graphs (revenue by category, vendor performance), traffic stats
+//   • Transactions → View all payouts, vendor invoices, earnings history
+//   • Support → View & reply to vendor issues, internal notes, contact logs
+
+// 2. ❌ Button Logic Missing (Detailed Fixes)
+
+// (A) "Generate Report" Button on Dashboard
+// Functionality:
+// - Admin clicks to download PDF/CSV report of booking stats, revenue, vendors
+// Code:
+// function handleGenerateReport() {
+//   fetch('/api/reports/generate', {
+//     method: 'GET',
+//     headers: { 'Authorization': `Bearer ${token}` },
+//   })
+//     .then(res => res.blob())
+//     .then(blob => {
+//       const url = window\.URL.createObjectURL(blob);
+//       const a = document.createElement('a');
+//       a.href = url;
+//       a.download = 'islandloaf\_report.pdf';
+//       document.body.appendChild(a);
+//       a.click();
+//       a.remove();
+//     });
+// }
+// JSX:
+// <button onClick={handleGenerateReport}>Generate Report</button>
+
+// (B) "Add Vendor" Button in Vendor Management
+// Navigate to form:
+// import { useNavigate } from 'react-router-dom';
+// const navigate = useNavigate();
+// JSX:
+// \<button onClick={() => navigate("/admin/add-vendor")} className="btn btn-primary">Add Vendor</button>
+
+// Route Setup:
+// In App.jsx:
+// \<Route path="/admin/add-vendor" element={<AddVendorForm />} />
+
+// AddVendorForm Component:
+// function AddVendorForm() {
+//   const \[formData, setFormData] = useState({ name: '', email: '', categories\_allowed: \[] });
+//   const handleChange = (e) => setFormData({ ...formData, \[e.target.name]: e.target.value });
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     await fetch('/api/vendors', {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify(formData),
+//     });
+//   };
+//   return (
+//     <form onSubmit={handleSubmit}>
+//       <input name="name" onChange={handleChange} placeholder="Vendor Name" />
+//       <input name="email" onChange={handleChange} placeholder="Vendor Email" />
+//       <select multiple name="categories_allowed" onChange={handleChange}>
+//         <option value="stay">Stay</option>
+//         <option value="vehicle">Vehicle</option>
+//         <option value="tickets">Tickets</option>
+//         <option value="wellness">Wellness</option>
+//       </select>
+//       <button type="submit">Create Vendor</button>
+//     </form>
+//   );
+// }
+
+// (C) "Create Booking" Button in Booking Management
+// Button JSX:
+// \<button onClick={() => navigate("/admin/create-booking")} className="btn btn-secondary">Create Booking</button>
+
+// Route:
+// \<Route path="/admin/create-booking" element={<CreateBookingForm />} />
+
+// CreateBookingForm should include:
+// - Step 1: Select category (stay, vehicle, tickets, wellness)
+// - Step 2: Show dynamic form fields based on selected category
+// - Step 3: Auto-calculate pricing, validate, then submit booking
+
+// (D) Vendor Row Actions in Admin Table
+// View Button:
+// \<button onClick={() => navigate(`/admin/vendors/${vendorId}`)}>View</button>
+// Edit Button:
+// \<button onClick={() => navigate(`/admin/vendors/${vendorId}/edit`)}>Edit</button>
+// Delete Button:
+// \<button onClick={() => handleDeleteVendor(vendorId)}>Delete</button>
+
+// Delete Logic:
+// const handleDeleteVendor = async (id) => {
+//   await fetch(`/api/vendors/${id}`, { method: 'DELETE' });
+//   // Refresh vendor list
+// }
+
+// 3. 🧩 Booking Management Tabs (Confirmed, Pending, Cancelled)
+// Logic Example:
+// const \[statusFilter, setStatusFilter] = useState("All");
+// const filteredBookings = bookings.filter(b => statusFilter === "All" || b.status === statusFilter);
+// Render buttons:
+// \<button onClick={() => setStatusFilter("All")}>All</button>
+// \<button onClick={() => setStatusFilter("confirmed")}>Confirmed</button>
+// \<button onClick={() => setStatusFilter("pending")}>Pending</button>
+// \<button onClick={() => setStatusFilter("cancelled")}>Cancelled</button>
+
+// 4. 📦 Revenue Management Panel
+// - Pull data from /api/bookings to compute total sales
+// - Group by category and vendor ID
+// - Show table: \[Vendor Name | Category | Total Bookings | Revenue]
+
+// 5. ⚙ Platform Settings
+// - Setup options like: default currency, platform commission %, payout thresholds
+// - Add User Management section (Admin control only)
+// - Editable fields: e.g., set currency to USD, EUR, LKR etc.
+
+// ✅ NEXT STEPS:
+// - Implement each button function and test route transitions
+// - Build forms with validation
+// - Continue UI polish and connect real-time DB
+// - Confirm all admin-only logic is locked to role: 'admin'

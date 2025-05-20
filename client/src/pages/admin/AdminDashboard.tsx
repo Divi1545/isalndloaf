@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 // Create a basic stat card component for the admin dashboard
 const StatCard = ({ title, value, icon, iconColor, iconBgColor, trend, subtitle }: {
@@ -72,13 +74,50 @@ const StatCard = ({ title, value, icon, iconColor, iconBgColor, trend, subtitle 
 
 const AdminDashboard = () => {
   const [selectedVendor, setSelectedVendor] = useState<string>('all');
+  const { toast } = useToast();
+  const [_, setLocation] = useLocation();
+  
+  // Handle report generation
+  const handleGenerateReport = () => {
+    toast({
+      title: "Generating report",
+      description: "Your report is being prepared and will download shortly"
+    });
+    
+    // In a real app, this would fetch from API
+    // For this demo, simulate a download after a short delay
+    setTimeout(() => {
+      // Create a blob representing a PDF file
+      const reportData = new Blob(
+        ['IslandLoaf Admin Report: ' + new Date().toLocaleDateString()], 
+        { type: 'application/pdf' }
+      );
+      
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(reportData);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `islandloaf_report_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      
+      toast({
+        title: "Report downloaded",
+        description: "Your report has been generated successfully",
+      });
+    }, 1500);
+  };
   
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <div className="flex items-center gap-3">
-          <Button className="bg-purple-600 hover:bg-purple-700">
+          <Button 
+            className="bg-purple-600 hover:bg-purple-700"
+            onClick={handleGenerateReport}
+          >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -158,7 +197,9 @@ const AdminDashboard = () => {
                       <SelectItem value="wellness">Wellness</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button>
+                  <Button
+                    onClick={() => setLocation("/admin/add-vendor")}
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                       <circle cx="9" cy="7" r="4"></circle>

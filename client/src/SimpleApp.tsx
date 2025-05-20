@@ -220,6 +220,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import VendorManagement from "@/pages/admin/VendorManagement";
 import BookingManagement from "@/pages/admin/BookingManagement";
 import RevenueManagement from "@/pages/admin/RevenueManagement";
+import AddVendorForm from "@/pages/admin/AddVendorForm";
 
 // Main App Component
 const SimpleApp = () => {
