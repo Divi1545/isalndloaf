@@ -5,8 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UpcomingBookings from "@/components/dashboard/upcoming-bookings";
+import { useLocation } from "wouter";
 
 const BookingManager = () => {
+  const [_, setLocation] = useLocation();
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -37,7 +39,10 @@ const BookingManager = () => {
               <SelectItem value="completed">Completed</SelectItem>
             </SelectContent>
           </Select>
-          <Button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700" onClick={() => window.location.href = "/dashboard/add-booking"}>
+          <Button 
+            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700" 
+            onClick={() => setLocation("/dashboard/add-booking")}
+          >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
               <path d="M12 5v14M5 12h14"></path>
             </svg>
