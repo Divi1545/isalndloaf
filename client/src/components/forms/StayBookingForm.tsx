@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface StayBookingFormProps {
   onSuccess: () => void;
@@ -19,6 +21,8 @@ interface GuestCount {
 
 const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     stayType: '',
     propertyType: '',
@@ -44,14 +48,24 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
     status: 'pending'
   });
 
-  const handleChange = (field: string, value: any) => {
+  type FormDataKey = keyof typeof formData;
+  type NestedKey = 'guestCount' | 'discounts';
+
+  const handleChange = (field: FormDataKey, value: any) => {
     setFormData({
       ...formData,
       [field]: value
     });
+    // Clear any error for this field
+    if (errors[field]) {
+      setErrors({
+        ...errors,
+        [field]: ''
+      });
+    }
   };
 
-  const handleNestedChange = (parent: string, field: string, value: any) => {
+  const handleNestedChange = (parent: NestedKey, field: string, value: any) => {
     setFormData({
       ...formData,
       [parent]: {
@@ -59,10 +73,18 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
         [field]: value
       }
     });
+    // Clear any error for this nested field
+    const errorKey = `${parent}.${field}`;
+    if (errors[errorKey]) {
+      setErrors({
+        ...errors,
+        [errorKey]: ''
+      });
+    }
   };
 
-  const handleArrayToggle = (field: string, value: string) => {
-    const array = formData[field] as string[];
+  const handleArrayToggle = (field: 'themes' | 'amenities', value: string) => {
+    const array = formData[field];
     const newArray = array.includes(value)
       ? array.filter(item => item !== value)
       : [...array, value];
@@ -71,6 +93,14 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
       ...formData,
       [field]: newArray
     });
+    
+    // Clear any error for this field
+    if (errors[field]) {
+      setErrors({
+        ...errors,
+        [field]: ''
+      });
+    }
   };
 
   const calculateTotal = () => {
@@ -94,15 +124,89 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
     return total.toLocaleString();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields validation
+    if (!formData.stayType) newErrors.stayType = "Stay type is required";
+    if (!formData.propertyType) newErrors.propertyType = "Property type is required";
+    
+    // Date validation
+    const checkIn = new Date(formData.checkInDate);
+    const checkOut = new Date(formData.checkOutDate);
+    
+    if (checkOut <= checkIn) {
+      newErrors.checkOutDate = "Check-out date must be after check-in date";
+    }
+    
+    // Price validation
+    if (!formData.basePrice || parseFloat(formData.basePrice) <= 0) {
+      newErrors.basePrice = "Base price must be greater than zero";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast({
+        title: "Form Error",
+        description: "Please fix the errors before submitting",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    // In a real app, this would submit to an API
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Calculate total price for submission
+      const totalPrice = parseInt(calculateTotal().replace(/,/g, ''));
+      
+      // Prepare booking data
+      const bookingData = {
+        type: 'stay',
+        details: {
+          ...formData,
+          totalPrice
+        },
+        userId: 1, // This would come from auth context in a real app
+        status: formData.status
+      };
+      
+      // API submission
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create booking');
+      }
+      
+      toast({
+        title: "Success!",
+        description: "Booking has been created successfully",
+        variant: "default"
+      });
+      
       onSuccess();
-    }, 1000);
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create booking. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
