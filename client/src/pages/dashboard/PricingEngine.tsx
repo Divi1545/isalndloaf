@@ -7,13 +7,65 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 const PricingEngine = () => {
+  const { toast } = useToast();
+  const [_, setLocation] = useLocation();
+  
+  const handleUpdateAllPrices = async () => {
+    try {
+      await fetch('/api/pricing/update-all', { method: 'POST' });
+      toast({
+        title: "Success",
+        description: "All pricing updated successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update pricing",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleSaveChanges = async () => {
+    try {
+      const currentPricingSettings = {
+        // Collect all the pricing form values here
+        basePrice: 149.00,
+        weekendSurcharge: 15,
+        // Other settings as needed
+      };
+      
+      await fetch('/api/pricing/save', {
+        method: 'POST',
+        body: JSON.stringify(currentPricingSettings),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      toast({
+        title: "Success",
+        description: "Pricing saved successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save pricing settings",
+        variant: "destructive"
+      });
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Pricing Engine</h1>
-        <Button className="w-full md:w-auto">
+        <Button 
+          className="w-full md:w-auto"
+          onClick={handleUpdateAllPrices}
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
             <path d="M12 5V2"></path>
             <path d="m19 8-3-3"></path>

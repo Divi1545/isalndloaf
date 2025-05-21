@@ -1,0 +1,76 @@
+// ✅ Booking Manager: Add Booking Button Logic
+// Remove duplicate buttons and keep one clean version:
+// Final Button:
+// \<button onClick={() => navigate("/vendor/add-booking")}>Add Booking</button>
+
+// Ensure route exists:
+// \<Route path="/vendor/add-booking" element={<AddBookingForm />} />
+
+// ✅ Calendar Sync
+// Associated Service Dropdown should fetch all stay-type listings:
+// fetch(`/api/vendor/services?type=stay`).then(...) => populate dropdown
+
+// Sync All Calendars Button:
+// <button onClick={handleSyncAllCalendars}>Sync All Calendars</button>
+// Function:
+// async function handleSyncAllCalendars() {
+//   await fetch('/api/calendar/sync-all', { method: 'POST' })
+//   showToast('Sync started for all connected calendars');
+// }
+
+// ✅ Pricing Engine
+// Update All Prices Button:
+// <button onClick={handleUpdateAllPrices}>Update All Prices</button>
+// Function:
+// const handleUpdateAllPrices = async () => {
+//   await fetch('/api/pricing/update-all', { method: 'POST' });
+//   toast.success('All pricing updated');
+// };
+
+// Save Changes Button:
+// <button onClick={handleSaveChanges}>Save Changes</button>
+// Function:
+// const handleSaveChanges = async () => {
+//   const payload = {...currentPricingSettings};
+//   await fetch('/api/pricing/save', {
+//     method: 'POST',
+//     body: JSON.stringify(payload),
+//     headers: { 'Content-Type': 'application/json' },
+//   });
+//   toast.success('Pricing saved successfully');
+// };
+
+// Room Dropdown Options:
+// fetch(`/api/stay/types`) => return \[
+//   'Beach Villa', 'Garden Room', 'Ocean View Suite', 'Hilltop Cottage',
+//   'Lake Bungalow', 'Luxury Suite', 'Jungle Cabin', 'Mountain Lodge',
+//   'Island Bungalow', 'Forest Retreat', 'Tent Camp', 'Treehouse Stay',
+//   'Boutique Room', 'Farm Stay', 'Lake View Cottage', 'Seaside Retreat'
+// ]
+// Replace static dropdown with dynamic rendering of all options
+
+// Edit Room Button:
+// \<button onClick={() => navigate("/vendor/edit-room")}>Edit Room</button>
+
+// ✅ Add New Activity Button
+// \<button onClick={() => navigate("/vendor/add-activity")}>Add New Activity</button>
+// Route:
+// \<Route path="/vendor/add-activity" element={<AddActivityPage />} />
+
+// ✅ Transport Dropdown Expansion
+// Vehicle Type Dropdown:
+// fetch(`/api/vehicles/vendor-options`) => return \['Scooter Rental', 'Car Rental', 'Boat Tour', 'Van', 'Jeep', 'Luxury Car']
+// Save Changes Button uses same logic as above pricing save
+
+// Edit Vehicle Button:
+// \<button onClick={() => navigate("/vendor/edit-vehicle")}>Edit Vehicle</button>
+
+// ✅ Profile Settings: Connect Marketplace Button
+// Connect Button:
+// <button onClick={handleConnectMarketplace}>Connect to Marketplace</button>
+// Function:
+// const handleConnectMarketplace = async () => {
+//   const res = await fetch('/api/vendor/connect-marketplace', { method: 'POST' });
+//   if (res.ok) toast.success("Connected successfully");
+//   else toast.error("Failed to connect");
+// };
