@@ -23,6 +23,28 @@ const mockUser = {
 };
 
 const Profile = () => {
+  const { toast } = useToast();
+  
+  const handleConnectMarketplace = async () => {
+    try {
+      const res = await fetch('/api/vendor/connect-marketplace', { method: 'POST' });
+      if (res.ok) {
+        toast({
+          title: "Success",
+          description: "Connected successfully to marketplace"
+        });
+      } else {
+        throw new Error("Failed to connect");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to connect to marketplace",
+        variant: "destructive"
+      });
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
