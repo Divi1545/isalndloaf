@@ -3,14 +3,36 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import CalendarOverview from "@/components/dashboard/calendar-overview";
 
 const CalendarSync = () => {
+  const { toast } = useToast();
+  
+  async function handleSyncAllCalendars() {
+    try {
+      await fetch('/api/calendar/sync-all', { method: 'POST' });
+      toast({
+        title: "Calendar sync initiated",
+        description: "Sync started for all connected calendars"
+      });
+    } catch (error) {
+      toast({
+        title: "Sync failed",
+        description: "There was an error syncing your calendars",
+        variant: "destructive"
+      });
+    }
+  }
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Calendar Sync</h1>
-        <Button className="w-full md:w-auto">
+        <Button 
+          className="w-full md:w-auto"
+          onClick={handleSyncAllCalendars}
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
             <path d="M21 12a9 9 0 0 1-9 9"></path>
             <path d="M9 3a9 9 0 0 1 9 9"></path>

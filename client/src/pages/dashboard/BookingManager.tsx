@@ -14,6 +14,17 @@ const BookingManager = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Booking Manager</h1>
         <div className="flex flex-col sm:flex-row items-center gap-3">
+          <Button 
+            variant="default" 
+            onClick={() => setLocation("/vendor/add-booking")}
+            className="w-full sm:w-auto"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Booking
+          </Button>
           <div className="relative w-full sm:w-[300px]">
             <Input 
               type="text"

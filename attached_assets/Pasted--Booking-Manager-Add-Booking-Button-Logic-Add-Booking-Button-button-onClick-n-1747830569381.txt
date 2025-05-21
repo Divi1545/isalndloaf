@@ -1,0 +1,82 @@
+// ✅ Booking Manager: Add Booking Button Logic
+// Add Booking Button:
+// \<button onClick={() => navigate("/vendor/add-booking")}>Add Booking</button>
+// Ensure route exists:
+// \<Route path="/vendor/add-booking" element={<AddBookingForm />} />
+
+// ✅ Calendar Sync
+// Associated Service Dropdown should fetch all stay-type listings:
+// fetch(`/api/vendor/services?type=stay`).then(...) => populate dropdown
+
+// Sync All Calendars Button:
+// <button onClick={handleSyncAllCalendars}>Sync All Calendars</button>
+// Function:
+// async function handleSyncAllCalendars() {
+//   await fetch('/api/calendar/sync-all', { method: 'POST' })
+//   showToast('Sync started for all connected calendars');
+// }
+
+// ✅ Pricing Engine
+// Update All Prices Button:
+// <button onClick={handleUpdateAllPrices}>Update All Prices</button>
+// Function:
+// const handleUpdateAllPrices = async () => {
+//   await fetch('/api/pricing/update-all', { method: 'POST' });
+//   toast.success('All pricing updated');
+// };
+
+// Save Changes Button:
+// <button onClick={handleSaveChanges}>Save Changes</button>
+// Function:
+// const handleSaveChanges = async () => {
+//   const payload = {...currentPricingSettings};
+//   await fetch('/api/pricing/save', {
+//     method: 'POST',
+//     body: JSON.stringify(payload),
+//     headers: { 'Content-Type': 'application/json' },
+//   });
+//   toast.success('Pricing saved successfully');
+// };
+
+// ✅ Add New Activity Button
+// \<button onClick={() => navigate("/vendor/add-activity")}>Add New Activity</button>
+// Route:
+// \<Route path="/vendor/add-activity" element={<AddActivityPage />} />
+
+// ✅ Transport Dropdown Expansion
+// Vehicle Type Dropdown:
+// fetch(`/api/vehicles/vendor-options`) => return \['Scooter Rental', 'Car Rental', 'Boat Tour', 'Van', 'Jeep', 'Luxury Car']
+// Save Changes Button uses same logic as above pricing save
+
+// ✅ Support Page Logic (Reply / Resolve)
+// - Button opens a modal or redirects to reply page
+// - Status should update after resolving
+
+// const \[supportStatus, setSupportStatus] = useState("All");
+// const filteredTickets = tickets.filter(ticket =>
+//   supportStatus === "All" || ticket.status.toLowerCase() === supportStatus.toLowerCase()
+// );
+
+// JSX:
+// <div className="tab-row">
+//   \<button onClick={() => setSupportStatus("All")}>All Tickets</button>
+//   \<button onClick={() => setSupportStatus("Open")}>Open</button>
+//   \<button onClick={() => setSupportStatus("In Progress")}>In Progress</button>
+//   \<button onClick={() => setSupportStatus("Resolved")}>Resolved</button>
+// </div>
+
+// Actions:
+// \<button onClick={() => openReplyModal(ticket.id)}>Reply</button>
+// \<button onClick={() => resolveTicket(ticket.id)}>Resolve</button>
+
+// ✅ Marketing Page (Campaign + Promo Button Fixes)
+
+// New Campaign Button:
+// \<button onClick={() => navigate("/marketing/new")}>New Campaign</button>
+
+// Create Support Ticket Button:
+// \<button onClick={() => navigate("/support/new")}>Create Support Ticket</button>
+
+// These routes must exist:
+// \<Route path="/marketing/new" element={<NewCampaignPage />} />
+// \<Route path="/support/new" element={<NewSupportTicketPage />} />
