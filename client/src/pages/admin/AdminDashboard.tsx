@@ -83,36 +83,44 @@ const AdminDashboard = () => {
     localStorage.removeItem("vendorId");
   }, []);
   
-  // Handle report generation
-  const handleGenerateReport = () => {
-    toast({
-      title: "Generating report",
-      description: "Your report is being prepared and will download shortly"
-    });
-    
-    // In a real app, this would fetch from API
-    // For this demo, simulate a download after a short delay
-    setTimeout(() => {
-      // Create a blob representing a PDF file
-      const reportData = new Blob(
-        ['IslandLoaf Admin Report: ' + new Date().toLocaleDateString()], 
-        { type: 'application/pdf' }
-      );
+  // Handle report generation using the API endpoint
+  const handleGenerateReport = async () => {
+    try {
+      toast({
+        title: "Generating report",
+        description: "Your report is being prepared and will download shortly"
+      });
+      
+      // Call the API endpoint
+      const response = await fetch('/api/reports/generate');
+      
+      // Create a blob from the response
+      const blob = await response.blob();
       
       // Create a download link and trigger it
-      const url = window.URL.createObjectURL(reportData);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `islandloaf_report_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'islandloaf_report.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
       
       toast({
         title: "Report downloaded",
         description: "Your report has been generated successfully",
       });
-    }, 1500);
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error generating report",
+        description: "There was a problem generating your report. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (
