@@ -13,6 +13,45 @@ import { useLocation } from "wouter";
 const PricingEngine = () => {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
+  const [roomTypes, setRoomTypes] = React.useState([
+    'Beach Villa', 'Garden Room', 'Ocean View Suite', 'Hilltop Cottage',
+    'Lake Bungalow', 'Luxury Suite', 'Jungle Cabin', 'Mountain Lodge',
+    'Island Bungalow', 'Forest Retreat', 'Tent Camp', 'Treehouse Stay',
+    'Boutique Room', 'Farm Stay', 'Lake View Cottage', 'Seaside Retreat'
+  ]);
+  const [vehicleTypes, setVehicleTypes] = React.useState([
+    'Scooter Rental', 'Car Rental', 'Boat Tour', 'Van', 'Jeep', 'Luxury Car'
+  ]);
+  
+  // Fetch room types on component mount
+  React.useEffect(() => {
+    const fetchRoomTypes = async () => {
+      try {
+        const response = await fetch('/api/stay/types');
+        if (response.ok) {
+          const data = await response.json();
+          setRoomTypes(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch room types:', error);
+      }
+    };
+    
+    const fetchVehicleTypes = async () => {
+      try {
+        const response = await fetch('/api/vehicles/vendor-options');
+        if (response.ok) {
+          const data = await response.json();
+          setVehicleTypes(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch vehicle types:', error);
+      }
+    };
+    
+    fetchRoomTypes();
+    fetchVehicleTypes();
+  }, []);
   
   const handleUpdateAllPrices = async () => {
     try {
@@ -94,9 +133,11 @@ const PricingEngine = () => {
                       <SelectValue placeholder="Select room" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="beachvilla">Beach Villa</SelectItem>
-                      <SelectItem value="gardenroom">Garden Room</SelectItem>
-                      <SelectItem value="oceanview">Ocean View Suite</SelectItem>
+                      {roomTypes.map((roomType, index) => (
+                        <SelectItem key={index} value={roomType.toLowerCase().replace(/\s+/g, '')}>
+                          {roomType}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Button 
@@ -334,9 +375,11 @@ const PricingEngine = () => {
                       <SelectValue placeholder="Select vehicle" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="scooter">Scooter Rental</SelectItem>
-                      <SelectItem value="car">Car Rental</SelectItem>
-                      <SelectItem value="boat">Boat Tour</SelectItem>
+                      {vehicleTypes.map((vehicleType, index) => (
+                        <SelectItem key={index} value={vehicleType.toLowerCase().replace(/\s+/g, '')}>
+                          {vehicleType}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Button 
