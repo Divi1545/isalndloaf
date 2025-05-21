@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -232,6 +232,17 @@ const SimpleApp = () => {
   const [currentAdminPath, setCurrentAdminPath] = useState<string | null>(null);
   const [_, setLocation] = useLocation();
   
+  // Check for authentication on component mount
+  useEffect(() => {
+    // Retrieve authentication from localStorage
+    const storedUserRole = localStorage.getItem("userRole");
+    
+    if (storedUserRole) {
+      setIsLoggedIn(true);
+      setUserRole(storedUserRole);
+    }
+  }, []);
+  
   // Set page title based on active link (for vendor)
   const getPageTitle = () => {
     const titles: Record<string, string> = {
@@ -362,6 +373,8 @@ const SimpleApp = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserRole('');
+    // Clear authentication from localStorage
+    localStorage.removeItem("userRole");
   };
   
   // Route navigation helper for admin
@@ -378,6 +391,8 @@ const SimpleApp = () => {
     setIsLoggedIn(true);
     setUserRole(role);
     setCurrentAdminPath(null);
+    // Store authentication in localStorage
+    localStorage.setItem("userRole", role);
   };
   
   // If not logged in, show the login page

@@ -21,6 +21,16 @@ declare module "express-session" {
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function registerRoutes(app: Express): Promise<void> {
+  // API Reports endpoint for generating CSV reports
+  app.get("/api/reports/generate", (req: Request, res: Response) => {
+    // Generate report data - in a real app, this would fetch from database
+    const content = "Islandloaf Report\nBookings: 102\nVendors: 40\nRevenue: LKR 3,400,000";
+    
+    // Set headers for file download
+    res.setHeader('Content-Disposition', 'attachment; filename=islandloaf_report.csv');
+    res.set('Content-Type', 'text/csv');
+    res.send(content);
+  });
   // Middleware to check if user is authenticated
   const requireAuth = (req: Request, res: Response, next: Function) => {
     if (!req.session.user) {

@@ -1,0 +1,94 @@
+// ✅ ADMIN DASHBOARD REPAIR CHECKLIST (FULL PAGE IMPLEMENTATION)
+
+// 1. 🔁 Assign Unique Functions to Similar Pages
+// - Dashboard → Show total bookings, vendor count, monthly revenue, system alerts
+// - Marketing → Send email campaigns, manage discount codes, trigger promos
+// - Analytics → Graphs (revenue by category, vendor performance), traffic stats
+// - Transactions → View all payouts, vendor invoices, earnings history
+// - Support → View & reply to vendor issues, internal notes, contact logs
+
+// 2. ❌ Button Logic Fixes (FULL CODE)
+
+// (A) 🔁 Fix Token Persistence (in AuthProvider or useEffect)
+// useEffect(() => {
+//   const token = localStorage.getItem("token");
+//   if (token) {
+//     setAuth({ token });
+//   } else {
+//     navigate('/login');
+//   }
+// }, \[]);
+
+// (B) ➕ Add Vendor Button
+// import { useNavigate } from 'react-router-dom';
+// const navigate = useNavigate();
+// \<button onClick={() => navigate("/admin/add-vendor")} className="btn btn-primary">Add Vendor</button>
+
+// (C) 📤 Generate Report Button
+// Backend route in Express:
+// router.get('/api/reports/generate', (req, res) => {
+//   const content = "Islandloaf Report\nBookings: 102\nVendors: 40\nRevenue: LKR 3,400,000";
+//   res.setHeader('Content-Disposition', 'attachment; filename=report.csv');
+//   res.set('Content-Type', 'text/csv');
+//   res.send(content);
+// });
+
+// Frontend handler:
+// const handleGenerateReport = async () => {
+//   const res = await fetch('/api/reports/generate');
+//   const blob = await res.blob();
+//   const url = URL.createObjectURL(blob);
+//   const link = document.createElement('a');
+//   link.href = url;
+//   link.download = 'islandloaf\_report.csv';
+//   document.body.appendChild(link);
+//   link.click();
+//   link.remove();
+// };
+// JSX:
+// <button onClick={handleGenerateReport}>Generate Report</button>
+
+// (D) ⚙ General Settings & User Management Buttons
+// Routing (App.jsx):
+// \<Route path="/admin/settings" element={<AdminSettingsPage />} />
+// \<Route path="/admin/users" element={<UserManagementPage />} />
+
+// Button logic:
+// \<button onClick={() => navigate("/admin/settings")}>General Settings</button>
+// \<button onClick={() => navigate("/admin/users")}>User Management</button>
+
+// 3. 🧩 Booking Tabs Fix (Confirmed, Pending, Cancelled)
+// const \[statusFilter, setStatusFilter] = useState("All");
+// const filteredBookings = bookings.filter(b => statusFilter === "All" || b.status === statusFilter);
+// JSX:
+// \<button onClick={() => setStatusFilter("All")}>All</button>
+// \<button onClick={() => setStatusFilter("confirmed")}>Confirmed</button>
+// \<button onClick={() => setStatusFilter("pending")}>Pending</button>
+// \<button onClick={() => setStatusFilter("cancelled")}>Cancelled</button>
+
+// 4. 📊 Analytics Page (Planned)
+// - Use Chart.js or Recharts
+// - Graph 1: Monthly Booking Revenue
+// - Graph 2: Vendor Performance Pie Chart
+// - Graph 3: Category Distribution (Stay, Vehicle, etc.)
+
+// 5. 💌 Marketing Page
+// - Email Blast Tool (fake trigger)
+// - Promo Code Generator (input + store)
+// - Show active marketing campaigns
+
+// 6. 💰 Transactions Page
+// - Table of payouts
+// - Column: Vendor, Amount, Booking ID, Status, Date
+// - Add Export CSV button (reuse same report download logic)
+
+// 7. 📞 Support Page
+// - Vendor submitted messages table
+// - Reply button → opens modal/form
+// - Mark as resolved button → update status in DB
+
+// ✅ FINAL STEPS:
+// → Implement each page route and layout
+// → Reuse code above for buttons and filters
+// → Add state persistence and visual feedback
+// → Notify when ready for next module (calendar sync, payout automation, etc.)
