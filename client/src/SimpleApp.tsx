@@ -222,6 +222,10 @@ import VendorManagement from "@/pages/admin/VendorManagement";
 import BookingManagement from "@/pages/admin/BookingManagement";
 import RevenueManagement from "@/pages/admin/RevenueManagement";
 import AddVendorForm from "@/pages/admin/AddVendorForm";
+import MarketingCampaigns from "@/pages/admin/MarketingCampaigns";
+import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
+import TransactionHistory from "@/pages/admin/TransactionHistory";
+import SupportDashboard from "@/pages/admin/SupportDashboard";
 
 // Main App Component
 const SimpleApp = () => {
@@ -342,6 +346,14 @@ const SimpleApp = () => {
         return <BookingManagement />;
       case "revenue":
         return <RevenueManagement />;
+      case "marketing":
+        return <MarketingCampaigns />;
+      case "analytics":
+        return <AnalyticsDashboard />;
+      case "transactions":
+        return <TransactionHistory />;
+      case "support":
+        return <SupportDashboard />;
       case "settings":
         return (
           <div className="py-20 px-4 md:px-6">
