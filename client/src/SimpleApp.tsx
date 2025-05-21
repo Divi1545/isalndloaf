@@ -226,6 +226,8 @@ import MarketingCampaigns from "@/pages/admin/MarketingCampaigns";
 import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
 import TransactionHistory from "@/pages/admin/TransactionHistory";
 import SupportDashboard from "@/pages/admin/SupportDashboard";
+import NewCampaignPage from "@/pages/admin/NewCampaignPage";
+import NewSupportTicketPage from "@/pages/admin/NewSupportTicketPage";
 
 // Main App Component
 const SimpleApp = () => {
@@ -334,6 +336,10 @@ const SimpleApp = () => {
       // Clear the action after handling it
       localStorage.removeItem("adminAction");
       return <AddVendorForm />;
+    } else if (adminAction === "newMarketingCampaign") {
+      return <NewCampaignPage />;
+    } else if (adminAction === "createSupportTicket") {
+      return <NewSupportTicketPage />;
     }
     
     // Otherwise show regular tab content based on active tab

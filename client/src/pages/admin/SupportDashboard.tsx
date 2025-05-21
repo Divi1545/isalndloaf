@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 const SupportDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [supportStatus, setSupportStatus] = useState('all');
   const { toast } = useToast();
   
   // Sample support tickets data for demonstration
@@ -112,7 +113,10 @@ const SupportDashboard = () => {
     const matchesStatus = statusFilter === 'all' || 
       ticket.status === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    const matchesSupportStatus = supportStatus === 'all' || 
+      ticket.status.toLowerCase() === supportStatus.toLowerCase();
+    
+    return matchesSearch && matchesStatus && matchesSupportStatus;
   });
 
   // Reply Dialog Component
@@ -210,17 +214,32 @@ const SupportDashboard = () => {
 
   // Mark as resolved function
   const handleMarkResolved = (ticketId: string) => {
+    // In a real app, this would call an API to update the ticket status
+    const updatedTickets = supportTickets.map(ticket => {
+      if (ticket.id === ticketId) {
+        return { ...ticket, status: 'resolved' };
+      }
+      return ticket;
+    });
+    
+    // Instead we're just showing a toast notification for the demo
     toast({
       title: "Ticket resolved",
       description: `Ticket ${ticketId} has been marked as resolved`
     });
+    
+    // Force a refresh of the filtered tickets
+    setSupportStatus(supportStatus);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Support Dashboard</h1>
-        <Button>
+        <Button onClick={() => 
+          // In a real app, this would navigate to a new ticket page
+          localStorage.setItem("adminAction", "createSupportTicket")
+        }>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -275,7 +294,11 @@ const SupportDashboard = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="all">
+      <Tabs 
+        defaultValue="all" 
+        value={supportStatus}
+        onValueChange={setSupportStatus}
+      >
         <TabsList>
           <TabsTrigger value="all">All Tickets</TabsTrigger>
           <TabsTrigger value="open">Open</TabsTrigger>
