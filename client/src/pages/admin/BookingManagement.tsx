@@ -392,7 +392,12 @@ const BookingManagement = () => {
         </div>
       </div>
       
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs 
+        defaultValue="all" 
+        className="w-full"
+        value={statusFilter}
+        onValueChange={setStatusFilter}
+      >
         <TabsList className="w-full max-w-md grid grid-cols-4">
           <TabsTrigger value="all">All Bookings</TabsTrigger>
           <TabsTrigger value="confirmed">Confirmed</TabsTrigger>

@@ -253,7 +253,12 @@ const VendorManagement = () => {
         </Button>
       </div>
       
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs 
+        defaultValue="all" 
+        className="w-full"
+        value={statusFilter}
+        onValueChange={setStatusFilter}
+      >
         <TabsList className="w-full max-w-md grid grid-cols-3">
           <TabsTrigger value="all">All Vendors</TabsTrigger>
           <TabsTrigger value="active">Active</TabsTrigger>
