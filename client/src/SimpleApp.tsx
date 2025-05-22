@@ -229,6 +229,9 @@ import SupportDashboard from "@/pages/admin/SupportDashboard";
 import NewCampaignPage from "@/pages/admin/NewCampaignPage";
 import NewSupportTicketPage from "@/pages/admin/NewSupportTicketPage";
 
+// Import Vendor Form Pages
+import AddBookingForm from "@/pages/vendor/AddBookingForm";
+
 // Main App Component
 const SimpleApp = () => {
   const [activeLink, setActiveLink] = useState("overview");
