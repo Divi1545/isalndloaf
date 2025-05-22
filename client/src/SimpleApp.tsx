@@ -287,6 +287,15 @@ const SimpleApp = () => {
   
   // Render content based on active link (for vendor)
   const renderContent = () => {
+    // Check for special vendor routes
+    const pathname = window.location.pathname;
+    
+    // Handle vendor form routes
+    if (pathname === "/vendor/add-booking") {
+      return <AddBookingForm />;
+    }
+    
+    // Otherwise show regular content based on active link
     switch (activeLink) {
       case "overview":
         return <Overview />;
