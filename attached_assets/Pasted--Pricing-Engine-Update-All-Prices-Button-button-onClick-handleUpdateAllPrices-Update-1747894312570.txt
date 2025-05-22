@@ -1,0 +1,43 @@
+// ✅ Pricing Engine
+// Update All Prices Button:
+// <button onClick={handleUpdateAllPrices}>Update All Prices</button>
+// Function:
+// const handleUpdateAllPrices = async () => {
+//   await fetch('/api/pricing/update-all', { method: 'POST' });
+//   toast.success('All pricing updated');
+// };
+
+// Save Changes Button:
+// <button onClick={handleSaveChanges}>Save Changes</button>
+// Function:
+// const handleSaveChanges = async () => {
+//   const payload = {...currentPricingSettings};
+//   await fetch('/api/pricing/save', {
+//     method: 'POST',
+//     body: JSON.stringify(payload),
+//     headers: { 'Content-Type': 'application/json' },
+//   });
+//   toast.success('Pricing saved successfully');
+// };
+
+// Room Dropdown Options:
+// fetch(`/api/stay/types`) => return \[
+//   'One Room', 'Double Bed', 'Twin Room', 'Triple Room', 'Family Room', 'Deluxe Room', 'Suite', 'Junior Suite', 'Studio', 'Entire Villa', 'Entire Apartment', 'Private Cottage', 'Shared Dorm', 'Capsule Room', 'Tent', 'Bungalow', 'Chalet', 'Houseboat', 'Cabana', 'Treehouse', 'Container Home', 'Dome', 'Glamping Tent', 'Farm Stay', 'Luxury Suite', 'Poolside Room', 'Ocean View Room', 'Lakefront Room', 'Mountain View Room', 'Hilltop Cottage', 'Lake Bungalow', 'Jungle Cabin', 'Mountain Lodge', 'Island Bungalow', 'Forest Retreat', 'Tent Camp', 'Treehouse Stay', 'Boutique Room', 'Farm Stay', 'Lake View Cottage'
+// ]
+
+// Edit Room Button:
+// \<button onClick={() => navigate("/vendor/edit-room")}>Edit Room</button>
+
+// ✅ Add New Activity Button
+// \<button onClick={() => navigate("/vendor/add-activity")}>Add New Activity</button>
+// Route:
+// \<Route path="/vendor/add-activity" element={<AddActivityPage />} />
+
+// ✅ Transport Dropdown Expansion
+// Vehicle Type Dropdown:
+// fetch(`/api/vehicles/types`) => return \[
+//   'Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Pickup Truck', 'Van / Mini Van', '4x4 / Off-road', 'Jeep', 'Luxury Car', 'Classic Car', 'Electric Vehicle', 'Hybrid', 'Limousine', 'Tuk Tuk', 'Motorbike / Scooter', 'Bicycle', 'Campervan / RV', 'Bus / Mini Bus'
+// ]
+
+// Edit Vehicle Button:
+// \<button onClick={() => navigate("/vendor/edit-vehicle")}>Edit Vehicle</button>

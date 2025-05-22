@@ -101,18 +101,33 @@ const PricingEngine = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Pricing Engine</h1>
-        <Button 
-          className="w-full md:w-auto"
-          onClick={handleUpdateAllPrices}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-            <path d="M12 5V2"></path>
-            <path d="m19 8-3-3"></path>
-            <circle cx="12" cy="12" r="7"></circle>
-            <path d="M12 16v-4l2-2"></path>
-          </svg>
-          Update All Prices
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button 
+            className="w-full sm:w-auto"
+            onClick={handleUpdateAllPrices}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+              <path d="M12 5V2"></path>
+              <path d="m19 8-3-3"></path>
+              <circle cx="12" cy="12" r="7"></circle>
+              <path d="M12 16v-4l2-2"></path>
+            </svg>
+            Update All Prices
+          </Button>
+          
+          <Button 
+            className="w-full sm:w-auto"
+            variant="outline"
+            onClick={handleSaveChanges}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save Changes
+          </Button>
+        </div>
       </div>
       
       <Tabs defaultValue="rooms" className="w-full">
