@@ -1,0 +1,46 @@
+// ✅ NEXT PHASE: FINAL LAUNCH TASKS
+
+// 🔐 1. IMPLEMENT TOKEN EXPIRY / AUTO-REFRESH
+// - Store login timestamp in localStorage
+// - Check expiry on page load, and auto-logout if expired
+// - Optionally implement refresh token flow to renew session silently
+// - Added secure token storage in localStorage with expiration timestamps
+// - Added auto-logout with session expiry toast notification
+
+// 🚀 2. ENABLE "ALWAYS ON" FOR BACKEND
+// - Upgrade Replit plan to Boosted Deployment or move backend to:
+//   → Railway, Render, Vercel (for continuous uptime)
+// - Add Replit pinging script if staying on free plan
+
+// 🧩 3. AUTO-ASSIGN VENDOR CATEGORIES ON SIGNUP
+// - In vendor registration backend logic:
+// if (newUser.role === "vendor") {
+//   newUser.categories\_allowed = \["stay", "transport", "tours"];
+// }
+// - Store to DB and reflect in dashboard tabs
+
+// 🗃️ 4. PREPARE POSTGRESQL MIGRATION
+// - Use Prisma or pg (PostgreSQL client)
+// - Create schemas for:
+//   → vendors, bookings, availability, services, pricing
+// - One-time script to migrate data from MemStorage to PostgreSQL
+// - Update frontend fetches to point to SQL endpoints
+
+// 📄 5. FINAL DOCUMENTATION TASKS
+// - Create README\_onboarding.md with steps for new team members
+// - Generate testing script (e.g., /scripts/final\_test.js):
+//     → Create mock bookings for all categories
+//     → Verify calendar block, pricing logic, and booking statuses
+// - Export JSON of test data for migration backup
+
+// ✅ IMPLEMENTED CHECKPOINTS:
+// - Dynamic pricing engine for Stay and Vehicle bookings
+// - Vehicle and Stay dropdowns include full category lists
+// - Category-specific forms for Stay, Transport, Tours, Wellness, Products
+// - Role-based access works; vendors only access their own data
+// - Admin dashboard supports marketing campaigns, analytics, revenue, settings
+// - Calendar sync with iCal works and is color-coded (Pending, Booked, Available)
+// - All major routes work and persist on refresh with localStorage tokens
+// - Pricing engine syncs properly to booking summary forms
+
+// ✅ AFTER THESE ARE DONE: YOU'RE 100% READY FOR GLOBAL LAUNCH

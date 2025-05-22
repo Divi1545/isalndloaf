@@ -135,7 +135,36 @@ export class MemStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
     const createdAt = new Date();
-    const newUser: User = { ...user, id, createdAt };
+    
+    // Auto-assign default categories for vendors
+    let categoriesAllowed = user.categoriesAllowed || [];
+    
+    // If it's a vendor and no categories are specified, assign default categories
+    if (user.role === 'vendor' && (!categoriesAllowed || categoriesAllowed.length === 0)) {
+      // Default categories based on business type
+      categoriesAllowed = ['stays', 'transport', 'tours'];
+      
+      // Adjust default categories based on business type
+      if (user.businessType === 'stays' || user.businessType === 'accommodation') {
+        categoriesAllowed = ['stays', 'tours', 'wellness'];
+      } else if (user.businessType === 'transport') {
+        categoriesAllowed = ['transport', 'tours'];
+      } else if (user.businessType === 'tours' || user.businessType === 'activities') {
+        categoriesAllowed = ['tours', 'tickets', 'transport'];
+      } else if (user.businessType === 'wellness') {
+        categoriesAllowed = ['wellness', 'tours'];
+      } else if (user.businessType === 'products' || user.businessType === 'retail') {
+        categoriesAllowed = ['products', 'tickets'];
+      }
+    }
+    
+    const newUser: User = { 
+      ...user, 
+      id, 
+      createdAt,
+      categoriesAllowed 
+    };
+    
     this.usersData.set(id, newUser);
     return newUser;
   }

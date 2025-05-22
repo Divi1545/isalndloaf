@@ -65,6 +65,59 @@ export async function registerRoutes(app: Express): Promise<void> {
   await createSampleUser();
 
   // Auth Routes
+  // Registration endpoint
+  app.post("/api/auth/register", async (req: Request, res: Response) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already in use" });
+      }
+      
+      // Check if username already exists
+      const existingUsername = await storage.getUserByUsername(userData.username);
+      if (existingUsername) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+      
+      // Create the user (categories will be auto-assigned based on business type)
+      const newUser = await storage.createUser(userData);
+      
+      // Set session
+      req.session.user = {
+        userId: newUser.id,
+        userRole: newUser.role,
+      };
+
+      // Return user data (excluding password)
+      const { password, ...newUserData } = newUser;
+      
+      // Create welcome notification
+      await storage.createNotification({
+        userId: newUser.id,
+        title: "Welcome to IslandLoaf",
+        message: `Welcome to IslandLoaf, ${newUser.fullName}! Your account has been created successfully. Get started by adding your first service.`,
+        type: "info",
+        read: false,
+        createdAt: new Date()
+      });
+      
+      res.status(201).json({
+        user: newUserData,
+        message: "Registration successful",
+        categories: newUser.categoriesAllowed
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error("Registration error:", error);
+      res.status(500).json({ error: "Failed to register user" });
+    }
+  });
+
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const data = loginSchema.parse(req.body);

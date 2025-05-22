@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   businessName: text("business_name").notNull(),
   businessType: text("business_type").notNull(),
   role: text("role").notNull().default("vendor"), // vendor or admin
+  categoriesAllowed: jsonb("categories_allowed").default(['stays', 'transport', 'tours']), // Default categories for vendors
   createdAt: timestamp("created_at").defaultNow(),
 });
 
