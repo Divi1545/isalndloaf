@@ -106,9 +106,51 @@ interface AddBookingFormProps {
   title?: string;
 }
 
+// Price calculation hook for stay bookings
+function useStayPricing() {
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  
+  const calculatePrice = async (stayType: string, checkInDate: Date, checkOutDate: Date, adults: number, children: number) => {
+    setIsCalculating(true);
+    try {
+      // This would be a real API call in production
+      // const response = await fetch('/api/pricing/calculate', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ stayType, checkInDate, checkOutDate, adults, children })
+      // });
+      // if (response.ok) {
+      //   const data = await response.json();
+      //   setCalculatedPrice(data.totalPrice);
+      // }
+      
+      // For demo, simulate price calculation
+      const days = Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)));
+      const basePrice = stayType.includes('Deluxe') || stayType.includes('Luxury') || stayType.includes('Suite') ? 150 : 80;
+      const totalGuests = adults + 0.5 * children;
+      const price = basePrice * days * Math.max(1, totalGuests * 0.8);
+      
+      // Simulate API delay
+      setTimeout(() => {
+        setCalculatedPrice(Math.round(price * 100) / 100);
+        setIsCalculating(false);
+      }, 500);
+    } catch (error) {
+      console.error('Error calculating price:', error);
+      setIsCalculating(false);
+    }
+  };
+  
+  return { calculatePrice, isCalculating, calculatedPrice };
+}
+
 const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: AddBookingFormProps) => {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // For automatic price calculation
+  const { calculatePrice, isCalculating, calculatedPrice } = useStayPricing();
   const [services, setServices] = useState<{id: string, name: string, type: string}[]>([]);
   const [stayTypes, setStayTypes] = useState<string[]>([]);
   const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
@@ -117,6 +159,14 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
   
   // Form-specific states based on booking type
   const [vehicleAddons, setVehicleAddons] = useState<{id: string, name: string}[]>([]);
+  const [propertySpaces, setPropertySpaces] = useState<string[]>([]);
+  const [themes, setThemes] = useState<string[]>([]);
+  const [rentalTypes, setRentalTypes] = useState<string[]>([]);
+  const [fuelTypes, setFuelTypes] = useState<string[]>([]);
+  const [transmissions, setTransmissions] = useState<string[]>([]);
+  const [tourAddons, setTourAddons] = useState<{id: string, name: string, price: number}[]>([]);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const [therapists, setTherapists] = useState<string[]>([]);
   
   // Fetch relevant data based on booking type
   useEffect(() => {
@@ -168,55 +218,230 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
     const fetchFormSpecificData = async () => {
       try {
         if (bookingType === 'stay') {
-          // Fetch stay types
-          // const stayTypesResponse = await fetch('/api/stay/types');
-          // const stayTypesData = await stayTypesResponse.json();
-          // setStayTypes(stayTypesData);
-          
-          // Mock stay types
-          setStayTypes([
-            'One Room', 'Double Bed', 'Twin Room', 'Triple Room', 'Family Room', 
-            'Deluxe Room', 'Suite', 'Junior Suite', 'Studio', 'Entire Villa', 
-            'Entire Apartment', 'Private Cottage', 'Shared Dorm', 'Capsule Room'
-          ]);
-          
-          // Fetch property types
-          setPropertyTypes([
-            'Hotel', 'Villa', 'Resort', 'Apartment', 'Bungalow', 'Boutique Hotel',
-            'Homestay', 'Hostel', 'Cottage', 'Treehouse', 'Guesthouse'
-          ]);
-          
-          // Fetch amenities
-          setAmenities([
-            { id: '1', name: 'WiFi' },
-            { id: '2', name: 'Air Conditioning' },
-            { id: '3', name: 'Swimming Pool' },
-            { id: '4', name: 'Beach Access' },
-            { id: '5', name: 'Kitchen' },
-            { id: '6', name: 'Breakfast Included' }
-          ]);
+          try {
+            // Fetch stay types
+            const stayTypesResponse = await fetch('/api/stay/types');
+            if (stayTypesResponse.ok) {
+              const stayTypesData = await stayTypesResponse.json();
+              setStayTypes(stayTypesData);
+            } else {
+              // Fallback to mock data if API fails
+              setStayTypes([
+                'One Room', 'Double Bed', 'Twin Room', 'Triple Room', 'Family Room', 
+                'Deluxe Room', 'Suite', 'Junior Suite', 'Studio', 'Entire Villa', 
+                'Entire Apartment', 'Private Cottage', 'Shared Dorm', 'Capsule Room',
+                'Tent', 'Bungalow', 'Chalet', 'Houseboat', 'Cabana', 'Treehouse'
+              ]);
+            }
+            
+            // Fetch property types
+            const propertyTypesResponse = await fetch('/api/stay/property-types');
+            if (propertyTypesResponse.ok) {
+              const propertyTypesData = await propertyTypesResponse.json();
+              setPropertyTypes(propertyTypesData);
+            } else {
+              // Fallback to mock data
+              setPropertyTypes([
+                'Hotel', 'Villa', 'Resort', 'Apartment', 'Bungalow', 'Boutique Hotel',
+                'Homestay', 'Hostel', 'Cottage', 'Treehouse', 'Guesthouse'
+              ]);
+            }
+            
+            // Fetch property spaces
+            const propertySpacesResponse = await fetch('/api/stay/property-spaces');
+            if (propertySpacesResponse.ok) {
+              const propertySpacesData = await propertySpacesResponse.json();
+              setPropertySpaces(propertySpacesData);
+            } else {
+              // Fallback to mock data
+              setPropertySpaces([
+                'Beachfront', 'Mountain View', 'City Center', 'Countryside', 'Lakeside',
+                'Riverside', 'Forest', 'Desert', 'Island', 'Oceanfront'
+              ]);
+            }
+            
+            // Fetch themes
+            const themesResponse = await fetch('/api/stay/themes');
+            if (themesResponse.ok) {
+              const themesData = await themesResponse.json();
+              setThemes(themesData);
+            } else {
+              // Fallback to mock data
+              setThemes([
+                'Romantic', 'Family-friendly', 'Business', 'Luxury', 'Budget',
+                'Adventure', 'Eco-friendly', 'Historic', 'Modern', 'Traditional'
+              ]);
+            }
+            
+            // Fetch amenities
+            const amenitiesResponse = await fetch('/api/stay/amenities');
+            if (amenitiesResponse.ok) {
+              const amenitiesData = await amenitiesResponse.json();
+              setAmenities(amenitiesData);
+            } else {
+              // Fallback to mock data
+              setAmenities([
+                { id: '1', name: 'WiFi' },
+                { id: '2', name: 'Air Conditioning' },
+                { id: '3', name: 'Swimming Pool' },
+                { id: '4', name: 'Beach Access' },
+                { id: '5', name: 'Kitchen' },
+                { id: '6', name: 'Breakfast Included' },
+                { id: '7', name: 'Private Bathroom' },
+                { id: '8', name: 'Balcony' },
+                { id: '9', name: 'Ocean View' },
+                { id: '10', name: 'Gym Access' }
+              ]);
+            }
+          } catch (error) {
+            console.error('Error fetching stay data:', error);
+            toast({
+              title: 'Error',
+              description: 'Failed to load stay options. Using default values.',
+              variant: 'destructive'
+            });
+          }
         } else if (bookingType === 'transport') {
-          // Fetch vehicle types
-          // const vehicleTypesResponse = await fetch('/api/vehicles/types');
-          // const vehicleTypesData = await vehicleTypesResponse.json();
-          // setVehicleTypes(vehicleTypesData);
-          
-          // Mock vehicle types
-          setVehicleTypes([
-            'Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Pickup Truck', 
-            'Van / Mini Van', '4x4 / Off-road', 'Jeep', 'Luxury Car', 'Classic Car', 
-            'Electric Vehicle', 'Hybrid', 'Motorbike / Scooter', 'Bicycle'
-          ]);
-          
-          // Fetch vehicle add-ons
-          setVehicleAddons([
-            { id: '1', name: 'GPS Navigation' },
-            { id: '2', name: 'Child Seat' },
-            { id: '3', name: 'Additional Driver' },
-            { id: '4', name: 'Roof Rack' },
-            { id: '5', name: 'Bluetooth Audio' },
-            { id: '6', name: 'Full Insurance' }
-          ]);
+          try {
+            // Fetch vehicle types
+            const vehicleTypesResponse = await fetch('/api/vehicles/types');
+            if (vehicleTypesResponse.ok) {
+              const vehicleTypesData = await vehicleTypesResponse.json();
+              setVehicleTypes(vehicleTypesData);
+            } else {
+              // Fallback to mock data
+              setVehicleTypes([
+                'Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Pickup Truck', 
+                'Van / Mini Van', '4x4 / Off-road', 'Jeep', 'Luxury Car', 'Classic Car', 
+                'Electric Vehicle', 'Hybrid', 'Motorbike / Scooter', 'Bicycle',
+                'Campervan / RV', 'Bus / Mini Bus', 'Limousine', 'Tuk Tuk'
+              ]);
+            }
+            
+            // Fetch rental types
+            const rentalTypesResponse = await fetch('/api/vehicles/rental-types');
+            if (rentalTypesResponse.ok) {
+              const rentalTypesData = await rentalTypesResponse.json();
+              setRentalTypes(rentalTypesData);
+            } else {
+              // Fallback to mock data
+              setRentalTypes([
+                'Hourly', 'Half Day', 'Full Day', 'Weekly', 'Monthly', 
+                'Airport Transfer', 'One-way Trip', 'Round Trip'
+              ]);
+            }
+            
+            // Fetch fuel types
+            const fuelTypesResponse = await fetch('/api/vehicles/fuel-types');
+            if (fuelTypesResponse.ok) {
+              const fuelTypesData = await fuelTypesResponse.json();
+              setFuelTypes(fuelTypesData);
+            } else {
+              // Fallback to mock data
+              setFuelTypes([
+                'Petrol', 'Diesel', 'Electric', 'Hybrid', 'CNG', 'LPG'
+              ]);
+            }
+            
+            // Fetch transmissions
+            const transmissionsResponse = await fetch('/api/vehicles/transmissions');
+            if (transmissionsResponse.ok) {
+              const transmissionsData = await transmissionsResponse.json();
+              setTransmissions(transmissionsData);
+            } else {
+              // Fallback to mock data
+              setTransmissions([
+                'Automatic', 'Manual', 'Semi-automatic', 'CVT'
+              ]);
+            }
+            
+            // Fetch vehicle add-ons
+            const vehicleAddonsResponse = await fetch('/api/vehicles/features');
+            if (vehicleAddonsResponse.ok) {
+              const vehicleAddonsData = await vehicleAddonsResponse.json();
+              setVehicleAddons(vehicleAddonsData);
+            } else {
+              // Fallback to mock data
+              setVehicleAddons([
+                { id: '1', name: 'GPS Navigation' },
+                { id: '2', name: 'Child Seat' },
+                { id: '3', name: 'Additional Driver' },
+                { id: '4', name: 'Roof Rack' },
+                { id: '5', name: 'Bluetooth Audio' },
+                { id: '6', name: 'Full Insurance' },
+                { id: '7', name: 'Unlimited Mileage' },
+                { id: '8', name: 'Roadside Assistance' },
+                { id: '9', name: 'Winter Tires' },
+                { id: '10', name: 'Ski Rack' }
+              ]);
+            }
+          } catch (error) {
+            console.error('Error fetching transport data:', error);
+            toast({
+              title: 'Error',
+              description: 'Failed to load transport options. Using default values.',
+              variant: 'destructive'
+            });
+          }
+        } else if (bookingType === 'wellness') {
+          try {
+            // Fetch time slots
+            const timeSlotsResponse = await fetch('/api/wellness/time-slots');
+            if (timeSlotsResponse.ok) {
+              const timeSlotsData = await timeSlotsResponse.json();
+              setTimeSlots(timeSlotsData);
+            } else {
+              // Fallback to mock data
+              setTimeSlots([
+                '09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00', 
+                '14:00 - 15:00', '15:00 - 16:00', '16:00 - 17:00', '17:00 - 18:00'
+              ]);
+            }
+            
+            // Fetch therapists
+            const therapistsResponse = await fetch('/api/wellness/therapists');
+            if (therapistsResponse.ok) {
+              const therapistsData = await therapistsResponse.json();
+              setTherapists(therapistsData);
+            } else {
+              // Fallback to mock data
+              setTherapists([
+                'No Preference', 'Sarah', 'John', 'Emily', 'Michael', 'Anna'
+              ]);
+            }
+          } catch (error) {
+            console.error('Error fetching wellness data:', error);
+            toast({
+              title: 'Error',
+              description: 'Failed to load wellness options. Using default values.',
+              variant: 'destructive'
+            });
+          }
+        } else if (bookingType === 'tour') {
+          try {
+            // Fetch tour add-ons
+            const tourAddonsResponse = await fetch('/api/tours/add-ons');
+            if (tourAddonsResponse.ok) {
+              const tourAddonsData = await tourAddonsResponse.json();
+              setTourAddons(tourAddonsData);
+            } else {
+              // Fallback to mock data
+              setTourAddons([
+                { id: '1', name: 'Lunch Included', price: 15 },
+                { id: '2', name: 'Professional Photos', price: 25 },
+                { id: '3', name: 'Transportation', price: 30 },
+                { id: '4', name: 'Personal Guide', price: 50 },
+                { id: '5', name: 'Souvenir Pack', price: 20 }
+              ]);
+            }
+          } catch (error) {
+            console.error('Error fetching tour data:', error);
+            toast({
+              title: 'Error',
+              description: 'Failed to load tour options. Using default values.',
+              variant: 'destructive'
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching form data:', error);
@@ -245,6 +470,29 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
     }
   };
   
+  // Function to watch form value changes and update price
+  const updatePriceFromFormValues = () => {
+    if (bookingType === 'stay' && form) {
+      const stayType = form.getValues('stayType');
+      const checkInDate = form.getValues('checkInDate');
+      const checkOutDate = form.getValues('checkOutDate');
+      const adults = Number(form.getValues('adults') || '1');
+      const children = Number(form.getValues('children') || '0');
+      
+      if (stayType && checkInDate && checkOutDate) {
+        calculatePrice(stayType, checkInDate, checkOutDate, adults, children);
+      }
+    }
+  };
+  
+  // Add useEffect to calculate price when stay booking form values change
+  // Show calculated price and update form value
+  useEffect(() => {
+    if (calculatedPrice !== null && form) {
+      form.setValue('totalPrice', calculatedPrice.toString());
+    }
+  }, [calculatedPrice]);
+  
   // Get default values based on booking type
   const getDefaultValues = () => {
     const baseDefaults = {
@@ -262,6 +510,10 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
           ...baseDefaults,
           stayType: '',
           propertyType: '',
+          propertySpace: '',
+          theme: '',
+          checkInDate: undefined,
+          checkOutDate: undefined,
           adults: '1',
           children: '0',
           amenities: [],
@@ -517,7 +769,10 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
                 <FormItem>
                   <FormLabel>Stay Type</FormLabel>
                   <Select 
-                    onValueChange={field.onChange} 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setTimeout(updatePriceFromFormValues, 100);
+                    }} 
                     defaultValue={field.value}
                   >
                     <FormControl>
@@ -568,6 +823,62 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
             
             <FormField
               control={form.control}
+              name="propertySpace"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Property Space</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {propertySpaces.map((space, index) => (
+                        <SelectItem key={index} value={space}>
+                          {space}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="theme"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Theme</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a theme" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {themes.map((theme, index) => (
+                        <SelectItem key={index} value={theme}>
+                          {theme}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="checkInDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -592,7 +903,10 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setTimeout(updatePriceFromFormValues, 100);
+                        }}
                         disabled={(date) => date < new Date()}
                         initialFocus
                       />
@@ -629,7 +943,10 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setTimeout(updatePriceFromFormValues, 100);
+                        }}
                         disabled={(date) => {
                           const checkInDate = form.getValues('checkInDate');
                           return checkInDate && date < checkInDate;
@@ -650,7 +967,15 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
                 <FormItem>
                   <FormLabel>Number of Adults</FormLabel>
                   <FormControl>
-                    <Input type="number" min="1" {...field} />
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      {...field} 
+                      onChange={(e) => {
+                        field.onChange(e);
+                        setTimeout(updatePriceFromFormValues, 100);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -664,8 +989,50 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
                 <FormItem>
                   <FormLabel>Number of Children</FormLabel>
                   <FormControl>
-                    <Input type="number" min="0" {...field} />
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      {...field} 
+                      onChange={(e) => {
+                        field.onChange(e);
+                        setTimeout(updatePriceFromFormValues, 100);
+                      }}
+                    />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="amenities"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Amenities</FormLabel>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {amenities.map((amenity) => (
+                      <div key={amenity.id} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`amenity-${amenity.id}`}
+                          checked={field.value?.includes(amenity.id)}
+                          onCheckedChange={(checked) => {
+                            const currentValue = field.value || [];
+                            const updatedValue = checked
+                              ? [...currentValue, amenity.id]
+                              : currentValue.filter(id => id !== amenity.id);
+                            field.onChange(updatedValue);
+                          }}
+                        />
+                        <label
+                          htmlFor={`amenity-${amenity.id}`}
+                          className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {amenity.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

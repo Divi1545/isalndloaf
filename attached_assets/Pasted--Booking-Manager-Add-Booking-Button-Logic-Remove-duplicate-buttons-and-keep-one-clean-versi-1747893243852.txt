@@ -1,0 +1,128 @@
+// ✅ Booking Manager: Add Booking Button Logic
+// Remove duplicate buttons and keep one clean version:
+// Final Button:
+// \<button onClick={() => setShowCategorySelector(true)}>Add Booking</button>
+
+// When clicked, show booking category options:
+// const \[showCategorySelector, setShowCategorySelector] = useState(false);
+// if (showCategorySelector) showModal with options below:
+
+/\* Booking Category Modal Structure:
+
+* Stay
+* Transport
+* Health & Wellness
+* Tours
+* Products
+  \*/
+
+// On category selection, navigate to respective route:
+// \<Route path="/vendor/add-booking/stay" element={<AddStayBookingForm />} />
+// \<Route path="/vendor/add-booking/transport" element={<AddTransportBookingForm />} />
+// \<Route path="/vendor/add-booking/wellness" element={<AddWellnessBookingForm />} />
+// \<Route path="/vendor/add-booking/tour" element={<AddTourBookingForm />} />
+// \<Route path="/vendor/add-booking/product" element={<AddProductBookingForm />} />
+
+// ✅ Booking Forms (Details Per Category)
+
+// --- Stay Booking Form ---
+// Fields: Guest Name, Email, Phone, Stay Type, Property Type, Property Space, Theme, Check-In, Check-Out, Adults, Children, Amenities (multi-select), Total Price, Notes
+// Dropdowns:
+// - Stay Type: fetch from /api/stay/types
+// - Property Type: /api/stay/property-types
+// - Property Space: /api/stay/property-spaces
+// - Themes: /api/stay/themes
+// - Amenities: /api/stay/amenities
+// - Auto-fetch Pricing from Pricing Engine based on selected stay type and dates
+// POST to: /api/bookings/stay
+
+// --- Transport Booking Form ---
+// Fields: Guest Name, Email, Phone, Vehicle Type, Rental Type, Fuel Type, Transmission, Pickup Location, Drop Location, Start Date, End Date, Hours/Days, Add-ons (multi-select), Total Price, Notes
+// Dropdowns:
+// - Vehicle Type: /api/vehicles/types
+// - Rental Type: /api/vehicles/rental-types
+// - Fuel Type: /api/vehicles/fuel-types
+// - Transmission: /api/vehicles/transmissions
+// - Add-ons: /api/vehicles/features
+// POST to: /api/bookings/transport
+
+// --- Health & Wellness Booking Form ---
+// Fields: Client Name, Email, Phone, Service Type, Preferred Date, Time Slot, Number of People, Therapist Preference, Notes, Total Price
+// Dropdowns: Services fetched from /api/services?category=wellness
+// POST to: /api/bookings/wellness
+
+// --- Tours Booking Form ---
+// Fields: Customer Name, Email, Phone, Tour Package, Start Date, Group Size, Add-on Options, Total Price, Notes
+// Dropdowns: Tours fetched from /api/services?category=tour
+// POST to: /api/bookings/tour
+
+// --- Product Order Booking Form ---
+// Fields: Buyer Name, Email, Phone, Product, Quantity, Shipping Address, Delivery Date, Total Cost, Notes
+// Dropdowns: Products from /api/products/vendor
+// POST to: /api/bookings/product
+
+// ✅ Calendar Sync
+// Associated Service Dropdown should fetch all stay-type listings:
+// fetch(`/api/vendor/services?type=stay`).then(...) => populate dropdown
+
+// Sync All Calendars Button:
+// <button onClick={handleSyncAllCalendars}>Sync All Calendars</button>
+// Function:
+// async function handleSyncAllCalendars() {
+//   await fetch('/api/calendar/sync-all', { method: 'POST' })
+//   showToast('Sync started for all connected calendars');
+// }
+
+// ✅ Pricing Engine
+// Update All Prices Button:
+// <button onClick={handleUpdateAllPrices}>Update All Prices</button>
+// Function:
+// const handleUpdateAllPrices = async () => {
+//   await fetch('/api/pricing/update-all', { method: 'POST' });
+//   toast.success('All pricing updated');
+// };
+
+// Save Changes Button:
+// <button onClick={handleSaveChanges}>Save Changes</button>
+// Function:
+// const handleSaveChanges = async () => {
+//   const payload = {...currentPricingSettings};
+//   await fetch('/api/pricing/save', {
+//     method: 'POST',
+//     body: JSON.stringify(payload),
+//     headers: { 'Content-Type': 'application/json' },
+//   });
+//   toast.success('Pricing saved successfully');
+// };
+
+// Room Dropdown Options:
+// fetch(`/api/stay/types`) => return \[
+//   'One Room', 'Double Bed', 'Twin Room', 'Triple Room', 'Family Room', 'Deluxe Room', 'Suite', 'Junior Suite', 'Studio', 'Entire Villa', 'Entire Apartment', 'Private Cottage', 'Shared Dorm', 'Capsule Room', 'Tent', 'Bungalow', 'Chalet', 'Houseboat', 'Cabana', 'Treehouse', 'Container Home', 'Dome', 'Glamping Tent', 'Farm Stay', 'Luxury Suite', 'Poolside Room', 'Ocean View Room', 'Lakefront Room', 'Mountain View Room'
+// ]
+
+// Edit Room Button:
+// \<button onClick={() => navigate("/vendor/edit-room")}>Edit Room</button>
+
+// ✅ Add New Activity Button
+// \<button onClick={() => navigate("/vendor/add-activity")}>Add New Activity</button>
+// Route:
+// \<Route path="/vendor/add-activity" element={<AddActivityPage />} />
+
+// ✅ Transport Dropdown Expansion
+// Vehicle Type Dropdown:
+// fetch(`/api/vehicles/types`) => return \[
+//   'Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Pickup Truck', 'Van / Mini Van', '4x4 / Off-road', 'Jeep', 'Luxury Car', 'Classic Car', 'Electric Vehicle', 'Hybrid', 'Limousine', 'Tuk Tuk', 'Motorbike / Scooter', 'Bicycle', 'Campervan / RV', 'Bus / Mini Bus'
+// ]
+
+// Edit Vehicle Button:
+// \<button onClick={() => navigate("/vendor/edit-vehicle")}>Edit Vehicle</button>
+
+// ✅ Profile Settings: Connect Marketplace Button
+// Connect Button:
+// <button onClick={handleConnectMarketplace}>Connect to Marketplace</button>
+// Function:
+// const handleConnectMarketplace = async () => {
+//   const res = await fetch('/api/vendor/connect-marketplace', { method: 'POST' });
+//   if (res.ok) toast.success("Connected successfully");
+//   else toast.error("Failed to connect");
+// };
