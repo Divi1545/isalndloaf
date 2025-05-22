@@ -1,0 +1,73 @@
+// ✅ GO-LIVE VERIFICATION CHECKLIST (REPLIT DEPLOYMENT)
+
+// 🔐 AUTHENTICATION & SESSION
+// ✅ Token securely stored in localStorage
+// ✅ Session preserved on refresh, redirects to correct dashboard
+// 🟡 Token expiry/auto-refresh not yet implemented (optional)
+
+// 📦 BOOKINGS
+// ✅ /api/bookings receives Stay, Transport, Tour, Wellness, Product
+// ✅ useStayPricing auto-calculates Stay pricing
+// ✅ Manual price entry available for other categories
+// ✅ vendorId is attached to each booking
+
+// 💸 PRICING ENGINE
+// ✅ 'Update All Prices' triggers /api/pricing/update-all
+// ✅ 'Save Changes' persists pricing via /api/pricing/save
+// ✅ Dropdowns dynamically pull pricing by Stay Type and Vehicle Type
+// ✅ Vehicle dropdown expanded with 19 options
+// ✅ Transport UI improved and Add Vehicle/Activity buttons added
+
+// 🔍 DATABASE & STORAGE
+// ✅ Data stored using MemStorage (collections with document IDs)
+// 🟡 PostgreSQL migration planned – structure prepared for transition
+// ✅ vendorId-based filtering enforced (frontend + backend)
+
+// 🧭 ROUTING
+// ✅ All critical routes load properly:
+//    /vendor/add-booking, /vendor/add-booking/stay, /vendor/edit-room, /vendor/edit-vehicle
+// ✅ Category-based form fields render dynamically
+
+// 🗓️ CALENDAR SYNC
+// ✅ Sync All Calendars POSTs to /api/calendar/sync-all
+// ✅ Booking statuses (Booked, Pending, Available) are color-coded in UI
+// ✅ External iCal data saved and rendered correctly
+
+// 🛒 PRODUCT, TOUR, WELLNESS BOOKINGS
+// ✅ All booking types save fields and total price properly
+// ✅ Manual price input editable before submission
+// ✅ Booking Manager separates each category correctly
+
+// 📤 MARKETPLACE & VENDOR CONTROLS
+// ✅ Connect to Marketplace triggers correct POST with toast
+// ✅ Vendors see/edit only their own listings/bookings
+// ✅ First-time vendor accounts initialize empty dashboards
+// 🟡 Vendors manually add categories (auto-assign optional future feature)
+
+// 🚦 PRODUCTION STATUS
+// 🟡 Backend may sleep on Replit after inactivity (Always On upgrade advised)
+// ✅ All fetch() calls wrapped with try/catch + proper error logging
+// ✅ CORS + headers configured for external APIs
+// ✅ Price sync and invalid input errors trigger toast + fallback logic
+
+// ✅ GO FOR LAUNCH: You are now ready to onboard real vendors!
+
+// 📑 VENDOR ONBOARDING SCRIPT
+// Welcome to IslandLoaf! Here's how to get started:
+// 1. Log in with your vendor account
+// 2. Head to 'Add Booking' to create your first Stay, Transport, or Tour
+// 3. Set your pricing via the 'Pricing Engine'
+// 4. Use 'Sync Calendar' to block availability from external platforms
+// 5. Go to 'Profile' → 'Connect to Marketplace' to make your listings go public
+
+// 🌐 POSTGRESQL MIGRATION PREP
+// - Replace MemStorage with PostgreSQL using pg or Prisma
+// - Define models for: vendors, bookings, services, pricing, calendar\_blocks
+// - Auto-migrate booking data from in-memory using a one-time script
+// - Update fetch logic to use SQL joins instead of direct document refs
+
+// 📣 LAUNCH ANNOUNCEMENT TEMPLATE
+// "🌴 IslandLoaf is now LIVE! Vendors across Sri Lanka can now list their stays, transport, wellness packages and more — and get booked in real-time."
+// "🧭 Whether you're a homestay owner, tuk tuk driver, or adventure guide — this is your new home."
+// "🎉 Head to islandloaf.com and sign up to get listed."
+// #islandloaf #traveltech #srilankatourism #getbooked

@@ -1,0 +1,55 @@
+// ✅ Pricing Engine Integration (Stay)
+// useStayPricing hook auto-applies base rate based on Stay Type, Check-in/out, Guest Count
+// Example usage in Stay Booking Form:
+// const { price, recalculate } = useStayPricing({
+//   stayType, checkIn, checkOut, adults, children
+// });
+// Total price updates live as fields change
+
+// Editable price field fallback (e.g. in Tour, Product, Transport):
+// \<input type="number" value={manualPrice} onChange={(e) => setManualPrice(e.target.value)} />
+
+// Save Changes Button for manual forms:
+// <button onClick={handleSaveBooking}>Save Booking</button>
+// const handleSaveBooking = async () => {
+//   await fetch('/api/bookings', {
+//     method: 'POST',
+//     body: JSON.stringify({ ...formData, totalPrice: price || manualPrice }),
+//     headers: { 'Content-Type': 'application/json' },
+//   });
+//   toast.success("Booking saved");
+// };
+
+// Update All Prices Button:
+// <button onClick={handleUpdateAllPrices}>Update All Prices</button>
+// const handleUpdateAllPrices = async () => {
+//   await fetch('/api/pricing/update-all', { method: 'POST' });
+//   toast.success('All pricing updated');
+// };
+
+// Save All Pricing Changes:
+// <button onClick={handleSaveChanges}>Save Changes</button>
+// const handleSaveChanges = async () => {
+//   const payload = {...currentPricingSettings};
+//   await fetch('/api/pricing/save', {
+//     method: 'POST',
+//     body: JSON.stringify(payload),
+//     headers: { 'Content-Type': 'application/json' },
+//   });
+//   toast.success('Pricing saved successfully');
+// };
+
+// Room Dropdown Options:
+// fetch(`/api/stay/types`) => return \[
+//   'One Room', 'Double Bed', 'Twin Room', 'Triple Room', 'Family Room', 'Deluxe Room', 'Suite', 'Junior Suite', 'Studio', 'Entire Villa', 'Entire Apartment', 'Private Cottage', 'Shared Dorm', 'Capsule Room', 'Tent', 'Bungalow', 'Chalet', 'Houseboat', 'Cabana', 'Treehouse', 'Container Home', 'Dome', 'Glamping Tent', 'Farm Stay', 'Luxury Suite', 'Poolside Room', 'Ocean View Room', 'Lakefront Room', 'Mountain View Room', 'Hilltop Cottage', 'Lake Bungalow', 'Jungle Cabin', 'Mountain Lodge', 'Island Bungalow', 'Forest Retreat', 'Tent Camp', 'Treehouse Stay', 'Boutique Room', 'Farm Stay', 'Lake View Cottage'
+// ];
+
+// Vehicle Type Dropdown:
+// fetch(`/api/vehicles/types`) => return \[
+//   'Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Pickup Truck', 'Van / Mini Van', '4x4 / Off-road', 'Jeep', 'Luxury Car', 'Classic Car', 'Electric Vehicle', 'Hybrid', 'Limousine', 'Tuk Tuk', 'Motorbike / Scooter', 'Bicycle', 'Campervan / RV', 'Bus / Mini Bus'
+// ];
+
+// PostgreSQL Migration Note:
+// Current DB uses MemStorage (temporary)
+// Future roadmap includes switching to persistent PostgreSQL
+// Define tables: vendors, bookings, services, pricing, availability

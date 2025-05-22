@@ -1,0 +1,53 @@
+// ✅ GO-LIVE VERIFICATION CHECKLIST (REPLIT DEPLOYMENT)
+
+// 🔐 AUTHENTICATION & SESSION
+// - Is token securely stored in localStorage/sessionStorage?
+// - Does refresh preserve login session and redirect to dashboard?
+// - Is there a token expiry/re-authentication system?
+
+// 📦 BOOKINGS
+// - Does /api/bookings correctly receive data for Stay, Transport, Tour, Wellness, Product?
+// - Is pricing pulled automatically for Stay via useStayPricing?
+// - For other categories, can price be manually entered and saved?
+// - Is vendorId included in booking save logic?
+
+// 💸 PRICING ENGINE
+// - Does 'Update All Prices' trigger /api/pricing/update-all?
+// - Does 'Save Changes' persist prices via /api/pricing/save?
+// - Can prices be pulled dynamically by Stay Type or Vehicle Type?
+
+// 🔍 DATABASE & STORAGE
+// - Is booking data stored under correct category (e.g., bookings.stay\[])?
+// - Will transition to PostgreSQL preserve schema and data structure?
+// - Are vendors scoped to their own data with vendorId filtering?
+
+// 🧭 ROUTING
+// - Do these routes render properly on page load?
+//   /vendor/add-booking
+//   /vendor/add-booking/stay
+//   /vendor/edit-room
+//   /vendor/edit-vehicle
+// - Does category-specific logic (Stay, Transport, etc.) show proper fields?
+
+// 🗓️ CALENDAR SYNC
+// - Does Sync All Calendars POST to /api/calendar/sync-all?
+// - Are blocked dates saved and rendered in UI?
+// - Are connected calendars correctly updating?
+
+// 🛒 PRODUCT, TOUR, WELLNESS BOOKINGS
+// - Do these booking types save correct fields?
+// - Is total price editable before save?
+// - Are they separated correctly in Booking Manager display?
+
+// 📤 MARKETPLACE & VENDOR CONTROLS
+// - Does 'Connect to Marketplace' button trigger correct POST?
+// - Do vendors only see and edit their own listings/bookings?
+// - Is default dashboard initialized for first-time vendors?
+
+// 🚦 PRODUCTION STATUS
+// - Is Replit kept Always On or deployed to stable cloud env?
+// - Are fetch() calls properly wrapped with error handling?
+// - Are CORS + headers set correctly for external integrations?
+// - Are booking failures, price sync errors logged or handled?
+
+// ✅ IF ALL ABOVE ARE GREEN: GO LIVE WITH REAL VENDORS

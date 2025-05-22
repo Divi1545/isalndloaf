@@ -1,0 +1,41 @@
+// ✅ AUTH & SESSION
+// 1. Is user session (JWT or token) stored in localStorage or sessionStorage?
+// 2. After refresh, does the user stay logged in and land on correct page?
+
+// ✅ BOOKINGS SYSTEM
+// 3. When creating a booking from /vendor/add-booking, does it POST to /api/bookings/create?
+// 4. Does it correctly categorize booking under: Stay / Transport / Product / Wellness / Tour?
+// 5. Is the price auto-calculated based on pricing engine or is it manual?
+
+// ✅ DATABASE PATH
+// 6. Are bookings saved in MongoDB or another DB? Can you show the full path (e.g. bookings → stay → bookingID)?
+// 7. Is vendorID automatically tied to the booking during creation?
+
+// ✅ PRICE ENGINE CONNECTION
+// 8. When a Stay is selected in booking, does the price auto-fill from the pricing engine logic?
+// 9. Can discounts and extras be included in the total price calculation?
+
+// ✅ ROUTE CHECK
+// 10. Do the following pages work on refresh or direct load:
+//     - /vendor/add-booking
+//     - /vendor/add-booking/stay
+//     - /vendor/add-booking/transport
+//     - /vendor/edit-room
+//     - /vendor/edit-vehicle
+
+// ✅ CALENDAR SYNC
+// 11. When syncing Booking.com, Airbnb, etc., are blocked dates saved in Google Sheets or database?
+// 12. Do they reflect visually on the calendar (Booked, Pending, Available)?
+
+// ✅ VENDOR ONBOARDING
+// 13. When a new vendor signs up, is a default permission + empty dashboard created?
+// 14. Can vendors see only their own bookings, pricing, and availability?
+// 15. Are their service categories (Stay, Tours, etc.) auto-assigned during setup?
+
+// ✅ ERROR & FAILOVER
+// 16. If a vendor enters a duplicate or invalid booking, do they see an error toast?
+// 17. If pricing is not set for a room, does it block submission or fallback to manual entry?
+
+// ✅ BACKEND STATUS CHECK
+// 18. Is the backend running continuously in Replit deployment, or does it sleep?
+// 19. Does every fetch() use async/await with proper error handling and response logging?
