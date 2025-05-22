@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,9 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UpcomingBookings from "@/components/dashboard/upcoming-bookings";
 import { useLocation } from "wouter";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog";
 
 const BookingManager = () => {
   const [_, setLocation] = useLocation();
+  const [showCategorySelector, setShowCategorySelector] = useState(false);
+
+  // Handle booking category selection
+  const handleCategorySelect = (category: string) => {
+    setShowCategorySelector(false);
+    setLocation(`/vendor/add-booking/${category}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -16,7 +31,7 @@ const BookingManager = () => {
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <Button 
             variant="default" 
-            onClick={() => setLocation("/vendor/add-booking")}
+            onClick={() => setShowCategorySelector(true)}
             className="w-full sm:w-auto"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
@@ -25,6 +40,38 @@ const BookingManager = () => {
             </svg>
             Add Booking
           </Button>
+          
+          {/* Booking Category Selection Modal */}
+          <Dialog open={showCategorySelector} onOpenChange={setShowCategorySelector}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Select Booking Category</DialogTitle>
+                <DialogDescription>
+                  Choose the type of booking you'd like to create
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+                {[
+                  { id: 'stay', name: 'Stay', icon: '🏠', desc: 'Accommodations and lodging' },
+                  { id: 'transport', name: 'Transport', icon: '🚗', desc: 'Vehicle rentals and transfers' },
+                  { id: 'wellness', name: 'Health & Wellness', icon: '💆', desc: 'Spa, yoga, and wellness services' },
+                  { id: 'tour', name: 'Tours', icon: '🧭', desc: 'Guided tours and experiences' },
+                  { id: 'product', name: 'Products', icon: '🛍️', desc: 'Physical goods and merchandise' }
+                ].map(category => (
+                  <Button
+                    key={category.id}
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center justify-center text-center"
+                    onClick={() => handleCategorySelect(category.id)}
+                  >
+                    <span className="text-2xl mb-2">{category.icon}</span>
+                    <span className="font-medium">{category.name}</span>
+                    <span className="text-xs text-muted-foreground mt-1">{category.desc}</span>
+                  </Button>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
           <div className="relative w-full sm:w-[300px]">
             <Input 
               type="text"

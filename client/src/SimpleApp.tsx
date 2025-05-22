@@ -299,7 +299,29 @@ const SimpleApp = () => {
     const pathname = window.location.pathname;
     
     // Handle vendor form routes
-    if (pathname === "/vendor/add-booking") {
+    if (pathname.startsWith("/vendor/add-booking")) {
+      // Extract the booking category if available
+      const category = pathname.split('/')[3]; // /vendor/add-booking/[category]
+      
+      if (category) {
+        // Return the specific booking form based on category
+        switch (category) {
+          case 'stay':
+            return <AddBookingForm bookingType="stay" title="Add Stay Booking" />;
+          case 'transport':
+            return <AddBookingForm bookingType="transport" title="Add Transport Booking" />;
+          case 'wellness':
+            return <AddBookingForm bookingType="wellness" title="Add Health & Wellness Booking" />;
+          case 'tour':
+            return <AddBookingForm bookingType="tour" title="Add Tour Booking" />;
+          case 'product':
+            return <AddBookingForm bookingType="product" title="Add Product Order" />;
+          default:
+            return <AddBookingForm />;
+        }
+      }
+      
+      // Generic booking form if no category is specified
       return <AddBookingForm />;
     }
     
