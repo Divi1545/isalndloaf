@@ -1,0 +1,52 @@
+## How to Download IslandLoaf Application
+
+There are several ways to download the IslandLoaf application:
+
+### Option 1: Download using Replit's built-in feature
+
+1. In the Replit interface, look for the Files panel on the left
+2. Click on the three-dot menu (⋮) at the top of the Files panel
+3. Select "Download as ZIP"
+4. This will download all project files to your computer
+
+### Option 2: Clone via Git
+
+If you have Git installed:
+
+1. Click on the Version Control icon in Replit (usually found in the left sidebar)
+2. Find the Git repository URL
+3. Open your terminal and run:
+   ```
+   git clone [repository URL]
+   ```
+
+### Option 3: Download Individual Files
+
+For essential files only:
+
+1. Main application files:
+   - client/src/ (frontend code)
+   - server/ (backend API)
+   - shared/schema.ts (data models)
+   - prisma/schema.prisma (database schema)
+   - README_onboarding.md (documentation)
+   - package.json (dependencies)
+   - .env (environment configuration)
+
+2. Download each file individually by clicking on it in the Files panel and using "Save As" in your browser
+
+### After Downloading
+
+1. Install dependencies:
+   ```
+   npm install
+   ```
+
+2. Configure environment variables:
+   - Copy `.env.example` to `.env`
+   - Set DATABASE_URL and other required variables
+
+3. Start the application:
+   ```
+   npm run dev
+   ```
