@@ -49,4 +49,10 @@ For essential files only:
 3. Start the application:
    ```
    npm run dev
-   ```
+   ```git add .
+git commit -m "Initial commit of IslandLoaf"
+git branch -M main
+git remote add origin https://github.com/Divi1545/islandloaf.git
+git push -u origin main
+
+
