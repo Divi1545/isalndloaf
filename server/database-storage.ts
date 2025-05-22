@@ -1,7 +1,5 @@
-import { eq, and, gte, lte } from "drizzle-orm";
-import { db } from "./db";
-import { IStorage } from "./storage";
-import * as schema from "@shared/schema";
+import { IStorage } from './storage';
+import prisma from './prisma-client';
 import {
   User, InsertUser,
   Service, InsertService,
@@ -10,267 +8,360 @@ import {
   Booking, InsertBooking,
   Notification, InsertNotification,
   MarketingContent, InsertMarketingContent
-} from "@shared/schema";
+} from '@shared/schema';
 
+/**
+ * PostgreSQL implementation of the IStorage interface
+ */
 export class DatabaseStorage implements IStorage {
+  
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(schema.users).where(eq(schema.users.id, id));
-    return user;
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+    return user || undefined;
   }
-
+  
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(schema.users).where(eq(schema.users.username, username));
-    return user;
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
+    return user || undefined;
   }
-
+  
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(schema.users).where(eq(schema.users.email, email));
-    return user;
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+    return user || undefined;
   }
-
+  
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(schema.users).values(user).returning();
-    return newUser;
+    // Default categories based on business type if none provided
+    if (!user.categoriesAllowed || (Array.isArray(user.categoriesAllowed) && user.categoriesAllowed.length === 0)) {
+      // Set default categories based on business type
+      if (user.role === 'vendor') {
+        let categoriesAllowed = ['stays', 'transport', 'tours'];
+        
+        switch(user.businessType) {
+          case 'stays':
+          case 'accommodation':
+            categoriesAllowed = ['stays', 'tours', 'wellness'];
+            break;
+          case 'transport':
+            categoriesAllowed = ['transport', 'tours'];
+            break;
+          case 'tours':
+          case 'activities':
+            categoriesAllowed = ['tours', 'tickets', 'transport'];
+            break;
+          case 'wellness':
+            categoriesAllowed = ['wellness', 'tours'];
+            break;
+          case 'products':
+          case 'retail':
+            categoriesAllowed = ['products', 'tickets'];
+            break;
+        }
+        
+        user.categoriesAllowed = categoriesAllowed;
+      }
+    }
+    
+    return await prisma.user.create({
+      data: user
+    });
   }
-
+  
   async getUsers(): Promise<User[]> {
-    return await db.select().from(schema.users);
+    return await prisma.user.findMany();
   }
-
+  
   // Service operations
   async getService(id: number): Promise<Service | undefined> {
-    const [service] = await db.select().from(schema.services).where(eq(schema.services.id, id));
-    return service;
+    const service = await prisma.service.findUnique({
+      where: { id }
+    });
+    return service || undefined;
   }
-
+  
   async getServices(userId: number): Promise<Service[]> {
-    return await db.select().from(schema.services).where(eq(schema.services.userId, userId));
+    return await prisma.service.findMany({
+      where: { userId }
+    });
   }
-
+  
   async createService(service: InsertService): Promise<Service> {
-    const [newService] = await db.insert(schema.services).values(service).returning();
-    return newService;
+    return await prisma.service.create({
+      data: service
+    });
   }
-
+  
   async updateService(id: number, serviceUpdate: Partial<InsertService>): Promise<Service | undefined> {
-    const [updatedService] = await db
-      .update(schema.services)
-      .set(serviceUpdate)
-      .where(eq(schema.services.id, id))
-      .returning();
-    return updatedService;
-  }
-
-  async deleteService(id: number): Promise<boolean> {
-    await db.delete(schema.services).where(eq(schema.services.id, id));
-    return true;
-  }
-
-  // Calendar events operations
-  async getCalendarEvents(userId: number, startDate?: Date, endDate?: Date): Promise<CalendarEvent[]> {
-    if (startDate && endDate) {
-      return await db
-        .select()
-        .from(schema.calendarEvents)
-        .where(
-          and(
-            eq(schema.calendarEvents.userId, userId),
-            gte(schema.calendarEvents.startDate, startDate),
-            lte(schema.calendarEvents.endDate, endDate)
-          )
-        );
-    } else {
-      return await db
-        .select()
-        .from(schema.calendarEvents)
-        .where(eq(schema.calendarEvents.userId, userId));
+    try {
+      return await prisma.service.update({
+        where: { id },
+        data: serviceUpdate
+      });
+    } catch (error) {
+      console.error(`Failed to update service ${id}:`, error);
+      return undefined;
     }
   }
-
+  
+  async deleteService(id: number): Promise<boolean> {
+    try {
+      await prisma.service.delete({
+        where: { id }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete service ${id}:`, error);
+      return false;
+    }
+  }
+  
+  // Calendar event operations
+  async getCalendarEvents(userId: number, startDate?: Date, endDate?: Date): Promise<CalendarEvent[]> {
+    const where: any = { userId };
+    
+    if (startDate && endDate) {
+      where.startDate = { gte: startDate };
+      where.endDate = { lte: endDate };
+    } else if (startDate) {
+      where.startDate = { gte: startDate };
+    } else if (endDate) {
+      where.endDate = { lte: endDate };
+    }
+    
+    return await prisma.calendarEvent.findMany({
+      where
+    });
+  }
+  
   async getCalendarEventsByService(serviceId: number): Promise<CalendarEvent[]> {
-    return await db
-      .select()
-      .from(schema.calendarEvents)
-      .where(eq(schema.calendarEvents.serviceId, serviceId));
+    return await prisma.calendarEvent.findMany({
+      where: { serviceId }
+    });
   }
-
+  
   async createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent> {
-    const [newEvent] = await db
-      .insert(schema.calendarEvents)
-      .values(event)
-      .returning();
-    return newEvent;
+    return await prisma.calendarEvent.create({
+      data: event
+    });
   }
-
+  
   async updateCalendarEvent(id: number, eventUpdate: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined> {
-    const [updatedEvent] = await db
-      .update(schema.calendarEvents)
-      .set(eventUpdate)
-      .where(eq(schema.calendarEvents.id, id))
-      .returning();
-    return updatedEvent;
+    try {
+      return await prisma.calendarEvent.update({
+        where: { id },
+        data: eventUpdate
+      });
+    } catch (error) {
+      console.error(`Failed to update calendar event ${id}:`, error);
+      return undefined;
+    }
   }
-
+  
   async deleteCalendarEvent(id: number): Promise<boolean> {
-    const result = await db
-      .delete(schema.calendarEvents)
-      .where(eq(schema.calendarEvents.id, id));
-    return result.count > 0;
+    try {
+      await prisma.calendarEvent.delete({
+        where: { id }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete calendar event ${id}:`, error);
+      return false;
+    }
   }
-
-  // Calendar sources operations
+  
+  // Calendar source operations
   async getCalendarSources(userId: number): Promise<CalendarSource[]> {
-    return await db
-      .select()
-      .from(schema.calendarSources)
-      .where(eq(schema.calendarSources.userId, userId));
+    return await prisma.calendarSource.findMany({
+      where: { userId }
+    });
   }
-
+  
   async createCalendarSource(source: InsertCalendarSource): Promise<CalendarSource> {
-    const [newSource] = await db
-      .insert(schema.calendarSources)
-      .values(source)
-      .returning();
-    return newSource;
+    return await prisma.calendarSource.create({
+      data: source
+    });
   }
-
+  
   async updateCalendarSource(id: number, sourceUpdate: Partial<InsertCalendarSource>): Promise<CalendarSource | undefined> {
-    const [updatedSource] = await db
-      .update(schema.calendarSources)
-      .set({ ...sourceUpdate, lastSynced: new Date() })
-      .where(eq(schema.calendarSources.id, id))
-      .returning();
-    return updatedSource;
+    try {
+      return await prisma.calendarSource.update({
+        where: { id },
+        data: sourceUpdate
+      });
+    } catch (error) {
+      console.error(`Failed to update calendar source ${id}:`, error);
+      return undefined;
+    }
   }
-
+  
   async deleteCalendarSource(id: number): Promise<boolean> {
-    const result = await db
-      .delete(schema.calendarSources)
-      .where(eq(schema.calendarSources.id, id));
-    return result.count > 0;
+    try {
+      await prisma.calendarSource.delete({
+        where: { id }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete calendar source ${id}:`, error);
+      return false;
+    }
   }
-
+  
   // Booking operations
   async getBooking(id: number): Promise<Booking | undefined> {
-    const [booking] = await db
-      .select()
-      .from(schema.bookings)
-      .where(eq(schema.bookings.id, id));
-    return booking;
+    const booking = await prisma.booking.findUnique({
+      where: { id }
+    });
+    return booking || undefined;
   }
-
+  
   async getBookings(userId: number): Promise<Booking[]> {
-    return await db
-      .select()
-      .from(schema.bookings)
-      .where(eq(schema.bookings.userId, userId));
+    return await prisma.booking.findMany({
+      where: { userId }
+    });
   }
-
+  
   async getRecentBookings(userId: number, limit: number): Promise<Booking[]> {
-    return await db
-      .select()
-      .from(schema.bookings)
-      .where(eq(schema.bookings.userId, userId))
-      .orderBy(schema.bookings.createdAt)
-      .limit(limit);
+    return await prisma.booking.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit
+    });
   }
-
+  
   async createBooking(booking: InsertBooking): Promise<Booking> {
-    const [newBooking] = await db
-      .insert(schema.bookings)
-      .values(booking)
-      .returning();
-    return newBooking;
+    // Ensure we have current date for createdAt and updatedAt
+    const now = new Date();
+    return await prisma.booking.create({
+      data: {
+        ...booking,
+        createdAt: booking.createdAt || now,
+        updatedAt: booking.updatedAt || now
+      }
+    });
   }
-
+  
   async updateBooking(id: number, bookingUpdate: Partial<InsertBooking>): Promise<Booking | undefined> {
-    const [updatedBooking] = await db
-      .update(schema.bookings)
-      .set({ ...bookingUpdate, updatedAt: new Date() })
-      .where(eq(schema.bookings.id, id))
-      .returning();
-    return updatedBooking;
+    try {
+      // Always update the updatedAt timestamp
+      return await prisma.booking.update({
+        where: { id },
+        data: {
+          ...bookingUpdate,
+          updatedAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error(`Failed to update booking ${id}:`, error);
+      return undefined;
+    }
   }
-
+  
   async deleteBooking(id: number): Promise<boolean> {
-    const result = await db
-      .delete(schema.bookings)
-      .where(eq(schema.bookings.id, id));
-    return result.count > 0;
+    try {
+      await prisma.booking.delete({
+        where: { id }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete booking ${id}:`, error);
+      return false;
+    }
   }
-
+  
   // Notification operations
   async getNotifications(userId: number): Promise<Notification[]> {
-    return await db
-      .select()
-      .from(schema.notifications)
-      .where(eq(schema.notifications.userId, userId))
-      .orderBy(schema.notifications.createdAt);
+    return await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
   }
-
+  
   async getUnreadNotifications(userId: number): Promise<Notification[]> {
-    return await db
-      .select()
-      .from(schema.notifications)
-      .where(eq(schema.notifications.userId, userId))
-      .where(eq(schema.notifications.read, false))
-      .orderBy(schema.notifications.createdAt);
+    return await prisma.notification.findMany({
+      where: { 
+        userId,
+        read: false
+      },
+      orderBy: { createdAt: 'desc' }
+    });
   }
-
+  
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    const [newNotification] = await db
-      .insert(schema.notifications)
-      .values(notification)
-      .returning();
-    return newNotification;
+    return await prisma.notification.create({
+      data: notification
+    });
   }
-
+  
   async markNotificationRead(id: number): Promise<boolean> {
-    const result = await db
-      .update(schema.notifications)
-      .set({ read: true })
-      .where(eq(schema.notifications.id, id));
-    return result.count > 0;
+    try {
+      await prisma.notification.update({
+        where: { id },
+        data: { read: true }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to mark notification ${id} as read:`, error);
+      return false;
+    }
   }
-
+  
   async deleteNotification(id: number): Promise<boolean> {
-    const result = await db
-      .delete(schema.notifications)
-      .where(eq(schema.notifications.id, id));
-    return result.count > 0;
+    try {
+      await prisma.notification.delete({
+        where: { id }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete notification ${id}:`, error);
+      return false;
+    }
   }
-
+  
   // Marketing content operations
   async getMarketingContents(userId: number): Promise<MarketingContent[]> {
-    return await db
-      .select()
-      .from(schema.marketingContents)
-      .where(eq(schema.marketingContents.userId, userId))
-      .orderBy(schema.marketingContents.createdAt);
+    return await prisma.marketingContent.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
   }
-
+  
   async createMarketingContent(content: InsertMarketingContent): Promise<MarketingContent> {
-    const [newContent] = await db
-      .insert(schema.marketingContents)
-      .values(content)
-      .returning();
-    return newContent;
+    return await prisma.marketingContent.create({
+      data: content
+    });
   }
-
+  
   async updateMarketingContent(id: number, contentUpdate: Partial<InsertMarketingContent>): Promise<MarketingContent | undefined> {
-    const [updatedContent] = await db
-      .update(schema.marketingContents)
-      .set(contentUpdate)
-      .where(eq(schema.marketingContents.id, id))
-      .returning();
-    return updatedContent;
+    try {
+      return await prisma.marketingContent.update({
+        where: { id },
+        data: contentUpdate
+      });
+    } catch (error) {
+      console.error(`Failed to update marketing content ${id}:`, error);
+      return undefined;
+    }
   }
-
+  
   async deleteMarketingContent(id: number): Promise<boolean> {
-    const result = await db
-      .delete(schema.marketingContents)
-      .where(eq(schema.marketingContents.id, id));
-    return result.count > 0;
+    try {
+      await prisma.marketingContent.delete({
+        where: { id }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete marketing content ${id}:`, error);
+      return false;
+    }
   }
 }
+
+// Create a singleton instance of the DatabaseStorage
+export const dbStorage = new DatabaseStorage();
