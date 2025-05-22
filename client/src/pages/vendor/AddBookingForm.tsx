@@ -1325,6 +1325,30 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
                 )}
               />
               
+              {/* Prominent Price Display for Stay Bookings */}
+              {bookingType === 'stay' && (
+                <div className="bg-primary/10 p-4 rounded-lg border border-primary/20 mb-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-medium">Calculated Price</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {isCalculating ? "Calculating..." : calculatedPrice === null ? "Complete the form to see price" : "Based on your selections"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-primary">
+                        {isCalculating ? (
+                          <span className="animate-pulse">Calculating...</span>
+                        ) : (
+                          calculatedPrice !== null && `$${calculatedPrice}`
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">All taxes included</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex justify-end gap-4">
                 <Button variant="outline" type="button" onClick={() => {
                   setLocation('/');
