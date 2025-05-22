@@ -82,7 +82,9 @@ const AddBookingForm = () => {
       });
       
       // Navigate back to the booking manager
-      setLocation('/dashboard/booking-manager');
+      setLocation('/');
+      // Set active tab to bookings via localStorage
+      localStorage.setItem('activeTab', 'bookings');
     } catch (error) {
       toast({
         title: 'Error',
@@ -96,7 +98,10 @@ const AddBookingForm = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Add New Booking</h1>
-        <Button variant="outline" onClick={() => setLocation('/dashboard/booking-manager')}>
+        <Button variant="outline" onClick={() => {
+          setLocation('/');
+          localStorage.setItem('activeTab', 'bookings');
+        }}>
           Cancel
         </Button>
       </div>
@@ -317,7 +322,10 @@ const AddBookingForm = () => {
               />
               
               <div className="flex justify-end gap-4">
-                <Button variant="outline" type="button" onClick={() => setLocation('/dashboard/booking-manager')}>
+                <Button variant="outline" type="button" onClick={() => {
+                  setLocation('/');
+                  localStorage.setItem('activeTab', 'bookings');
+                }}>
                   Cancel
                 </Button>
                 <Button type="submit">Create Booking</Button>

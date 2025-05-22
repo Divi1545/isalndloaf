@@ -241,7 +241,7 @@ const SimpleApp = () => {
   const [currentAdminPath, setCurrentAdminPath] = useState<string | null>(null);
   const [_, setLocation] = useLocation();
   
-  // Check for authentication on component mount
+  // Check for authentication and active tab on component mount
   useEffect(() => {
     // Retrieve authentication from localStorage
     const storedUserRole = localStorage.getItem("userRole");
@@ -249,6 +249,14 @@ const SimpleApp = () => {
     if (storedUserRole) {
       setIsLoggedIn(true);
       setUserRole(storedUserRole);
+      
+      // Check if there's an active tab stored in localStorage
+      const storedActiveTab = localStorage.getItem("activeTab");
+      if (storedActiveTab) {
+        setActiveLink(storedActiveTab);
+        // Clear the stored active tab after using it
+        localStorage.removeItem("activeTab");
+      }
     }
   }, []);
   
