@@ -20,7 +20,10 @@ const PricingEngine = () => {
     'Boutique Room', 'Farm Stay', 'Lake View Cottage', 'Seaside Retreat'
   ]);
   const [vehicleTypes, setVehicleTypes] = React.useState([
-    'Scooter Rental', 'Car Rental', 'Boat Tour', 'Van', 'Jeep', 'Luxury Car'
+    'Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Pickup Truck', 
+    'Van / Mini Van', '4x4 / Off-road', 'Jeep', 'Luxury Car', 'Classic Car', 
+    'Electric Vehicle', 'Hybrid', 'Limousine', 'Tuk Tuk', 'Motorbike / Scooter', 
+    'Bicycle', 'Campervan / RV', 'Bus / Mini Bus'
   ]);
   
   // Fetch room types on component mount
@@ -155,16 +158,28 @@ const PricingEngine = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button 
-                    variant="secondary"
-                    onClick={() => setLocation("/vendor/edit-room")}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path>
-                    </svg>
-                    Edit Room
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="secondary"
+                      onClick={() => setLocation("/vendor/edit-room")}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path>
+                      </svg>
+                      Edit Room
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setLocation("/vendor/add-activity")}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                      </svg>
+                      Add New Activity
+                    </Button>
+                  </div>
                 </div>
               </div>
               
@@ -397,16 +412,28 @@ const PricingEngine = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button 
-                    variant="secondary"
-                    onClick={() => setLocation("/vendor/edit-vehicle")}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path>
-                    </svg>
-                    Edit Vehicle
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="secondary"
+                      onClick={() => setLocation("/vendor/edit-vehicle")}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path>
+                      </svg>
+                      Edit Vehicle
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setLocation("/vendor/add-vehicle")}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                      </svg>
+                      Add New Vehicle
+                    </Button>
+                  </div>
                 </div>
               </div>
               
