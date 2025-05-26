@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -218,9 +219,15 @@ const VendorDetailDialog = ({ vendor }: { vendor: typeof vendors[0] }) => {
 };
 
 const VendorManagement = () => {
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [businessTypeFilter, setBusinessTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  const handleAddNewVendor = () => {
+    // Navigate to registration page to add new vendor
+    setLocation('/register');
+  };
   
   // Filter vendors based on search query and filters
   const filteredVendors = vendors.filter(vendor => {
@@ -242,7 +249,7 @@ const VendorManagement = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Vendor Management</h1>
-        <Button>
+        <Button onClick={handleAddNewVendor}>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
