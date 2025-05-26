@@ -414,10 +414,16 @@ const SimpleApp = () => {
                 Configure global platform settings, user permissions, and notification preferences.
               </p>
               <div className="flex gap-4">
-                <button className="px-4 py-2 bg-purple-600 text-white rounded-md">
+                <button 
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md"
+                  onClick={() => alert('General Settings functionality would be implemented here!')}
+                >
                   General Settings
                 </button>
-                <button className="px-4 py-2 bg-white border border-slate-200 rounded-md">
+                <button 
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-md"
+                  onClick={() => alert('User Management functionality would be implemented here!')}
+                >
                   User Management
                 </button>
               </div>
