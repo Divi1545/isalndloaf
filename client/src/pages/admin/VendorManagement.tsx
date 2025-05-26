@@ -225,6 +225,7 @@ const VendorManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   
   const handleAddNewVendor = () => {
+    console.log('Add New Vendor button clicked!');
     // For now, show a working alert, then navigate
     alert('Add New Vendor button works! In production, this would open the vendor registration form.');
     setLocation('/register');
