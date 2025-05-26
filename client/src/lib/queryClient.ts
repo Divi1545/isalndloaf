@@ -7,12 +7,25 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get the base URL for API calls
+const getBaseUrl = () => {
+  // In development (preview), use relative URLs
+  if (window.location.hostname === 'localhost' || window.location.hostname.includes('replit')) {
+    return '';
+  }
+  // For deployed domain, use the current origin
+  return window.location.origin;
+};
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const baseUrl = getBaseUrl();
+  const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : url;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +42,11 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const baseUrl = getBaseUrl();
+    const url = queryKey[0] as string;
+    const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : url;
+    
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 
