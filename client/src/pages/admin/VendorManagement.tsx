@@ -356,7 +356,15 @@ const VendorManagement = () => {
                       <div className="flex justify-center space-x-2">
                         <VendorDetailDialog vendor={vendor} />
                         
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            // Navigate to edit vendor page
+                            setLocation(`/admin/vendors/edit/${vendor.id}`);
+                          }}
+                        >
                           <span className="sr-only">Edit</span>
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -364,7 +372,17 @@ const VendorManagement = () => {
                           </svg>
                         </Button>
                         
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-red-500"
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete ${vendor.name}?`)) {
+                              // Add delete functionality here
+                              console.log(`Deleting vendor: ${vendor.id}`);
+                            }
+                          }}
+                        >
                           <span className="sr-only">Delete</span>
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 6h18"></path>

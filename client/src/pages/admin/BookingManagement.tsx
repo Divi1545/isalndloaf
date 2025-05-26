@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -344,10 +345,15 @@ const BookingDetailDialog = ({ booking }: { booking: typeof bookings[0] }) => {
 };
 
 const BookingManagement = () => {
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [vendorFilter, setVendorFilter] = useState('all');
   const [dateRangeFilter, setDateRangeFilter] = useState('all');
+
+  const handleCreateBooking = () => {
+    setLocation('/vendor/add-booking');
+  };
   
   // Filter bookings based on search query and filters
   const filteredBookings = bookings.filter(booking => {
@@ -381,7 +387,7 @@ const BookingManagement = () => {
             </svg>
             Export Data
           </Button>
-          <Button>
+          <Button onClick={handleCreateBooking}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
               <polyline points="3.29 7 12 12 20.71 7"></polyline>
@@ -510,7 +516,14 @@ const BookingManagement = () => {
                       <div className="flex justify-center space-x-2">
                         <BookingDetailDialog booking={booking} />
                         
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            setLocation(`/admin/bookings/edit/${booking.id}`);
+                          }}
+                        >
                           <span className="sr-only">Edit</span>
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -518,7 +531,14 @@ const BookingManagement = () => {
                           </svg>
                         </Button>
                         
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            console.log(`More options for booking: ${booking.id}`);
+                          }}
+                        >
                           <span className="sr-only">More options</span>
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="1"></circle>
