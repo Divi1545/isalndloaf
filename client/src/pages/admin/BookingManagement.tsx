@@ -352,6 +352,8 @@ const BookingManagement = () => {
   const [dateRangeFilter, setDateRangeFilter] = useState('all');
 
   const handleCreateBooking = () => {
+    // Show immediate feedback that the button works
+    alert('Create Booking button works! Navigating to booking form...');
     setLocation('/vendor/add-booking');
   };
   
