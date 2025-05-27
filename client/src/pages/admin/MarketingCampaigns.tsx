@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 const MarketingCampaigns = () => {
@@ -12,10 +15,46 @@ const MarketingCampaigns = () => {
   const [campaignMessage, setCampaignMessage] = useState('');
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState('');
+  const [isNewCampaignOpen, setIsNewCampaignOpen] = useState(false);
+  const [newCampaign, setNewCampaign] = useState({
+    title: '',
+    type: 'email',
+    message: '',
+    startDate: '',
+    endDate: '',
+    targetAudience: 'all',
+    promoCode: '',
+    discount: ''
+  });
   const { toast } = useToast();
 
-  const handleNewCampaign = () => {
-    setLocation('/admin/marketing/new-campaign');
+  const handleCreateCampaign = () => {
+    if (!newCampaign.title || !newCampaign.message) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in campaign title and message",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Campaign Created!",
+      description: `New campaign "${newCampaign.title}" has been created successfully`,
+    });
+
+    // Reset form
+    setNewCampaign({
+      title: '',
+      type: 'email',
+      message: '',
+      startDate: '',
+      endDate: '',
+      targetAudience: 'all',
+      promoCode: '',
+      discount: ''
+    });
+    setIsNewCampaignOpen(false);
   };
 
   const handleSendEmailBlast = () => {
@@ -73,13 +112,123 @@ const MarketingCampaigns = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Marketing Campaigns</h1>
-        <Button onClick={handleNewCampaign}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          New Campaign
-        </Button>
+        <Dialog open={isNewCampaignOpen} onOpenChange={setIsNewCampaignOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              New Campaign
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Marketing Campaign</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Campaign Title</Label>
+                  <Input 
+                    value={newCampaign.title}
+                    onChange={(e) => setNewCampaign({...newCampaign, title: e.target.value})}
+                    placeholder="Summer Beach Special"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Campaign Type</Label>
+                  <Select value={newCampaign.type} onValueChange={(value) => setNewCampaign({...newCampaign, type: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="email">Email Campaign</SelectItem>
+                      <SelectItem value="sms">SMS Campaign</SelectItem>
+                      <SelectItem value="social">Social Media</SelectItem>
+                      <SelectItem value="display">Display Ads</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Campaign Message</Label>
+                <Textarea 
+                  value={newCampaign.message}
+                  onChange={(e) => setNewCampaign({...newCampaign, message: e.target.value})}
+                  placeholder="Write your marketing message here..."
+                  rows={4}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Input 
+                    type="date"
+                    value={newCampaign.startDate}
+                    onChange={(e) => setNewCampaign({...newCampaign, startDate: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>End Date</Label>
+                  <Input 
+                    type="date"
+                    value={newCampaign.endDate}
+                    onChange={(e) => setNewCampaign({...newCampaign, endDate: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Target Audience</Label>
+                  <Select value={newCampaign.targetAudience} onValueChange={(value) => setNewCampaign({...newCampaign, targetAudience: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Customers</SelectItem>
+                      <SelectItem value="new">New Customers</SelectItem>
+                      <SelectItem value="returning">Returning Customers</SelectItem>
+                      <SelectItem value="vip">VIP Customers</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Promo Code (Optional)</Label>
+                  <Input 
+                    value={newCampaign.promoCode}
+                    onChange={(e) => setNewCampaign({...newCampaign, promoCode: e.target.value})}
+                    placeholder="SUMMER25"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Discount Percentage (Optional)</Label>
+                <Input 
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={newCampaign.discount}
+                  onChange={(e) => setNewCampaign({...newCampaign, discount: e.target.value})}
+                  placeholder="25"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setIsNewCampaignOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateCampaign}>
+                  Create Campaign
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
