@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 
 // Support dashboard page according to the checklist
 const SupportDashboard = () => {
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [supportStatus, setSupportStatus] = useState('all');
@@ -236,10 +238,7 @@ const SupportDashboard = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Support Dashboard</h1>
-        <Button onClick={() => 
-          // In a real app, this would navigate to a new ticket page
-          localStorage.setItem("adminAction", "createSupportTicket")
-        }>
+        <Button onClick={() => setLocation('/admin/support/create')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
