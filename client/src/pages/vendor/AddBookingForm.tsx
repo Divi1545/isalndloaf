@@ -37,6 +37,46 @@ const productServices = [
   "Local Craft Item", "Souvenir Package", "Fresh Produce Box", "Spices Pack", "Tea Set", "Jewelry Box", "Handmade Textile", "Coconut Products", "Essential Oils", "Organic Skincare", "Ayurvedic Kit", "Gift Hamper", "Artisanal Snacks", "Sculptures", "Cultural Decor", "Coffee Set", "Beachwear Set", "Pottery Collection", "Bamboo Products"
 ];
 
+// ✅ 6. HEALTH & WELLNESS PRICING CONFIG
+const wellnessPricing = {
+  basePricePerSession: 80.00,
+  durationMinutes: 60,
+  taxRatePercent: 10,
+  additionalServiceFee: 10.00,
+  weekendSurchargePercent: 15,
+  cleaningFee: 5.00,
+  specialOffers: {
+    earlyBirdDiscountPercent: 10,
+    longSessionDiscountPercent: 12,
+  },
+  availability: {
+    allowAdvanceBooking: true,
+    dailyLimit: 10,
+  }
+};
+
+// ✅ 7. ACTIVITIES & TOURS PRICING CONFIG
+const activityPricing = {
+  basePricePerPerson: 120.00,
+  taxRatePercent: 12,
+  weekendSurchargePercent: 20,
+  equipmentFee: 15.00,
+  insuranceFee: 5.00,
+  groupDiscount: {
+    minGroupSize: 4,
+    discountPercent: 10
+  },
+  specialOffers: {
+    lastMinuteDealPercent: 15,
+    earlyBirdDiscountPercent: 10
+  },
+  stayLinkedDiscountPercent: 15,
+  availability: {
+    allowAdvanceBooking: true,
+    maxGuestsPerTrip: 12
+  }
+};
+
 // Base schema with common fields for all booking types
 const baseFormSchema = {
   customerName: z.string().min(2, { message: 'Customer name must be at least 2 characters.' }),
@@ -135,30 +175,115 @@ function useStayPricing() {
   const calculatePrice = async (stayType: string, checkInDate: Date, checkOutDate: Date, adults: number, children: number) => {
     setIsCalculating(true);
     try {
-      // This would be a real API call in production
-      // const response = await fetch('/api/pricing/calculate', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ stayType, checkInDate, checkOutDate, adults, children })
-      // });
-      // if (response.ok) {
-      //   const data = await response.json();
-      //   setCalculatedPrice(data.totalPrice);
-      // }
-      
-      // For demo, simulate price calculation
       const days = Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)));
       const basePrice = stayType.includes('Deluxe') || stayType.includes('Luxury') || stayType.includes('Suite') ? 150 : 80;
       const totalGuests = adults + 0.5 * children;
       const price = basePrice * days * Math.max(1, totalGuests * 0.8);
       
-      // Simulate API delay
       setTimeout(() => {
         setCalculatedPrice(Math.round(price * 100) / 100);
         setIsCalculating(false);
       }, 500);
     } catch (error) {
-      console.error('Error calculating price:', error);
+      console.error('Error calculating stay price:', error);
+      setIsCalculating(false);
+    }
+  };
+  
+  return { calculatePrice, isCalculating, calculatedPrice };
+}
+
+// Price calculation hook for wellness bookings
+function useWellnessPricing() {
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  
+  const calculatePrice = async (serviceType: string, date: Date, duration: number = 60, hasSpecialOffers: boolean = false) => {
+    setIsCalculating(true);
+    try {
+      let price = wellnessPricing.basePricePerSession;
+      
+      // Duration adjustment
+      if (duration > 60) {
+        price += (duration - 60) / 60 * wellnessPricing.basePricePerSession * 0.8;
+      }
+      
+      // Weekend surcharge
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      if (isWeekend) {
+        price *= (1 + wellnessPricing.weekendSurchargePercent / 100);
+      }
+      
+      // Add fees
+      price += wellnessPricing.additionalServiceFee + wellnessPricing.cleaningFee;
+      
+      // Apply special offers
+      if (hasSpecialOffers) {
+        const earlyBooking = date.getTime() > new Date().getTime() + (7 * 24 * 60 * 60 * 1000);
+        if (earlyBooking) {
+          price *= (1 - wellnessPricing.specialOffers.earlyBirdDiscountPercent / 100);
+        }
+        if (duration > 90) {
+          price *= (1 - wellnessPricing.specialOffers.longSessionDiscountPercent / 100);
+        }
+      }
+      
+      // Add tax
+      price *= (1 + wellnessPricing.taxRatePercent / 100);
+      
+      setTimeout(() => {
+        setCalculatedPrice(Math.round(price * 100) / 100);
+        setIsCalculating(false);
+      }, 500);
+    } catch (error) {
+      console.error('Error calculating wellness price:', error);
+      setIsCalculating(false);
+    }
+  };
+  
+  return { calculatePrice, isCalculating, calculatedPrice };
+}
+
+// Price calculation hook for tour/activity bookings  
+function useActivityPricing() {
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  
+  const calculatePrice = async (activityType: string, date: Date, groupSize: number, hasStayLinked: boolean = false) => {
+    setIsCalculating(true);
+    try {
+      let pricePerPerson = activityPricing.basePricePerPerson;
+      
+      // Weekend surcharge
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      if (isWeekend) {
+        pricePerPerson *= (1 + activityPricing.weekendSurchargePercent / 100);
+      }
+      
+      let totalPrice = pricePerPerson * groupSize;
+      
+      // Group discount
+      if (groupSize >= activityPricing.groupDiscount.minGroupSize) {
+        totalPrice *= (1 - activityPricing.groupDiscount.discountPercent / 100);
+      }
+      
+      // Stay-linked discount
+      if (hasStayLinked) {
+        totalPrice *= (1 - activityPricing.stayLinkedDiscountPercent / 100);
+      }
+      
+      // Add fees
+      totalPrice += (activityPricing.equipmentFee + activityPricing.insuranceFee) * groupSize;
+      
+      // Add tax
+      totalPrice *= (1 + activityPricing.taxRatePercent / 100);
+      
+      setTimeout(() => {
+        setCalculatedPrice(Math.round(totalPrice * 100) / 100);
+        setIsCalculating(false);
+      }, 500);
+    } catch (error) {
+      console.error('Error calculating activity price:', error);
       setIsCalculating(false);
     }
   };
