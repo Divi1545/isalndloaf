@@ -1,0 +1,35 @@
+// 🚨 VENDOR DASHBOARD DROPDOWN FIX REQUESTS (For Replit Agent)
+
+// ✅ 1. VEHICLE TYPE DROPDOWN – Expand to include all known vehicle categories globally
+const vehicleTypes = [
+  "Economy Car", "Luxury Car", "SUV", "Van", "Minivan", "Sedan", "Convertible", "Coupe", "Hatchback", "Pickup Truck", "Bus", "Coach", "Electric Car", "Hybrid Car", "Motorbike", "Scooter", "Rickshaw", "Bicycle", "Limousine", "Off-Road Vehicle", "4x4", "Campervan", "RV", "Caravan", "Jeep", "Golf Cart", "Snowmobile", "ATV", "Truck", "Trailer"
+];
+
+// ✅ 2. TRANSPORT SERVICE DROPDOWN – Add more global services
+const transportServices = [
+  "Airport Pickup", "Hotel Drop-off", "Point-to-Point Ride", "Hourly Rental", "Chauffeur Service", "Self-Drive Rental", "Event Transport", "Group Shuttle", "VIP Transport", "Helicopter Transfer", "Boat Transfer", "Train Pickup", "Sightseeing Ride", "Night Tour", "Business Trip", "Wedding Car"
+];
+
+// ✅ 3. HEALTH & WELLNESS SERVICE OPTIONS – Expand to global wellness services
+const wellnessServices = [
+  "Full Body Massage", "Yoga Session", "Spa Package", "Aromatherapy", "Acupuncture", "Facial Treatment", "Hair Spa", "Body Scrub", "Hot Stone Therapy", "Thai Massage", "Reflexology", "Ayurvedic Treatment", "Sound Healing", "Chiropractic Session", "Wellness Retreat", "Detox Program", "Nail Treatment", "Meditation Class", "Skin Therapy", "Cryotherapy"
+];
+
+// ✅ 4. TOUR SERVICE OPTIONS – Expand to international tours
+const tourServices = [
+  "Island Tour", "Snorkeling Trip", "Hiking Adventure", "City Tour", "Cultural Tour", "Wildlife Safari", "Sunset Cruise", "Whale Watching", "Food Tour", "Historical Walk", "Photography Tour", "ATV Adventure", "Cycling Tour", "Boat Safari", "Ziplining", "Temple Visit", "Village Tour", "Mountain Trekking", "Waterfall Hike"
+];
+
+// ✅ 5. PRODUCT SERVICE OPTIONS – Global item listing
+const productServices = [
+  "Local Craft Item", "Souvenir Package", "Fresh Produce Box", "Spices Pack", "Tea Set", "Jewelry Box", "Handmade Textile", "Coconut Products", "Essential Oils", "Organic Skincare", "Ayurvedic Kit", "Gift Hamper", "Artisanal Snacks", "Sculptures", "Cultural Decor", "Coffee Set", "Beachwear Set", "Pottery Collection", "Bamboo Products"
+];
+
+// ⚠️ Ensure these are linked correctly in frontend form dropdown logic depending on the selected booking type.
+// Example: On transport booking page -> populate dropdown with vehicleTypes and transportServices
+
+// 🔄 Update the dropdown options in the form fields dynamically and reload them on mount/init.
+
+// Optional: Fetch from backend DB or store in .env/data file if values are too many to hardcode.
+
+console.log("Dropdown values injected successfully.");

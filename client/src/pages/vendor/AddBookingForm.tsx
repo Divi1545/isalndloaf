@@ -16,6 +16,27 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
+// Comprehensive dropdown options as requested
+const vehicleTypes = [
+  "Economy Car", "Luxury Car", "SUV", "Van", "Minivan", "Sedan", "Convertible", "Coupe", "Hatchback", "Pickup Truck", "Bus", "Coach", "Electric Car", "Hybrid Car", "Motorbike", "Scooter", "Rickshaw", "Bicycle", "Limousine", "Off-Road Vehicle", "4x4", "Campervan", "RV", "Caravan", "Jeep", "Golf Cart", "Snowmobile", "ATV", "Truck", "Trailer"
+];
+
+const transportServices = [
+  "Airport Pickup", "Hotel Drop-off", "Point-to-Point Ride", "Hourly Rental", "Chauffeur Service", "Self-Drive Rental", "Event Transport", "Group Shuttle", "VIP Transport", "Helicopter Transfer", "Boat Transfer", "Train Pickup", "Sightseeing Ride", "Night Tour", "Business Trip", "Wedding Car"
+];
+
+const wellnessServices = [
+  "Full Body Massage", "Yoga Session", "Spa Package", "Aromatherapy", "Acupuncture", "Facial Treatment", "Hair Spa", "Body Scrub", "Hot Stone Therapy", "Thai Massage", "Reflexology", "Ayurvedic Treatment", "Sound Healing", "Chiropractic Session", "Wellness Retreat", "Detox Program", "Nail Treatment", "Meditation Class", "Skin Therapy", "Cryotherapy"
+];
+
+const tourServices = [
+  "Island Tour", "Snorkeling Trip", "Hiking Adventure", "City Tour", "Cultural Tour", "Wildlife Safari", "Sunset Cruise", "Whale Watching", "Food Tour", "Historical Walk", "Photography Tour", "ATV Adventure", "Cycling Tour", "Boat Safari", "Ziplining", "Temple Visit", "Village Tour", "Mountain Trekking", "Waterfall Hike"
+];
+
+const productServices = [
+  "Local Craft Item", "Souvenir Package", "Fresh Produce Box", "Spices Pack", "Tea Set", "Jewelry Box", "Handmade Textile", "Coconut Products", "Essential Oils", "Organic Skincare", "Ayurvedic Kit", "Gift Hamper", "Artisanal Snacks", "Sculptures", "Cultural Decor", "Coffee Set", "Beachwear Set", "Pottery Collection", "Bamboo Products"
+];
+
 // Base schema with common fields for all booking types
 const baseFormSchema = {
   customerName: z.string().min(2, { message: 'Customer name must be at least 2 characters.' }),
@@ -178,28 +199,25 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
         // const data = await response.json();
         // setServices(data);
         
-        // Mock data for now
+        // Generate comprehensive service options based on your specifications
         const mockServices = [
-          // Stay services
-          { id: '1', name: 'Beach Villa', type: 'stay' },
-          { id: '2', name: 'Garden Room', type: 'stay' },
-          { id: '3', name: 'Ocean View Suite', type: 'stay' },
-          // Transport services
-          { id: '4', name: 'Economy Car', type: 'transport' },
-          { id: '5', name: 'Luxury Car', type: 'transport' },
-          { id: '6', name: 'Scooter', type: 'transport' },
-          // Wellness services
-          { id: '7', name: 'Full Body Massage', type: 'wellness' },
-          { id: '8', name: 'Yoga Session', type: 'wellness' },
-          { id: '9', name: 'Spa Package', type: 'wellness' },
-          // Tour services
-          { id: '10', name: 'Island Tour', type: 'tour' },
-          { id: '11', name: 'Snorkeling Trip', type: 'tour' },
-          { id: '12', name: 'Hiking Adventure', type: 'tour' },
-          // Product services
-          { id: '13', name: 'Local Craft Item', type: 'product' },
-          { id: '14', name: 'Souvenir Package', type: 'product' },
-          { id: '15', name: 'Fresh Produce Box', type: 'product' },
+          // Transport services using vehicleTypes and transportServices arrays
+          ...transportServices.map((service, index) => ({ id: `t-${index + 1}`, name: service, type: 'transport' })),
+          // Wellness services using wellnessServices array
+          ...wellnessServices.map((service, index) => ({ id: `w-${index + 1}`, name: service, type: 'wellness' })),
+          // Tour services using tourServices array
+          ...tourServices.map((service, index) => ({ id: `to-${index + 1}`, name: service, type: 'tour' })),
+          // Product services using productServices array
+          ...productServices.map((service, index) => ({ id: `p-${index + 1}`, name: service, type: 'product' })),
+          // Stay services (keeping existing ones for accommodation)
+          { id: 's-1', name: 'Beach Villa', type: 'stay' },
+          { id: 's-2', name: 'Garden Room', type: 'stay' },
+          { id: 's-3', name: 'Ocean View Suite', type: 'stay' },
+          { id: 's-4', name: 'Mountain Retreat', type: 'stay' },
+          { id: 's-5', name: 'City Apartment', type: 'stay' },
+          { id: 's-6', name: 'Luxury Resort', type: 'stay' },
+          { id: 's-7', name: 'Boutique Hotel', type: 'stay' },
+          { id: 's-8', name: 'Eco Lodge', type: 'stay' },
         ];
         
         // Filter services by booking type
@@ -309,13 +327,8 @@ const AddBookingForm = ({ bookingType = 'stay', title = 'Add New Booking' }: Add
               const vehicleTypesData = await vehicleTypesResponse.json();
               setVehicleTypes(vehicleTypesData);
             } else {
-              // Fallback to mock data
-              setVehicleTypes([
-                'Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Pickup Truck', 
-                'Van / Mini Van', '4x4 / Off-road', 'Jeep', 'Luxury Car', 'Classic Car', 
-                'Electric Vehicle', 'Hybrid', 'Motorbike / Scooter', 'Bicycle',
-                'Campervan / RV', 'Bus / Mini Bus', 'Limousine', 'Tuk Tuk'
-              ]);
+              // Use comprehensive vehicle types list
+              setVehicleTypes(vehicleTypes);
             }
             
             // Fetch rental types
