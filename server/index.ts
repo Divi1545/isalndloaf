@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { extendStorageWithIcalSupport } from "./storage/icalExtensions";
 import { storage } from "./storage-provider"; // Updated to use storage provider
 import session from "express-session";
+import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
 // Load environment variables from .env file
@@ -12,6 +13,33 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Rate limiting for auth endpoints (security enhancement)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: { error: "Too many authentication attempts, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to auth routes
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+// Session configuration with production-ready security
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 6, // 6 hours
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: "lax"
+  },
+  rolling: true, // Refresh session on activity
+}));
 
 // Extend storage with iCal support
 extendStorageWithIcalSupport(storage);

@@ -31,12 +31,32 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.set('Content-Type', 'text/csv');
     res.send(content);
   });
-  // Middleware to check if user is authenticated
+  // Enhanced middleware to check if user is authenticated with logging
   const requireAuth = (req: Request, res: Response, next: Function) => {
     if (!req.session.user) {
+      console.log(`🔒 Unauthorized access attempt to ${req.path} from IP: ${req.ip}`);
       return res.status(401).json({ error: "Not authenticated" });
     }
+    console.log(`✅ Authenticated request to ${req.path} by user ${req.session.user.userId} (${req.session.user.userRole})`);
     next();
+  };
+
+  // Role-based access control middleware
+  const requireRole = (allowedRoles: string[]) => {
+    return (req: Request, res: Response, next: Function) => {
+      if (!req.session.user) {
+        console.log(`🔒 Unauthenticated role check attempt on ${req.path}`);
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      if (!allowedRoles.includes(req.session.user.userRole)) {
+        console.log(`🚫 Role violation: ${req.session.user.userRole} tried to access ${req.path} (requires: ${allowedRoles.join('|')})`);
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      console.log(`✅ Role authorized: ${req.session.user.userRole} accessing ${req.path}`);
+      next();
+    };
   };
 
   // Create a sample user if none exists (for development purposes)
