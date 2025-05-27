@@ -1,5 +1,7 @@
 import LoginForm from "@/components/auth/login-form";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 export default function Login() {
   return (

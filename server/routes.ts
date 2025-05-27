@@ -84,6 +84,53 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Create sample user on startup
   await createSampleUser();
 
+  // Vendor Registration Route (new dedicated endpoint)
+  app.post("/api/vendors/register", async (req: Request, res: Response) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already in use" });
+      }
+      
+      // Check if username already exists
+      const existingUsername = await storage.getUserByUsername(userData.username);
+      if (existingUsername) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+      
+      // Create the vendor with pending status
+      const newVendor = await storage.createUser({
+        ...userData,
+        role: 'vendor',
+        status: 'pending' // Pending admin approval
+      });
+      
+      // Create welcome notification for admin review
+      await storage.createNotification({
+        userId: 1, // Admin user ID
+        title: "New Vendor Application",
+        message: `New vendor application from ${newVendor.businessName} (${newVendor.email}) awaiting approval.`,
+        type: "info",
+        read: false
+      });
+      
+      // Return success without logging in (awaiting approval)
+      res.status(201).json({
+        message: "Vendor application submitted successfully. You will be notified once approved.",
+        status: "pending"
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error("Vendor registration error:", error);
+      res.status(500).json({ error: "Failed to submit vendor application" });
+    }
+  });
+
   // Auth Routes
   // Registration endpoint
   app.post("/api/auth/register", async (req: Request, res: Response) => {

@@ -1,0 +1,57 @@
+📋 VENDOR ONBOARDING FLOW – INSPIRED BY BOOKING.COM
+
+\=============================
+🌐 STEP 1: LANDING PAGE – "List Your Property / Service"
+========================================================
+
+* Call-to-action button: “Become a Vendor”
+* Opens dedicated signup flow: `/vendor-signup`
+* Highlights platform benefits: Reach 1M+ tourists, secure payments, 24/7 support
+
+\=============================
+📝 STEP 2: VENDOR SIGNUP FORM
+=============================
+
+* Step-by-step form like Booking.com:
+
+  1. **Business Type:** Hotel / Villa / Tour / Transport / Product
+  2. **Basic Info:** Vendor name, contact person, phone, email
+  3. **Business Location:** Address, map pin
+  4. **Account Setup:** Email + password
+  5. **Service Details:** Description, category, operational days, rates
+  6. **Photos Upload:** Multiple photos (drag & drop)
+  7. **Terms Agreement + Submit**
+
+\=============================
+🔐 STEP 3: ADMIN APPROVAL WORKFLOW
+==================================
+
+* After signup, vendor status = "Pending"
+* Admin panel gets notification
+* Admin reviews: Can approve, reject, or request changes
+* Upon approval: Welcome email, dashboard access unlocked
+
+\=============================
+✅ FEATURES TO SUPPORT THIS FLOW
+===============================
+
+* Auto-email triggers (pending → approved)
+* Admin dashboard filters by vendor status
+* Upload service logo/photos (via AWS, Cloudinary, or base64)
+* CAPTCHA or phone/email OTP to prevent spam
+
+\=============================
+🛠 TECH NOTES FOR IMPLEMENTATION
+================================
+
+* Route: `POST /api/vendors/register`
+* DB schema: add `status: 'pending' | 'approved' | 'rejected'`
+* Optional: Add `vendor_notes`, `assigned_admin`, `created_at`
+
+\=============================
+🟢 END RESULT
+=============
+
+Vendors apply via a clean and familiar UX → Admin reviews → Approved vendors go live with dashboard access
+
+💼 Just like Booking.com, IslandLoaf ensures trust, quality control, and professional onboarding.

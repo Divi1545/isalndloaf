@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
+import VendorSignup from "@/pages/VendorSignup";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Dashboard from "@/pages/dashboard";
 import BookingManager from "@/pages/dashboard/booking-manager";
@@ -43,6 +44,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/vendor-signup" component={VendorSignup} />
       
       {/* Dashboard routes */}
       <Route path="/dashboard">
