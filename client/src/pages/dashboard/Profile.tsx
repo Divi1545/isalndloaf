@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock user data
@@ -25,6 +26,26 @@ const mockUser = {
 
 const Profile = () => {
   const { toast } = useToast();
+  const [paymentMethods, setPaymentMethods] = useState([
+    {
+      id: 1,
+      type: 'bank',
+      name: 'Bank Account',
+      details: 'Primary • Local Bank Ltd. ending in 4582',
+      isPrimary: true
+    }
+  ]);
+  const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
+  const [newPayment, setNewPayment] = useState({
+    type: 'credit_card',
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    holderName: '',
+    bankName: '',
+    accountNumber: '',
+    routingNumber: ''
+  });
   
   const handleConnectMarketplace = async () => {
     try {
@@ -44,6 +65,36 @@ const Profile = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleAddPaymentMethod = () => {
+    const newMethod = {
+      id: paymentMethods.length + 1,
+      type: newPayment.type,
+      name: newPayment.type === 'credit_card' ? 'Credit Card' : 'Bank Account',
+      details: newPayment.type === 'credit_card' 
+        ? `**** **** **** ${newPayment.cardNumber.slice(-4)}` 
+        : `${newPayment.bankName} ending in ${newPayment.accountNumber.slice(-4)}`,
+      isPrimary: false
+    };
+    
+    setPaymentMethods([...paymentMethods, newMethod]);
+    setIsAddPaymentOpen(false);
+    setNewPayment({
+      type: 'credit_card',
+      cardNumber: '',
+      expiryDate: '',
+      cvv: '',
+      holderName: '',
+      bankName: '',
+      accountNumber: '',
+      routingNumber: ''
+    });
+    
+    toast({
+      title: "Success",
+      description: "Payment method added successfully"
+    });
   };
   
   return (
@@ -274,35 +325,144 @@ const Profile = () => {
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold mb-4">Payment Methods</h3>
               <div className="space-y-5">
-                <div className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="mr-4 bg-blue-100 p-2 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
-                          <rect width="20" height="14" x="2" y="5" rx="2"></rect>
-                          <line x1="2" x2="22" y1="10" y2="10"></line>
-                        </svg>
+                {paymentMethods.map((method) => (
+                  <div key={method.id} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="mr-4 bg-blue-100 p-2 rounded-full">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                            {method.type === 'credit_card' ? (
+                              <>
+                                <rect width="20" height="14" x="2" y="5" rx="2"></rect>
+                                <line x1="2" x2="22" y1="10" y2="10"></line>
+                              </>
+                            ) : (
+                              <>
+                                <rect width="20" height="14" x="2" y="5" rx="2"></rect>
+                                <line x1="2" x2="22" y1="10" y2="10"></line>
+                              </>
+                            )}
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium">{method.name}</p>
+                          <p className="text-sm text-muted-foreground">{method.details}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">Bank Account</p>
-                        <p className="text-sm text-muted-foreground">Primary • Local Bank Ltd. ending in 4582</p>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm">Edit</Button>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">Edit</Button>
                     </div>
                   </div>
-                </div>
+                ))}
                 
                 <div className="p-4 border rounded-lg border-dashed">
                   <div className="flex items-center justify-center py-4">
-                    <Button variant="outline">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                        <path d="M5 12h14"></path>
-                        <path d="M12 5v14"></path>
-                      </svg>
-                      Add Payment Method
-                    </Button>
+                    <Dialog open={isAddPaymentOpen} onOpenChange={setIsAddPaymentOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                            <path d="M5 12h14"></path>
+                            <path d="M12 5v14"></path>
+                          </svg>
+                          Add Payment Method
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Add Payment Method</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Payment Type</Label>
+                            <Select value={newPayment.type} onValueChange={(value) => setNewPayment({...newPayment, type: value})}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="credit_card">Credit Card</SelectItem>
+                                <SelectItem value="bank_account">Bank Account</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          {newPayment.type === 'credit_card' ? (
+                            <>
+                              <div className="space-y-2">
+                                <Label>Cardholder Name</Label>
+                                <Input 
+                                  value={newPayment.holderName}
+                                  onChange={(e) => setNewPayment({...newPayment, holderName: e.target.value})}
+                                  placeholder="John Doe"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Card Number</Label>
+                                <Input 
+                                  value={newPayment.cardNumber}
+                                  onChange={(e) => setNewPayment({...newPayment, cardNumber: e.target.value})}
+                                  placeholder="1234 5678 9012 3456"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label>Expiry Date</Label>
+                                  <Input 
+                                    value={newPayment.expiryDate}
+                                    onChange={(e) => setNewPayment({...newPayment, expiryDate: e.target.value})}
+                                    placeholder="MM/YY"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>CVV</Label>
+                                  <Input 
+                                    value={newPayment.cvv}
+                                    onChange={(e) => setNewPayment({...newPayment, cvv: e.target.value})}
+                                    placeholder="123"
+                                  />
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="space-y-2">
+                                <Label>Bank Name</Label>
+                                <Input 
+                                  value={newPayment.bankName}
+                                  onChange={(e) => setNewPayment({...newPayment, bankName: e.target.value})}
+                                  placeholder="Commercial Bank"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Account Number</Label>
+                                <Input 
+                                  value={newPayment.accountNumber}
+                                  onChange={(e) => setNewPayment({...newPayment, accountNumber: e.target.value})}
+                                  placeholder="1234567890"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Routing Number</Label>
+                                <Input 
+                                  value={newPayment.routingNumber}
+                                  onChange={(e) => setNewPayment({...newPayment, routingNumber: e.target.value})}
+                                  placeholder="011234567"
+                                />
+                              </div>
+                            </>
+                          )}
+                          
+                          <div className="flex justify-end gap-3 pt-4">
+                            <Button variant="outline" onClick={() => setIsAddPaymentOpen(false)}>
+                              Cancel
+                            </Button>
+                            <Button onClick={handleAddPaymentMethod}>
+                              Add Payment Method
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
                 
