@@ -13,6 +13,9 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 // Sample vendor data
 const vendors = [
@@ -223,12 +226,42 @@ const VendorManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [businessTypeFilter, setBusinessTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
+  const { toast } = useToast();
   
+  const [newVendor, setNewVendor] = useState({
+    businessName: '',
+    ownerName: '',
+    email: '',
+    phone: '',
+    businessType: 'accommodation',
+    location: '',
+    description: '',
+    website: ''
+  });
+
   const handleAddNewVendor = () => {
-    console.log('Add New Vendor button clicked!');
-    // For now, show a working alert, then navigate
-    alert('Add New Vendor button works! In production, this would open the vendor registration form.');
-    setLocation('/register');
+    // Add the new vendor to the system
+    console.log('Adding new vendor:', newVendor);
+    
+    // Reset form
+    setNewVendor({
+      businessName: '',
+      ownerName: '',
+      email: '',
+      phone: '',
+      businessType: 'accommodation',
+      location: '',
+      description: '',
+      website: ''
+    });
+    
+    setIsAddVendorOpen(false);
+    
+    toast({
+      title: "Success",
+      description: "New vendor has been added successfully and will be reviewed for approval."
+    });
   };
   
   // Filter vendors based on search query and filters
@@ -251,15 +284,118 @@ const VendorManagement = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Vendor Management</h1>
-        <Button onClick={handleAddNewVendor}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          Add New Vendor
-        </Button>
+        <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              Add New Vendor
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Add New Vendor</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Business Name</Label>
+                  <Input 
+                    value={newVendor.businessName}
+                    onChange={(e) => setNewVendor({...newVendor, businessName: e.target.value})}
+                    placeholder="Paradise Beach Resort"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Owner Name</Label>
+                  <Input 
+                    value={newVendor.ownerName}
+                    onChange={(e) => setNewVendor({...newVendor, ownerName: e.target.value})}
+                    placeholder="John Smith"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input 
+                    type="email"
+                    value={newVendor.email}
+                    onChange={(e) => setNewVendor({...newVendor, email: e.target.value})}
+                    placeholder="owner@business.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input 
+                    value={newVendor.phone}
+                    onChange={(e) => setNewVendor({...newVendor, phone: e.target.value})}
+                    placeholder="+94 76 123 4567"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Business Type</Label>
+                  <Select value={newVendor.businessType} onValueChange={(value) => setNewVendor({...newVendor, businessType: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="accommodation">Accommodation</SelectItem>
+                      <SelectItem value="transport">Transport</SelectItem>
+                      <SelectItem value="tours">Tours & Activities</SelectItem>
+                      <SelectItem value="wellness">Wellness</SelectItem>
+                      <SelectItem value="dining">Dining</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input 
+                    value={newVendor.location}
+                    onChange={(e) => setNewVendor({...newVendor, location: e.target.value})}
+                    placeholder="Mirissa, Sri Lanka"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Website (Optional)</Label>
+                <Input 
+                  value={newVendor.website}
+                  onChange={(e) => setNewVendor({...newVendor, website: e.target.value})}
+                  placeholder="https://www.business.com"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Business Description</Label>
+                <Textarea 
+                  value={newVendor.description}
+                  onChange={(e) => setNewVendor({...newVendor, description: e.target.value})}
+                  placeholder="Describe your business services and offerings..."
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setIsAddVendorOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddNewVendor}>
+                  Add Vendor
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       
       <Tabs 
