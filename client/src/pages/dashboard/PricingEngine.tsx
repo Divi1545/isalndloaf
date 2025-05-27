@@ -25,6 +25,23 @@ const PricingEngine = () => {
     'Electric Vehicle', 'Hybrid', 'Limousine', 'Tuk Tuk', 'Motorbike / Scooter', 
     'Bicycle', 'Campervan / RV', 'Bus / Mini Bus'
   ]);
+
+  // Activities & Tours pricing configuration
+  const [activityTypes] = React.useState([
+    "Island Tour", "Snorkeling Trip", "Hiking Adventure", "City Tour", "Cultural Tour", 
+    "Wildlife Safari", "Sunset Cruise", "Whale Watching", "Food Tour", "Historical Walk", 
+    "Photography Tour", "ATV Adventure", "Cycling Tour", "Boat Safari", "Ziplining", 
+    "Temple Visit", "Village Tour", "Mountain Trekking", "Waterfall Hike"
+  ]);
+
+  // Wellness services pricing configuration  
+  const [wellnessTypes] = React.useState([
+    "Full Body Massage", "Yoga Session", "Spa Package", "Aromatherapy", "Acupuncture", 
+    "Facial Treatment", "Hair Spa", "Body Scrub", "Hot Stone Therapy", "Thai Massage", 
+    "Reflexology", "Ayurvedic Treatment", "Sound Healing", "Chiropractic Session", 
+    "Wellness Retreat", "Detox Program", "Nail Treatment", "Meditation Class", 
+    "Skin Therapy", "Cryotherapy"
+  ]);
   
   // Fetch room types on component mount
   React.useEffect(() => {
@@ -367,28 +384,165 @@ const PricingEngine = () => {
         
         <TabsContent value="activities" className="mt-4">
           <Card>
-            <CardContent className="pt-6 pb-2">
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="rounded-full bg-blue-100 p-3 mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                    <path d="M12 17h.01"></path>
-                  </svg>
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <h3 className="text-lg font-semibold">Activities & Tours Pricing</h3>
+                <div className="flex items-center gap-3">
+                  <Select defaultValue="island-tour">
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Select activity type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activityTypes.map((type, index) => (
+                        <SelectItem key={index} value={type.toLowerCase().replace(/\s+/g, '-')}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={() => setLocation("/vendor/add-activity")}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                      <path d="M5 12h14"></path>
+                      <path d="M12 5v14"></path>
+                    </svg>
+                    Add New Activity
+                  </Button>
                 </div>
-                <h3 className="text-lg font-medium mb-1">No activities or tours yet</h3>
-                <p className="text-muted-foreground max-w-sm mb-4">
-                  Create tour packages or activities to add them to your listing and set up their pricing.
-                </p>
-                <Button
-                  onClick={() => setLocation("/vendor/add-activity")}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                    <path d="M5 12h14"></path>
-                    <path d="M12 5v14"></path>
-                  </svg>
-                  Add New Activity
-                </Button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Base Pricing Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Base Price per Person</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <Input className="pl-7" placeholder="0.00" defaultValue="120.00" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Tax Rate</label>
+                    <div className="relative">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                      <Input className="pr-7" placeholder="0" defaultValue="12" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Equipment Fee</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <Input className="pl-7" placeholder="0.00" defaultValue="15.00" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Insurance Fee</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <Input className="pl-7" placeholder="0.00" defaultValue="5.00" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing Rules Section */}
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-4">Pricing Rules & Discounts</h4>
+                  <div className="space-y-4">
+                    {/* Weekend Surcharge */}
+                    <div className="flex items-center justify-between py-2 border-b">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium">Weekend Surcharge</label>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="weekend-surcharge" defaultChecked />
+                          <Label htmlFor="weekend-surcharge">For Saturdays & Sundays</Label>
+                        </div>
+                      </div>
+                      <div className="relative w-20">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                        <Input className="pr-7" placeholder="0" defaultValue="20" />
+                      </div>
+                    </div>
+
+                    {/* Group Discount */}
+                    <div className="flex items-center justify-between py-2 border-b">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium">Group Discount</label>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="group-discount" defaultChecked />
+                          <Label htmlFor="group-discount">For groups of 4+ people</Label>
+                        </div>
+                      </div>
+                      <div className="relative w-20">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                        <Input className="pr-7" placeholder="0" defaultValue="10" />
+                      </div>
+                    </div>
+
+                    {/* Early Bird Discount */}
+                    <div className="flex items-center justify-between py-2 border-b">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium">Early Bird Discount</label>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="early-bird" defaultChecked />
+                          <Label htmlFor="early-bird">For bookings 7+ days in advance</Label>
+                        </div>
+                      </div>
+                      <div className="relative w-20">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                        <Input className="pr-7" placeholder="0" defaultValue="10" />
+                      </div>
+                    </div>
+
+                    {/* Last Minute Deal */}
+                    <div className="flex items-center justify-between py-2 border-b">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium">Last Minute Deal</label>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="last-minute" />
+                          <Label htmlFor="last-minute">For bookings within 24 hours</Label>
+                        </div>
+                      </div>
+                      <div className="relative w-20">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                        <Input className="pr-7" placeholder="0" defaultValue="15" />
+                      </div>
+                    </div>
+
+                    {/* Stay-Linked Discount */}
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium">Stay-Linked Discount</label>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="stay-linked" defaultChecked />
+                          <Label htmlFor="stay-linked">For guests with accommodation bookings</Label>
+                        </div>
+                      </div>
+                      <div className="relative w-20">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                        <Input className="pr-7" placeholder="0" defaultValue="15" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Availability Settings */}
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-4">Availability Settings</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Max Guests per Trip</label>
+                      <Input placeholder="12" defaultValue="12" />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="advance-booking" defaultChecked />
+                      <Label htmlFor="advance-booking">Allow advance booking</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end gap-3">
+                <Button variant="outline">Cancel</Button>
+                <Button>Save Changes</Button>
               </div>
             </CardContent>
           </Card>
