@@ -20,6 +20,9 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 // Sample booking data
 const bookings = [
@@ -350,11 +353,48 @@ const BookingManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [vendorFilter, setVendorFilter] = useState('all');
   const [dateRangeFilter, setDateRangeFilter] = useState('all');
+  const [isCreateBookingOpen, setIsCreateBookingOpen] = useState(false);
+  const { toast } = useToast();
+
+  const [newBooking, setNewBooking] = useState({
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    vendorId: '',
+    serviceType: 'accommodation',
+    serviceName: '',
+    checkinDate: '',
+    checkoutDate: '',
+    guests: 1,
+    totalAmount: '',
+    specialRequests: ''
+  });
 
   const handleCreateBooking = () => {
-    // Show immediate feedback that the button works
-    alert('Create Booking button works! Navigating to booking form...');
-    setLocation('/vendor/add-booking');
+    // Process the booking creation
+    console.log('Creating new booking:', newBooking);
+    
+    // Reset form
+    setNewBooking({
+      customerName: '',
+      customerEmail: '',
+      customerPhone: '',
+      vendorId: '',
+      serviceType: 'accommodation',
+      serviceName: '',
+      checkinDate: '',
+      checkoutDate: '',
+      guests: 1,
+      totalAmount: '',
+      specialRequests: ''
+    });
+    
+    setIsCreateBookingOpen(false);
+    
+    toast({
+      title: "Success",
+      description: "New booking has been created successfully."
+    });
   };
   
   // Filter bookings based on search query and filters
@@ -389,14 +429,153 @@ const BookingManagement = () => {
             </svg>
             Export Data
           </Button>
-          <Button onClick={handleCreateBooking}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-              <polyline points="3.29 7 12 12 20.71 7"></polyline>
-              <line x1="12" x2="12" y1="22" y2="12"></line>
-            </svg>
-            Create Booking
-          </Button>
+          <Dialog open={isCreateBookingOpen} onOpenChange={setIsCreateBookingOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.29 7 12 12 20.71 7"></polyline>
+                  <line x1="12" x2="12" y1="22" y2="12"></line>
+                </svg>
+                Create Booking
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create New Booking</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>Customer Name</Label>
+                    <Input 
+                      value={newBooking.customerName}
+                      onChange={(e) => setNewBooking({...newBooking, customerName: e.target.value})}
+                      placeholder="John Smith"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Customer Email</Label>
+                    <Input 
+                      type="email"
+                      value={newBooking.customerEmail}
+                      onChange={(e) => setNewBooking({...newBooking, customerEmail: e.target.value})}
+                      placeholder="customer@email.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone Number</Label>
+                    <Input 
+                      value={newBooking.customerPhone}
+                      onChange={(e) => setNewBooking({...newBooking, customerPhone: e.target.value})}
+                      placeholder="+1 555-123-4567"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Vendor</Label>
+                    <Select value={newBooking.vendorId} onValueChange={(value) => setNewBooking({...newBooking, vendorId: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select vendor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="V-1001">Beach Paradise Villa</SelectItem>
+                        <SelectItem value="V-1002">Island Adventures</SelectItem>
+                        <SelectItem value="V-1003">Coastal Scooters</SelectItem>
+                        <SelectItem value="V-1004">Serenity Spa</SelectItem>
+                        <SelectItem value="V-1005">Mountain Retreat</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Service Type</Label>
+                    <Select value={newBooking.serviceType} onValueChange={(value) => setNewBooking({...newBooking, serviceType: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="accommodation">Accommodation</SelectItem>
+                        <SelectItem value="transport">Transport</SelectItem>
+                        <SelectItem value="tours">Tours & Activities</SelectItem>
+                        <SelectItem value="wellness">Wellness</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Service Name</Label>
+                  <Input 
+                    value={newBooking.serviceName}
+                    onChange={(e) => setNewBooking({...newBooking, serviceName: e.target.value})}
+                    placeholder="Ocean View Suite, Island Tour, etc."
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>Check-in Date</Label>
+                    <Input 
+                      type="date"
+                      value={newBooking.checkinDate}
+                      onChange={(e) => setNewBooking({...newBooking, checkinDate: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Check-out Date</Label>
+                    <Input 
+                      type="date"
+                      value={newBooking.checkoutDate}
+                      onChange={(e) => setNewBooking({...newBooking, checkoutDate: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Guests</Label>
+                    <Input 
+                      type="number"
+                      min="1"
+                      value={newBooking.guests}
+                      onChange={(e) => setNewBooking({...newBooking, guests: parseInt(e.target.value) || 1})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Total Amount ($)</Label>
+                    <Input 
+                      type="number"
+                      step="0.01"
+                      value={newBooking.totalAmount}
+                      onChange={(e) => setNewBooking({...newBooking, totalAmount: e.target.value})}
+                      placeholder="299.99"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Special Requests (Optional)</Label>
+                  <Textarea 
+                    value={newBooking.specialRequests}
+                    onChange={(e) => setNewBooking({...newBooking, specialRequests: e.target.value})}
+                    placeholder="Any special requirements or requests..."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button variant="outline" onClick={() => setIsCreateBookingOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateBooking}>
+                    Create Booking
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       
