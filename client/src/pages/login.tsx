@@ -18,23 +18,23 @@ export default function Login() {
           
           <LoginForm />
           
-          {/* Vendor Signup Call-to-Action */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="text-center text-sm text-gray-600 mb-4">
-              <p>Want to list your business on IslandLoaf?</p>
+          {/* Vendor Signup Call-to-Action - Force Visible */}
+          <div className="mt-8 pt-6 border-t-2 border-blue-200 bg-blue-50 p-4 rounded-lg">
+            <div className="text-center mb-4">
+              <p className="text-lg font-semibold text-blue-800 mb-2">
+                🏝️ Join IslandLoaf as a Vendor
+              </p>
+              <p className="text-sm text-blue-600">
+                List your tourism business and reach thousands of travelers
+              </p>
             </div>
             <Link href="/vendor-signup">
-              <Button variant="outline" className="w-full bg-white hover:bg-gray-50 border-2 border-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="m22 2-5 10-5-5 10-5z"/>
-                </svg>
-                Become a Vendor
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 text-lg">
+                🚀 Start Your Vendor Application
               </Button>
             </Link>
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              Join 1,000+ tourism businesses • No setup fees
+            <p className="text-xs text-blue-500 mt-3 text-center font-medium">
+              ✅ No setup fees • ✅ 24/7 support • ✅ Instant approval
             </p>
           </div>
         </CardContent>
