@@ -134,6 +134,16 @@ export default function LoginForm() {
           {isLoading ? "Signing in..." : "Sign in"}
         </Button>
         
+        {/* Simple Vendor Link */}
+        <div className="text-center text-sm">
+          <span>New to IslandLoaf? </span>
+          <Link href="/vendor-signup">
+            <span className="text-blue-600 hover:underline cursor-pointer font-medium">
+              Join as a Vendor
+            </span>
+          </Link>
+        </div>
+        
         {/* Vendor Signup Call-to-Action */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="text-center text-sm text-gray-600 mb-4">
