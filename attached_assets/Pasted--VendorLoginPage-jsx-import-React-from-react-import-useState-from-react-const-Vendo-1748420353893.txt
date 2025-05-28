@@ -1,0 +1,75 @@
+// VendorLoginPage.jsx
+import React from "react";
+import { useState } from "react";
+
+const VendorLoginPage = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // Handle login logic here (API call, token storage, etc.)
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-semibold text-center mb-6">Sign in to your account</h2>
+
+        <div className="flex justify-center mb-6">
+          <button className="px-4 py-2 bg-green-600 text-white rounded-l">Vendor Login</button>
+          <button className="px-4 py-2 bg-gray-200 rounded-r">Admin Login</button>
+        </div>
+
+        <form onSubmit={handleLogin}>
+          <label className="block mb-2 text-sm font-medium">Email</label>
+          <input
+            type="email"
+            className="w-full px-3 py-2 mb-4 border rounded"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="vendor@islandloaf.com"
+            required
+          />
+
+          <label className="block mb-2 text-sm font-medium">Password</label>
+          <input
+            type="password"
+            className="w-full px-3 py-2 mb-2 border rounded"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
+
+          <div className="text-right mb-4">
+            <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+              Forgot password?
+            </a>
+          </div>
+
+          <button type="submit" className="w-full bg-green-600 text-white py-2 rounded">
+            Sign in
+          </button>
+        </form>
+
+        {/* Vendor Sign Up Button */}
+        <div className="mt-6 text-center">
+          <span>Don't have an account? </span>
+          <a href="/vendor-signup" className="text-blue-600 font-medium hover:underline">
+            Sign up as Vendor
+          </a>
+        </div>
+
+        {/* Demo credentials for development/testing */}
+        <div className="mt-6 text-xs text-center text-gray-500">
+          Demo credentials:<br />
+          vendor@beachsidevillas.com / vendor123<br />
+          admin@islandloaf.com / admin123
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default VendorLoginPage;

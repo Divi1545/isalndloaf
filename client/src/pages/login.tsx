@@ -18,35 +18,14 @@ export default function Login() {
           
           <LoginForm />
           
-          {/* Simple Vendor Button */}
+          {/* Vendor Sign Up Link - Simple approach */}
           <div className="mt-6 text-center">
-            <hr className="my-4" />
-            <p className="text-sm text-gray-600 mb-3">New to IslandLoaf?</p>
+            <span className="text-sm">Don't have an account? </span>
             <Link href="/vendor-signup">
-              <Button variant="outline" className="w-full">
-                Join as a Vendor
-              </Button>
+              <span className="text-blue-600 font-medium hover:underline cursor-pointer">
+                Sign up as Vendor
+              </span>
             </Link>
-          </div>
-          
-          {/* Vendor Signup Call-to-Action - Force Visible */}
-          <div className="mt-8 pt-6 border-t-2 border-blue-200 bg-blue-50 p-4 rounded-lg">
-            <div className="text-center mb-4">
-              <p className="text-lg font-semibold text-blue-800 mb-2">
-                🏝️ Join IslandLoaf as a Vendor
-              </p>
-              <p className="text-sm text-blue-600">
-                List your tourism business and reach thousands of travelers
-              </p>
-            </div>
-            <Link href="/vendor-signup">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 text-lg">
-                🚀 Start Your Vendor Application
-              </Button>
-            </Link>
-            <p className="text-xs text-blue-500 mt-3 text-center font-medium">
-              ✅ No setup fees • ✅ 24/7 support • ✅ Instant approval
-            </p>
           </div>
         </CardContent>
       </Card>
