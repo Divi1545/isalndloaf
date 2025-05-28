@@ -134,12 +134,12 @@ export default function LoginForm() {
           {isLoading ? "Signing in..." : "Sign in"}
         </Button>
         
-        {/* Simple Vendor Link */}
-        <div className="text-center text-sm">
-          <span>New to IslandLoaf? </span>
+        {/* DEBUG: Force Visible Vendor Link */}
+        <div style={{ backgroundColor: 'red', color: 'white', padding: '10px', margin: '10px 0', textAlign: 'center' }}>
+          🚨 VENDOR SIGNUP TEST 🚨 
           <Link href="/vendor-signup">
-            <span className="text-blue-600 hover:underline cursor-pointer font-medium">
-              Join as a Vendor
+            <span style={{ color: 'yellow', textDecoration: 'underline', cursor: 'pointer' }}>
+              CLICK HERE TO JOIN AS VENDOR
             </span>
           </Link>
         </div>
