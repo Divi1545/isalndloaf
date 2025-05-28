@@ -18,6 +18,17 @@ export default function Login() {
           
           <LoginForm />
           
+          {/* Simple Vendor Button */}
+          <div className="mt-6 text-center">
+            <hr className="my-4" />
+            <p className="text-sm text-gray-600 mb-3">New to IslandLoaf?</p>
+            <Link href="/vendor-signup">
+              <Button variant="outline" className="w-full">
+                Join as a Vendor
+              </Button>
+            </Link>
+          </div>
+          
           {/* Vendor Signup Call-to-Action - Force Visible */}
           <div className="mt-8 pt-6 border-t-2 border-blue-200 bg-blue-50 p-4 rounded-lg">
             <div className="text-center mb-4">
