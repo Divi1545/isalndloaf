@@ -234,6 +234,7 @@ const VendorManagement = () => {
     ownerName: '',
     email: '',
     phone: '',
+    password: '',
     businessType: 'accommodation',
     location: '',
     description: '',
@@ -250,6 +251,7 @@ const VendorManagement = () => {
       ownerName: '',
       email: '',
       phone: '',
+      password: '',
       businessType: 'accommodation',
       location: '',
       description: '',
@@ -338,6 +340,16 @@ const VendorManagement = () => {
                     placeholder="+94 76 123 4567"
                   />
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Password</Label>
+                <Input 
+                  type="password"
+                  value={newVendor.password}
+                  onChange={(e) => setNewVendor({...newVendor, password: e.target.value})}
+                  placeholder="Set a password for vendor login"
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-3">
