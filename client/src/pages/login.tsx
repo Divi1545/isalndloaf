@@ -13,7 +13,7 @@ export default function Login() {
               <i className="ri-island-line text-5xl text-primary"></i>
             </div>
             <h1 className="text-3xl font-bold text-primary-600 mb-2">IslandLoaf</h1>
-            <p className="text-neutral-600">Vendor Dashboard Login</p>
+            <p className="text-neutral-600">Tourism Management Platform</p>
           </div>
           
           <LoginForm />
@@ -50,6 +50,18 @@ export default function Login() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Vendor Signup - Outside Card */}
+      <div className="mt-4 w-full max-w-md mx-4">
+        <div className="bg-white p-4 rounded-lg shadow-md text-center">
+          <p className="text-sm text-gray-700 mb-3">Want to join IslandLoaf as a vendor?</p>
+          <Link href="/vendor-signup">
+            <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+              Become a Vendor
+            </Button>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
