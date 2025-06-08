@@ -1228,6 +1228,112 @@ Format as comprehensive JSON:
     }
   });
 
+  // AI Agent Trainer Endpoints
+  app.post("/api/ai/agent-trainer", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { agent, trainingData } = req.body;
+      const userId = req.session.user!.userId;
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "AI training service not available" });
+      }
+
+      if (!agent || !trainingData?.input || !trainingData?.expectedOutput) {
+        return res.status(400).json({ error: "Missing required training data" });
+      }
+
+      // Generate prompt tuning suggestions using OpenAI
+      const tuningPrompt = `Analyze this training example for an AI agent and provide specific prompt improvements:
+
+AGENT TYPE: ${agent}
+USER INPUT: ${trainingData.input}
+EXPECTED OUTPUT: ${trainingData.expectedOutput}
+CONTEXT: ${trainingData.context || 'None provided'}
+
+Provide structured analysis:
+1. IMPROVED PROMPT TEMPLATE for this scenario
+2. KEY PATTERNS the agent should recognize
+3. RESPONSE STRUCTURE guidelines
+4. EDGE CASES to consider
+5. VALIDATION RULES for similar inputs
+
+Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lankan tourism platform.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are an AI prompt engineering expert specializing in tourism and booking systems. Provide specific, actionable advice for improving agent prompts." 
+          },
+          { role: "user", content: tuningPrompt }
+        ],
+        temperature: 0.3,
+        max_tokens: 1500
+      });
+
+      const suggestions = completion.choices[0].message.content || "";
+
+      // Store training data as a notification for tracking
+      const trainingRecord = await storage.createNotification({
+        userId,
+        title: `AI Training: ${agent} Agent`,
+        message: `Input: ${trainingData.input}\nExpected: ${trainingData.expectedOutput}`,
+        type: "training",
+        read: false
+      });
+
+      console.log(`AI Agent Training Submitted:`, {
+        agent,
+        userId,
+        trainingId: trainingRecord.id,
+        timestamp: new Date().toISOString()
+      });
+
+      res.json({
+        success: true,
+        trainingId: trainingRecord.id,
+        suggestions: suggestions,
+        message: "Training data processed and suggestions generated"
+      });
+
+    } catch (error) {
+      console.error("AI agent training error:", error);
+      res.status(500).json({ error: "Failed to process training data" });
+    }
+  });
+
+  app.get("/api/ai/agent-trainer/history", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { agent } = req.query;
+      const userId = req.session.user!.userId;
+
+      // Get training history from notifications
+      const notifications = await storage.getNotifications(userId);
+      const trainingHistory = notifications
+        .filter(n => n.type === "training")
+        .filter(n => !agent || n.title.includes(agent as string))
+        .slice(0, 20)
+        .map(n => ({
+          id: n.id,
+          agent: n.title.replace("AI Training: ", "").replace(" Agent", ""),
+          input: n.message.split("\nExpected:")[0].replace("Input: ", ""),
+          expectedOutput: n.message.split("\nExpected: ")[1] || "",
+          status: 'success' as const,
+          timestamp: n.createdAt || new Date().toISOString()
+        }));
+
+      res.json({ 
+        success: true, 
+        history: trainingHistory
+      });
+
+    } catch (error) {
+      console.error("Failed to fetch training history:", error);
+      res.status(500).json({ error: "Failed to fetch training history" });
+    }
+  });
+
   // For handling errors
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack);

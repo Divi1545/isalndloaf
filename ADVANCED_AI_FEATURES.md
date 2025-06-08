@@ -131,6 +131,7 @@ Your system is designed to work with the comprehensive Airtable schema you provi
 3. **Customer Experience Analysis**: Automated feedback processing
 4. **Trip Planning**: Personalized itinerary generation
 5. **Multi-Agent Automation**: Programmatic business operations
+6. **AI Agent Training**: Advanced training system for improving agent responses
 
 ## API Keys & Configuration
 
