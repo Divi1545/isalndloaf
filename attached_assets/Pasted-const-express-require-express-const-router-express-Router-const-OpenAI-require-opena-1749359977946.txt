@@ -1,0 +1,266 @@
+const express = require('express');
+const router = express.Router();
+const OpenAI = require('openai');
+const { authenticate } = require('../../middleware/auth');
+const Airtable = require('airtable');
+
+// Initialize Airtable
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// Vendor Analytics with SWOT
+router.post('/vendor-analytics', authenticate, async (req, res) => {
+  try {
+    const { vendorId, period = 30 } = req.body;
+    
+    // Fetch vendor from Airtable
+    const vendor = await base('Vendors').find(vendorId);
+    if (!vendor) {
+      return res.status(404).json({ error: 'Vendor not found' });
+    }
+
+    // Fetch bookings for this vendor
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - period);
+    
+    const bookings = await base('Bookings')
+      .select({
+        filterByFormula: `AND(
+          {VendorId} = '${vendorId}',
+          IS_AFTER({CreatedAt}, '${startDate.toISOString()}')
+        )`
+      })
+      .all();
+
+    // Fetch reviews
+    const reviews = await base('Reviews')
+      .select({
+        filterByFormula: `{VendorId} = '${vendorId}'`
+      })
+      .all();
+
+    // Calculate metrics
+    const metrics = {
+      totalBookings: bookings.length,
+      totalRevenue: bookings.reduce((sum, b) => sum + (b.fields.TotalPrice || 0), 0),
+      averageRating: reviews.length > 0 
+        ? reviews.reduce((sum, r) => sum + (r.fields.Rating || 0), 0) / reviews.length 
+        : 0,
+      occupancyRate: (bookings.length / period) * 100,
+      reviewCount: reviews.length
+    };
+
+    // Generate SWOT analysis using OpenAI
+    const swotPrompt = `
+      Analyze this tourism vendor and provide a SWOT analysis:
+      
+      Vendor: ${vendor.fields.BusinessName}
+      Type: ${vendor.fields.ServicesOffered?.join(', ')}
+      Location: ${vendor.fields.Location}
+      
+      Performance Metrics (last ${period} days):
+      - Total Bookings: ${metrics.totalBookings}
+      - Revenue: $${metrics.totalRevenue}
+      - Average Rating: ${metrics.averageRating.toFixed(1)}/5
+      - Occupancy Rate: ${metrics.occupancyRate.toFixed(1)}%
+      - Total Reviews: ${metrics.reviewCount}
+      
+      Provide a structured SWOT analysis with 3-4 points each for:
+      - Strengths
+      - Weaknesses  
+      - Opportunities
+      - Threats
+      
+      Format as JSON with arrays for each category.
+    `;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are a tourism business analyst expert in Sri Lankan tourism market." },
+        { role: "user", content: swotPrompt }
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" }
+    });
+
+    const swotAnalysis = JSON.parse(completion.choices[0].message.content);
+
+    res.json({
+      success: true,
+      vendor: {
+        id: vendor.id,
+        name: vendor.fields.BusinessName,
+        type: vendor.fields.ServicesOffered
+      },
+      metrics,
+      swotAnalysis,
+      recommendations: swotAnalysis.opportunities?.slice(0, 2) || []
+    });
+
+  } catch (error) {
+    console.error('Vendor analytics error:', error);
+    res.status(500).json({ error: 'Failed to generate analytics' });
+  }
+});
+
+// Analyze Feedback with Sentiment Analysis
+router.post('/analyze-feedback', authenticate, async (req, res) => {
+  try {
+    const { feedbackTexts, vendorId } = req.body;
+    
+    if (!feedbackTexts || !Array.isArray(feedbackTexts)) {
+      return res.status(400).json({ error: 'Invalid feedback data' });
+    }
+
+    const sentimentPrompt = `
+      Analyze the sentiment of these customer reviews and provide insights:
+      
+      Reviews:
+      ${feedbackTexts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}
+      
+      Provide:
+      1. Overall sentiment score (0-100, where 100 is most positive)
+      2. Sentiment breakdown (positive/neutral/negative percentages)
+      3. Key themes mentioned (max 5)
+      4. Actionable improvements (max 3)
+      5. Positive highlights (max 3)
+      
+      Format as JSON.
+    `;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "You are a customer feedback analyst for tourism services." },
+        { role: "user", content: sentimentPrompt }
+      ],
+      temperature: 0.3,
+      response_format: { type: "json_object" }
+    });
+
+    const analysis = JSON.parse(completion.choices[0].message.content);
+
+    // Store analysis results if vendorId provided
+    if (vendorId) {
+      await base('FeedbackAnalysis').create([
+        {
+          fields: {
+            VendorId: vendorId,
+            AnalysisDate: new Date().toISOString(),
+            OverallScore: analysis.overallScore,
+            SentimentBreakdown: JSON.stringify(analysis.sentimentBreakdown),
+            KeyThemes: analysis.keyThemes?.join(', '),
+            Improvements: JSON.stringify(analysis.improvements),
+            Highlights: JSON.stringify(analysis.highlights)
+          }
+        }
+      ]);
+    }
+
+    res.json({
+      success: true,
+      analysis,
+      summary: {
+        overallScore: analysis.overallScore,
+        sentiment: analysis.sentimentBreakdown,
+        topThemes: analysis.keyThemes?.slice(0, 3) || []
+      }
+    });
+
+  } catch (error) {
+    console.error('Feedback analysis error:', error);
+    res.status(500).json({ error: 'Failed to analyze feedback' });
+  }
+});
+
+// Optimize Booking with Smart Matching
+router.post('/optimize-booking', authenticate, async (req, res) => {
+  try {
+    const { budget, dates, preferences, guestCount = 2 } = req.body;
+    
+    // Fetch available services from Airtable
+    const services = await base('Services')
+      .select({
+        filterByFormula: `AND(
+          {BasePrice} <= ${budget},
+          {Status} = 'Active',
+          {MaxCapacity} >= ${guestCount}
+        )`
+      })
+      .all();
+
+    // Get vendor details for each service
+    const servicesWithVendors = await Promise.all(
+      services.map(async (service) => {
+        const vendor = await base('Vendors').find(service.fields.VendorId[0]);
+        return {
+          ...service.fields,
+          vendorName: vendor.fields.BusinessName,
+          vendorRating: vendor.fields.Rating || 'New'
+        };
+      })
+    );
+
+    const optimizationPrompt = `
+      Find the best tourism options for this customer:
+      
+      Budget: $${budget} per person
+      Dates: ${dates.checkIn} to ${dates.checkOut}
+      Guests: ${guestCount}
+      Preferences: ${JSON.stringify(preferences)}
+      
+      Available Options:
+      ${servicesWithVendors.map(s => `
+        - ${s.vendorName}: ${s.ServiceType} - "${s.Title}"
+          Price: $${s.BasePrice}/night
+          Location: ${s.Location}
+          Rating: ${s.vendorRating}
+          Amenities: ${s.Amenities?.join(', ')}
+      `).join('\n')}
+      
+      Rank the top 3 options considering:
+      1. Value for money
+      2. Match with preferences
+      3. Location convenience
+      4. Service quality
+      
+      Provide reasoning for each recommendation.
+      Format as JSON with 'recommendations' array.
+    `;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are a travel concierge expert in Sri Lankan tourism." },
+        { role: "user", content: optimizationPrompt }
+      ],
+      temperature: 0.5,
+      response_format: { type: "json_object" }
+    });
+
+    const optimization = JSON.parse(completion.choices[0].message.content);
+
+    res.json({
+      success: true,
+      request: {
+        budget,
+        dates,
+        guestCount,
+        preferences
+      },
+      recommendations: optimization.recommendations || [],
+      savings: optimization.potentialSavings || 0,
+      matchScore: optimization.overallMatchScore || 85
+    });
+
+  } catch (error) {
+    console.error('Booking optimization error:', error);
+    res.status(500).json({ error: 'Failed to optimize booking' });
+  }
+});
+
+module.exports = router;

@@ -1,0 +1,120 @@
+const express = require('express');
+const router = express.Router();
+const OpenAI = require('openai');
+const { authenticate } = require('../../middleware/auth');
+const Airtable = require('airtable');
+
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+router.post('/trip-concierge', authenticate, async (req, res) => {
+  try {
+    const { arrivalDate, duration, interests, budget } = req.body;
+
+    // Fetch relevant services from Airtable based on interests
+    const serviceFilters = interests.map(interest => 
+      `FIND('${interest}', LOWER({Tags}))`
+    ).join(', ');
+
+    const services = await base('Services')
+      .select({
+        filterByFormula: `AND(
+          {Status} = 'Active',
+          OR(${serviceFilters})
+        )`
+      })
+      .all();
+
+    // Group services by type
+    const groupedServices = services.reduce((acc, service) => {
+      const type = service.fields.ServiceType;
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(service.fields);
+      return acc;
+    }, {});
+
+    const conciergePrompt = `
+      Create a detailed ${duration}-day Sri Lankan itinerary for a tourist:
+      
+      Arrival: ${arrivalDate}
+      Duration: ${duration} days
+      Interests: ${interests.join(', ')}
+      Budget: $${budget} total
+      
+      Available Services:
+      ${Object.entries(groupedServices).map(([type, items]) => 
+        `${type}: ${items.length} options`
+      ).join('\n')}
+      
+      Create a day-by-day itinerary including:
+      1. Morning, afternoon, and evening activities
+      2. Recommended accommodations (budget-appropriate)
+      3. Transportation between locations
+      4. Meal recommendations
+      5. Estimated daily costs
+      6. Local tips and cultural insights
+      
+      Make it practical, engaging, and within budget.
+      Format as JSON with 'days' array containing detailed plans.
+    `;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert Sri Lankan travel concierge. Create personalized, practical itineraries that showcase authentic experiences while respecting budget constraints." 
+        },
+        { role: "user", content: conciergePrompt }
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" }
+    });
+
+    const itinerary = JSON.parse(completion.choices[0].message.content);
+
+    // Generate booking links (dummy for now)
+    const bookingLinks = {
+      accommodations: services
+        .filter(s => s.fields.ServiceType === 'Accommodation')
+        .slice(0, 3)
+        .map(s => ({
+          name: s.fields.Title,
+          price: s.fields.BasePrice,
+          link: `/book/service/${s.id}`
+        })),
+      tours: services
+        .filter(s => s.fields.ServiceType === 'Tour')
+        .slice(0, 5)
+        .map(s => ({
+          name: s.fields.Title,
+          price: s.fields.BasePrice,
+          link: `/book/service/${s.id}`
+        }))
+    };
+
+    res.json({
+      success: true,
+      request: {
+        arrivalDate,
+        duration,
+        interests,
+        budget
+      },
+      itinerary: itinerary.days,
+      bookingLinks,
+      totalEstimatedCost: itinerary.totalCost || budget * 0.9,
+      savingsTips: itinerary.savingsTips || [],
+      weatherAdvice: `Pack light clothing, rain gear for ${arrivalDate}`,
+      generatedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Trip concierge error:', error);
+    res.status(500).json({ error: 'Failed to generate itinerary' });
+  }
+});
+
+module.exports = router;

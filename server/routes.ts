@@ -864,6 +864,370 @@ Provide detailed analysis in JSON:
     }
   });
 
+  // AI Trip Concierge Service
+  app.post("/api/ai/trip-concierge", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { arrivalDate, duration, interests, budget, location = "Sri Lanka" } = req.body;
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "AI concierge service not available" });
+      }
+
+      if (!arrivalDate || !duration || !interests || !budget) {
+        return res.status(400).json({ error: "Missing required fields: arrivalDate, duration, interests, budget" });
+      }
+
+      // Get available services from our system
+      const allServices = await storage.getServices(0);
+      const accommodations = allServices.filter(s => s.type.toLowerCase() === 'accommodation');
+      const tours = allServices.filter(s => s.type.toLowerCase() === 'tours');
+      const transport = allServices.filter(s => s.type.toLowerCase() === 'transport');
+      const wellness = allServices.filter(s => s.type.toLowerCase() === 'wellness');
+
+      const conciergePrompt = `Create a detailed ${duration}-day Sri Lankan travel itinerary:
+
+TRIP DETAILS:
+- Arrival: ${arrivalDate}
+- Duration: ${duration} days
+- Interests: ${interests.join(', ')}
+- Total Budget: $${budget}
+- Location Focus: ${location}
+
+AVAILABLE SERVICES:
+Accommodations (${accommodations.length} options):
+${accommodations.slice(0, 5).map(s => `- ${s.title}: $${s.price}/night - ${s.description.substring(0, 80)}...`).join('\n')}
+
+Tours & Activities (${tours.length} options):
+${tours.slice(0, 5).map(s => `- ${s.title}: $${s.price} - ${s.description.substring(0, 80)}...`).join('\n')}
+
+Transport Options (${transport.length} available):
+${transport.slice(0, 3).map(s => `- ${s.title}: $${s.price} - ${s.description.substring(0, 80)}...`).join('\n')}
+
+Wellness Services (${wellness.length} available):
+${wellness.slice(0, 3).map(s => `- ${s.title}: $${s.price} - ${s.description.substring(0, 80)}...`).join('\n')}
+
+REQUIREMENTS:
+1. Create day-by-day detailed itinerary
+2. Include morning, afternoon, evening activities
+3. Recommend specific accommodations from our list
+4. Suggest transportation between locations
+5. Estimate daily costs and keep within budget
+6. Add cultural insights and local tips
+7. Include weather considerations
+8. Suggest authentic Sri Lankan experiences
+
+Format as comprehensive JSON:
+{
+  "itinerary": {
+    "days": [
+      {
+        "day": 1,
+        "date": "calculated date",
+        "location": "primary location",
+        "morning": {"activity": "description", "cost": 0, "duration": "2 hours"},
+        "afternoon": {"activity": "description", "cost": 0, "duration": "3 hours"},
+        "evening": {"activity": "description", "cost": 0, "duration": "2 hours"},
+        "accommodation": {"name": "from our list", "cost": 0},
+        "meals": {"breakfast": 0, "lunch": 0, "dinner": 0},
+        "transport": {"method": "description", "cost": 0},
+        "dailyTotal": 0,
+        "highlights": ["key experiences"],
+        "tips": ["local insights"]
+      }
+    ]
+  },
+  "summary": {
+    "totalEstimatedCost": 0,
+    "accommodationCost": 0,
+    "activitiesCost": 0,
+    "transportCost": 0,
+    "mealsCost": 0,
+    "budgetRemaining": 0
+  },
+  "recommendations": {
+    "bestAccommodations": ["top 3 from our services"],
+    "mustDoActivities": ["essential experiences"],
+    "culturalExperiences": ["authentic Sri Lankan experiences"],
+    "foodRecommendations": ["local cuisine highlights"],
+    "packingList": ["essential items to bring"]
+  },
+  "bookingStrategy": {
+    "bestBookingTimes": "when to book each service",
+    "seasonalConsiderations": "weather and crowd factors",
+    "budgetOptimization": "money-saving tips",
+    "flexibilityAdvice": "alternative options"
+  }
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert Sri Lankan travel concierge with deep local knowledge. Create personalized, practical itineraries that showcase authentic experiences while respecting budget constraints. Use actual services from the provided list when possible."
+          },
+          {
+            role: "user",
+            content: conciergePrompt
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 3000
+      });
+
+      const tripPlan = JSON.parse(completion.choices[0].message.content || '{}');
+
+      // Add booking links for recommended services
+      const bookingLinks = {
+        accommodations: accommodations.slice(0, 3).map(s => ({
+          id: s.id,
+          name: s.title,
+          price: s.price,
+          bookingUrl: `/book/service/${s.id}`,
+          description: s.description.substring(0, 100) + '...'
+        })),
+        tours: tours.slice(0, 5).map(s => ({
+          id: s.id,
+          name: s.title,
+          price: s.price,
+          bookingUrl: `/book/service/${s.id}`,
+          description: s.description.substring(0, 100) + '...'
+        })),
+        transport: transport.slice(0, 3).map(s => ({
+          id: s.id,
+          name: s.title,
+          price: s.price,
+          bookingUrl: `/book/service/${s.id}`,
+          description: s.description.substring(0, 100) + '...'
+        }))
+      };
+
+      res.json({
+        success: true,
+        tripRequest: {
+          arrivalDate,
+          duration,
+          interests,
+          budget,
+          location
+        },
+        itinerary: tripPlan.itinerary,
+        summary: tripPlan.summary,
+        recommendations: tripPlan.recommendations,
+        bookingStrategy: tripPlan.bookingStrategy,
+        bookingLinks,
+        generatedAt: new Date().toISOString(),
+        validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // Valid for 7 days
+      });
+
+    } catch (error) {
+      console.error("AI trip concierge error:", error);
+      res.status(500).json({ error: "Failed to generate travel itinerary" });
+    }
+  });
+
+  // AI Agent Executor System
+  app.post("/api/ai/agent-executor", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { agent, action, data } = req.body;
+      const userId = req.session.user!.userId;
+      
+      if (!agent || !action || !data) {
+        return res.status(400).json({ error: "Missing required fields: agent, action, data" });
+      }
+
+      // Define available agent actions
+      const agentHandlers = {
+        vendor: {
+          analyze: async (params: any) => {
+            const vendorServices = await storage.getServices(params.vendorId || userId);
+            const vendorBookings = await storage.getBookings(params.vendorId || userId);
+            
+            return {
+              success: true,
+              vendorId: params.vendorId || userId,
+              analytics: {
+                totalServices: vendorServices.length,
+                totalBookings: vendorBookings.length,
+                revenue: vendorBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0),
+                activeServices: vendorServices.filter(s => s.type).length
+              },
+              message: "Vendor analysis completed"
+            };
+          },
+          approve: async (params: any) => {
+            // Simulate vendor approval (in real system, this would update vendor status)
+            return {
+              success: true,
+              vendorId: params.vendorId,
+              status: "approved",
+              message: `Vendor ${params.vendorId} has been approved`,
+              approvedAt: new Date().toISOString()
+            };
+          },
+          suspend: async (params: any) => {
+            return {
+              success: true,
+              vendorId: params.vendorId,
+              status: "suspended",
+              reason: params.reason || "Policy violation",
+              message: `Vendor ${params.vendorId} has been suspended`
+            };
+          }
+        },
+        booking: {
+          create: async (params: any) => {
+            const booking = await storage.createBooking({
+              userId: params.vendorId || userId,
+              serviceType: params.serviceType,
+              checkIn: params.checkIn,
+              checkOut: params.checkOut,
+              guests: params.guests,
+              totalPrice: params.totalPrice,
+              status: "pending",
+              customerName: params.customerName,
+              customerEmail: params.customerEmail
+            });
+            
+            return {
+              success: true,
+              bookingId: booking.id,
+              message: "Booking created successfully"
+            };
+          },
+          confirm: async (params: any) => {
+            const booking = await storage.updateBooking(params.bookingId, { status: "confirmed" });
+            return {
+              success: true,
+              bookingId: params.bookingId,
+              status: "confirmed",
+              message: "Booking confirmed successfully"
+            };
+          },
+          cancel: async (params: any) => {
+            const booking = await storage.updateBooking(params.bookingId, { status: "cancelled" });
+            return {
+              success: true,
+              bookingId: params.bookingId,
+              status: "cancelled",
+              message: "Booking cancelled successfully"
+            };
+          }
+        },
+        marketing: {
+          generateContent: async (params: any) => {
+            if (!process.env.OPENAI_API_KEY) {
+              throw new Error("OpenAI API not configured");
+            }
+            
+            const content = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                {
+                  role: "system",
+                  content: "Generate marketing content for Sri Lankan tourism businesses."
+                },
+                {
+                  role: "user",
+                  content: `Create ${params.type} content for ${params.businessName} targeting ${params.audience}`
+                }
+              ],
+              max_tokens: 500
+            });
+            
+            const marketingContent = await storage.createMarketingContent({
+              userId,
+              contentType: params.type,
+              content: content.choices[0].message.content || "",
+              targetAudience: params.audience,
+              createdAt: new Date()
+            });
+            
+            return {
+              success: true,
+              contentId: marketingContent.id,
+              content: content.choices[0].message.content,
+              message: "Marketing content generated successfully"
+            };
+          },
+          scheduleCampaign: async (params: any) => {
+            return {
+              success: true,
+              campaignId: params.campaignId,
+              scheduledFor: params.scheduledDate,
+              message: "Campaign scheduled successfully"
+            };
+          }
+        },
+        support: {
+          createTicket: async (params: any) => {
+            const notification = await storage.createNotification({
+              userId,
+              title: `Support Ticket: ${params.subject}`,
+              message: params.description,
+              type: "support",
+              read: false,
+              createdAt: new Date()
+            });
+            
+            return {
+              success: true,
+              ticketId: notification.id,
+              subject: params.subject,
+              message: "Support ticket created successfully"
+            };
+          },
+          respondToTicket: async (params: any) => {
+            return {
+              success: true,
+              ticketId: params.ticketId,
+              response: params.response,
+              message: "Response sent successfully"
+            };
+          }
+        }
+      };
+
+      // Validate agent and action
+      if (!agentHandlers[agent as keyof typeof agentHandlers]) {
+        return res.status(400).json({ error: `Invalid agent: ${agent}` });
+      }
+
+      const agentHandler = agentHandlers[agent as keyof typeof agentHandlers];
+      if (!agentHandler[action as keyof typeof agentHandler]) {
+        return res.status(400).json({ error: `Invalid action '${action}' for agent '${agent}'` });
+      }
+
+      // Execute the agent action
+      const result = await agentHandler[action as keyof typeof agentHandler](data);
+
+      // Log the action (you could extend this to store in database)
+      console.log(`Agent action executed: ${agent}/${action}`, {
+        userId,
+        data,
+        result,
+        timestamp: new Date().toISOString()
+      });
+
+      res.json({
+        success: true,
+        agent,
+        action,
+        result,
+        executedAt: new Date().toISOString(),
+        executedBy: userId
+      });
+
+    } catch (error) {
+      console.error("Agent executor error:", error);
+      res.status(500).json({ 
+        error: "Agent execution failed",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // For handling errors
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack);

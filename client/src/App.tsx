@@ -13,6 +13,7 @@ import AddBooking from "./pages/dashboard/add-booking";
 import CalendarSync from "@/pages/dashboard/calendar-sync";
 import PricingEngine from "@/pages/dashboard/pricing-engine";
 import AiMarketing from "@/pages/dashboard/ai-marketing";
+import AIFeatures from "@/pages/dashboard/AIFeatures";
 import Analytics from "@/pages/dashboard/analytics";
 import ProfileSettings from "@/pages/dashboard/profile-settings";
 import Notifications from "@/pages/dashboard/notifications";
@@ -57,6 +58,7 @@ function Router() {
               <Route path="/dashboard/calendar" component={CalendarSync} />
               <Route path="/dashboard/pricing" component={PricingEngine} />
               <Route path="/dashboard/ai-marketing" component={AiMarketing} />
+              <Route path="/dashboard/ai-features" component={AIFeatures} />
               <Route path="/dashboard/analytics" component={Analytics} />
               <Route path="/dashboard/profile" component={ProfileSettings} />
               <Route path="/dashboard/notifications" component={Notifications} />

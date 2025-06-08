@@ -1,0 +1,104 @@
+// This file documents the Airtable schema structure
+// Create these tables in your Airtable base:
+
+const AIRTABLE_SCHEMA = {
+  Vendors: {
+    fields: [
+      { name: 'BusinessName', type: 'Single line text' },
+      { name: 'Email', type: 'Email' },
+      { name: 'Phone', type: 'Phone number' },
+      { name: 'Location', type: 'Single line text' },
+      { name: 'ServicesOffered', type: 'Multiple select' },
+      { name: 'Status', type: 'Single select' }, // pending, approved, suspended
+      { name: 'Rating', type: 'Number' },
+      { name: 'StripeAccountId', type: 'Single line text' },
+      { name: 'CalendarSyncUrl', type: 'URL' },
+      { name: 'CreatedAt', type: 'Date' },
+      { name: 'Services', type: 'Link to Services' }
+    ]
+  },
+  
+  Bookings: {
+    fields: [
+      { name: 'BookingId', type: 'Autonumber' },
+      { name: 'VendorId', type: 'Link to Vendors' },
+      { name: 'ServiceId', type: 'Link to Services' },
+      { name: 'CustomerName', type: 'Single line text' },
+      { name: 'CustomerEmail', type: 'Email' },
+      { name: 'CustomerPhone', type: 'Phone number' },
+      { name: 'CheckIn', type: 'Date' },
+      { name: 'CheckOut', type: 'Date' },
+      { name: 'GuestCount', type: 'Number' },
+      { name: 'TotalPrice', type: 'Currency' },
+      { name: 'Status', type: 'Single select' }, // pending, confirmed, cancelled
+      { name: 'PaymentStatus', type: 'Single select' },
+      { name: 'SpecialRequests', type: 'Long text' },
+      { name: 'CreatedAt', type: 'Created time' }
+    ]
+  },
+  
+  Services: {
+    fields: [
+      { name: 'Title', type: 'Single line text' },
+      { name: 'Description', type: 'Long text' },
+      { name: 'ServiceType', type: 'Single select' },
+      { name: 'VendorId', type: 'Link to Vendors' },
+      { name: 'BasePrice', type: 'Currency' },
+      { name: 'MaxCapacity', type: 'Number' },
+      { name: 'Amenities', type: 'Multiple select' },
+      { name: 'Images', type: 'Attachment' },
+      { name: 'Location', type: 'Single line text' },
+      { name: 'Status', type: 'Single select' }, // Active, Inactive
+      { name: 'AvailabilityCalendar', type: 'URL' }
+    ]
+  },
+  
+  Reviews: {
+    fields: [
+      { name: 'VendorId', type: 'Link to Vendors' },
+      { name: 'BookingId', type: 'Link to Bookings' },
+      { name: 'CustomerName', type: 'Single line text' },
+      { name: 'Rating', type: 'Rating' },
+      { name: 'Comment', type: 'Long text' },
+      { name: 'CreatedAt', type: 'Created time' }
+    ]
+  },
+  
+  AgentLogs: {
+    fields: [
+      { name: 'Agent', type: 'Single select' },
+      { name: 'Action', type: 'Single line text' },
+      { name: 'Data', type: 'Long text' },
+      { name: 'Result', type: 'Long text' },
+      { name: 'Status', type: 'Single select' },
+      { name: 'UserId', type: 'Single line text' },
+      { name: 'Timestamp', type: 'Created time' }
+    ]
+  },
+  
+  FeedbackAnalysis: {
+    fields: [
+      { name: 'VendorId', type: 'Link to Vendors' },
+      { name: 'AnalysisDate', type: 'Date' },
+      { name: 'OverallScore', type: 'Number' },
+      { name: 'SentimentBreakdown', type: 'Long text' },
+      { name: 'KeyThemes', type: 'Single line text' },
+      { name: 'Improvements', type: 'Long text' },
+      { name: 'Highlights', type: 'Long text' }
+    ]
+  },
+  
+  MarketingCampaigns: {
+    fields: [
+      { name: 'VendorId', type: 'Link to Vendors' },
+      { name: 'CampaignType', type: 'Single select' },
+      { name: 'Content', type: 'Long text' },
+      { name: 'Hashtags', type: 'Single line text' },
+      { name: 'TargetAudience', type: 'Single select' },
+      { name: 'Status', type: 'Single select' },
+      { name: 'CreatedAt', type: 'Created time' }
+    ]
+  }
+};
+
+module.exports = AIRTABLE_SCHEMA;

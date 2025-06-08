@@ -1,0 +1,200 @@
+const express = require('express');
+const router = express.Router();
+const { authenticate } = require('../../middleware/auth');
+const Airtable = require('airtable');
+const { sendTelegramNotification } = require('../../services/telegram');
+
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
+
+// Agent action handlers
+const agentHandlers = {
+  vendor: {
+    approve: async (data) => {
+      await base('Vendors').update(data.vendorId, {
+        Status: 'approved',
+        ApprovedAt: new Date().toISOString()
+      });
+      return { success: true, message: `Vendor ${data.vendorId} approved` };
+    },
+    suspend: async (data) => {
+      await base('Vendors').update(data.vendorId, {
+        Status: 'suspended',
+        SuspendedAt: new Date().toISOString()
+      });
+      return { success: true, message: `Vendor ${data.vendorId} suspended` };
+    },
+    analyze: async (data) => {
+      // Trigger analytics generation
+      return { success: true, message: 'Analytics generated', vendorId: data.vendorId };
+    }
+  },
+  booking: {
+    create: async (data) => {
+      const record = await base('Bookings').create([{
+        fields: {
+          VendorId: [data.vendorId],
+          ServiceId: [data.serviceId],
+          CustomerName: data.customerName,
+          CustomerEmail: data.customerEmail,
+          CustomerPhone: data.customerPhone,
+          CheckIn: data.checkIn,
+          CheckOut: data.checkOut,
+          GuestCount: data.guestCount,
+          TotalPrice: data.totalPrice,
+          Status: 'pending',
+          PaymentStatus: 'pending'
+        }
+      }]);
+      return { success: true, bookingId: record[0].id };
+    },
+    confirm: async (data) => {
+      await base('Bookings').update(data.bookingId, {
+        Status: 'confirmed',
+        PaymentStatus: 'paid'
+      });
+      return { success: true, message: `Booking ${data.bookingId} confirmed` };
+    },
+    cancel: async (data) => {
+      await base('Bookings').update(data.bookingId, {
+        Status: 'cancelled',
+        CancelledAt: new Date().toISOString()
+      });
+      return { success: true, message: `Booking ${data.bookingId} cancelled` };
+    }
+  },
+  marketing: {
+    generateContent: async (data) => {
+      const campaign = await base('MarketingCampaigns').create([{
+        fields: {
+          VendorId: [data.vendorId],
+          CampaignType: data.type,
+          TargetAudience: data.audience,
+          Status: 'draft'
+        }
+      }]);
+      return { success: true, campaignId: campaign[0].id };
+    },
+    scheduleCampaign: async (data) => {
+      await base('MarketingCampaigns').update(data.campaignId, {
+        Status: 'scheduled',
+        ScheduledFor: data.scheduledDate
+      });
+      return { success: true, message: 'Campaign scheduled' };
+    }
+  },
+  finance: {
+    processPayment: async (data) => {
+      // Process payment logic
+      return { success: true, transactionId: 'TXN-' + Date.now() };
+    },
+    generateReport: async (data) => {
+      // Generate financial report
+      return { success: true, reportUrl: '/reports/finance-' + Date.now() };
+    }
+  },
+  support: {
+    createTicket: async (data) => {
+      // Create support ticket in Airtable
+      return { success: true, ticketId: 'TKT-' + Date.now() };
+    },
+    respondToTicket: async (data) => {
+      // Add response to ticket
+      return { success: true, message: 'Response sent' };
+    }
+  },
+  zoom: {
+    scheduleCall: async (data) => {
+      // Schedule Zoom call via API
+      return { success: true, meetingId: 'ZOOM-' + Date.now() };
+    }
+  }
+};
+
+// Main executor endpoint
+router.post('/execute', authenticate, async (req, res) => {
+  try {
+    const { agent, action, data } = req.body;
+    
+    // Validate input
+    if (!agent || !action || !data) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: agent, action, data' 
+      });
+    }
+
+    // Check if agent and action exist
+    if (!agentHandlers[agent] || !agentHandlers[agent][action]) {
+      return res.status(400).json({ 
+        error: `Invalid agent/action combination: ${agent}/${action}` 
+      });
+    }
+
+    // Log the action to Airtable
+    const logRecord = await base('AgentLogs').create([{
+      fields: {
+        Agent: agent,
+        Action: action,
+        Data: JSON.stringify(data),
+        UserId: req.user.id,
+        Status: 'processing'
+      }
+    }]);
+
+    // Execute the action
+    const result = await agentHandlers[agent][action](data);
+
+    // Update log with result
+    await base('AgentLogs').update(logRecord[0].id, {
+      Status: 'completed',
+      Result: JSON.stringify(result)
+    });
+
+    // Send notifications for important actions
+    const notificationActions = [
+      'vendor.approve',
+      'booking.create',
+      'finance.processPayment',
+      'support.createTicket'
+    ];
+
+    if (notificationActions.includes(`${agent}.${action}`)) {
+      // Send Telegram notification
+      if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_ADMIN_CHAT_ID) {
+        await sendTelegramNotification({
+          chatId: process.env.TELEGRAM_ADMIN_CHAT_ID,
+          message: `🤖 Agent Action: ${agent}/${action}\n${JSON.stringify(result, null, 2)}`
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      agent,
+      action,
+      result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Agent executor error:', error);
+    
+    // Log error to Airtable
+    await base('AgentLogs').create([{
+      fields: {
+        Agent: req.body.agent,
+        Action: req.body.action,
+        Data: JSON.stringify(req.body.data),
+        UserId: req.user?.id,
+        Status: 'failed',
+        Error: error.message
+      }
+    }]);
+
+    res.status(500).json({ 
+      error: 'Agent execution failed',
+      message: error.message 
+    });
+  }
+});
+
+module.exports = router;
