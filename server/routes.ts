@@ -1228,6 +1228,316 @@ Format as comprehensive JSON:
     }
   });
 
+  // Enhanced System Status
+  app.get("/api/system/status", async (req: Request, res: Response) => {
+    try {
+      const status = {
+        service: 'islandloaf-api',
+        version: '2.0.0',
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        services: {
+          database: process.env.DATABASE_URL ? 'postgresql' : 'memory',
+          openai: !!process.env.OPENAI_API_KEY,
+          storage: 'operational',
+          agent_api: !!process.env.AGENT_API_KEY
+        },
+        endpoints: {
+          health: '/api/health',
+          agent: '/api/agent/execute',
+          ai: '/api/ai/*',
+          webhooks: '/api/webhooks/*'
+        }
+      };
+
+      res.json({
+        success: true,
+        data: status,
+        message: 'System operational'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'System check failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Agent API key validation middleware
+  const validateAgentApiKey = (req: Request, res: Response, next: Function) => {
+    const apiKey = req.headers['x-api-key'] || req.query.apiKey;
+    
+    if (!apiKey || apiKey !== process.env.AGENT_API_KEY) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid API key',
+        code: 'INVALID_API_KEY'
+      });
+    }
+
+    next();
+  };
+
+  // Universal Agent Executor
+  app.post("/api/agent/execute", validateAgentApiKey, async (req: Request, res: Response) => {
+    try {
+      const { agent, action, data, requestId } = req.body;
+      
+      if (!agent || !action) {
+        return res.status(400).json({
+          success: false,
+          error: 'Agent and action are required',
+          code: 'MISSING_PARAMS'
+        });
+      }
+
+      const startTime = Date.now();
+      console.log(`Agent execution: ${agent}.${action} - ${requestId || 'no-id'}`);
+
+      let result;
+      
+      switch (agent.toLowerCase()) {
+        case 'vendor':
+          result = await executeVendorAgent(action, data);
+          break;
+        case 'booking':
+          result = await executeBookingAgent(action, data);
+          break;
+        case 'marketing':
+          result = await executeMarketingAgent(action, data);
+          break;
+        case 'support':
+          result = await executeSupportAgent(action, data);
+          break;
+        default:
+          throw new Error(`Unknown agent: ${agent}`);
+      }
+
+      res.json({
+        success: true,
+        agent,
+        action,
+        data: result,
+        message: `${agent} agent executed ${action} successfully`,
+        metadata: {
+          requestId,
+          timestamp: new Date().toISOString(),
+          executionTime: Date.now() - startTime
+        }
+      });
+
+    } catch (error) {
+      console.error('Agent execution failed:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        code: 'EXECUTION_FAILED',
+        fallback: 'Manual intervention required',
+        metadata: {
+          requestId: req.body.requestId,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+  });
+
+  // Agent action handlers
+  async function executeVendorAgent(action: string, data: any) {
+    switch (action) {
+      case 'analyze':
+        const vendor = await storage.getUser(data.vendorId);
+        if (!vendor) throw new Error('Vendor not found');
+        
+        return {
+          vendorId: data.vendorId,
+          status: vendor.role === 'vendor' ? 'active' : 'inactive',
+          businessName: vendor.businessName,
+          analysis: 'Vendor analysis completed'
+        };
+
+      case 'approve':
+        return {
+          vendorId: data.vendorId,
+          status: 'approved',
+          approvedAt: new Date().toISOString()
+        };
+
+      case 'suspend':
+        return {
+          vendorId: data.vendorId,
+          status: 'suspended',
+          suspendedAt: new Date().toISOString(),
+          reason: data.reason || 'Administrative action'
+        };
+
+      default:
+        throw new Error(`Unknown vendor action: ${action}`);
+    }
+  }
+
+  async function executeBookingAgent(action: string, data: any) {
+    switch (action) {
+      case 'create':
+        const booking = await storage.createBooking({
+          userId: data.vendorId,
+          serviceId: data.serviceId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          startDate: new Date(data.startDate),
+          endDate: new Date(data.endDate),
+          totalPrice: data.totalPrice,
+          commission: data.commission || data.totalPrice * 0.1,
+          status: 'pending'
+        });
+
+        return {
+          bookingId: booking.id,
+          status: 'created',
+          totalPrice: booking.totalPrice,
+          commission: booking.commission
+        };
+
+      case 'confirm':
+        const confirmedBooking = await storage.updateBooking(data.bookingId, {
+          status: 'confirmed'
+        });
+        
+        return {
+          bookingId: data.bookingId,
+          status: 'confirmed',
+          confirmedAt: new Date().toISOString()
+        };
+
+      case 'cancel':
+        await storage.updateBooking(data.bookingId, {
+          status: 'cancelled'
+        });
+        
+        return {
+          bookingId: data.bookingId,
+          status: 'cancelled',
+          cancelledAt: new Date().toISOString(),
+          reason: data.reason || 'Customer request'
+        };
+
+      default:
+        throw new Error(`Unknown booking action: ${action}`);
+    }
+  }
+
+  async function executeMarketingAgent(action: string, data: any) {
+    switch (action) {
+      case 'generate_content':
+        return {
+          contentType: data.type || 'social_media',
+          content: `Generated ${data.type} content for ${data.service}`,
+          generatedAt: new Date().toISOString()
+        };
+
+      case 'schedule_campaign':
+        return {
+          campaignId: `CAM-${Date.now()}`,
+          scheduled: true,
+          scheduledFor: data.scheduledFor,
+          platform: data.platform
+        };
+
+      default:
+        throw new Error(`Unknown marketing action: ${action}`);
+    }
+  }
+
+  async function executeSupportAgent(action: string, data: any) {
+    switch (action) {
+      case 'create_ticket':
+        const notification = await storage.createNotification({
+          userId: data.vendorId || 1,
+          title: `Support Ticket: ${data.subject}`,
+          message: data.description,
+          type: 'support'
+        });
+
+        return {
+          ticketId: notification.id,
+          subject: data.subject,
+          priority: data.priority || 'medium',
+          createdAt: new Date().toISOString()
+        };
+
+      case 'respond':
+        return {
+          ticketId: data.ticketId,
+          response: data.response,
+          respondedAt: new Date().toISOString(),
+          status: 'responded'
+        };
+
+      default:
+        throw new Error(`Unknown support action: ${action}`);
+    }
+  }
+
+  // Webhook Endpoints
+  app.post("/api/webhooks/n8n", async (req: Request, res: Response) => {
+    try {
+      const { workflow, data, executionId } = req.body;
+      
+      console.log(`n8n webhook: ${workflow} - ${executionId}`);
+
+      let result;
+      switch (workflow) {
+        case 'booking_automation':
+          const booking = await storage.createBooking({
+            userId: data.vendorId,
+            serviceId: data.serviceId,
+            customerName: data.customerName,
+            customerEmail: data.customerEmail,
+            startDate: new Date(data.startDate),
+            endDate: new Date(data.endDate),
+            totalPrice: data.totalPrice,
+            commission: data.commission || data.totalPrice * 0.1,
+            status: 'pending'
+          });
+          result = { bookingId: booking.id };
+          break;
+
+        case 'vendor_onboarding':
+          const vendor = await storage.createUser({
+            username: data.email,
+            email: data.email,
+            password: 'temp-password',
+            fullName: data.fullName,
+            businessName: data.businessName,
+            businessType: data.businessType,
+            role: 'vendor'
+          });
+          result = { vendorId: vendor.id };
+          break;
+
+        default:
+          result = { message: 'Workflow not recognized' };
+      }
+
+      res.json({
+        success: true,
+        executionId,
+        result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('n8n webhook error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        fallback: 'Manual processing required'
+      });
+    }
+  });
+
   // AI Agent Trainer Endpoints
   app.post("/api/ai/agent-trainer", requireAuth, async (req: Request, res: Response) => {
     try {

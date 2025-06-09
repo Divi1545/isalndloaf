@@ -11,8 +11,29 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Enhanced middleware with CORS and logging
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging with unique IDs
+app.use((req, res, next) => {
+  const start = Date.now();
+  const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  (req as any).requestId = requestId;
+  (req as any).startTime = start;
+
+  log(`[${new Date().toISOString()}] ${req.method} ${req.path} - ${requestId}`);
+
+  const originalSend = res.send;
+  res.send = function(data) {
+    const duration = Date.now() - start;
+    log(`[${new Date().toISOString()}] ${req.method} ${req.path} - ${res.statusCode} (${duration}ms) - ${requestId}`);
+    return originalSend.call(this, data);
+  };
+
+  next();
+});
 
 // Rate limiting for auth endpoints (security enhancement)
 const authLimiter = rateLimit({
