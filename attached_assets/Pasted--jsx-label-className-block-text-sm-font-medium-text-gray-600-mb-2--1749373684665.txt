@@ -1,0 +1,423 @@
+```jsx
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  User Input / Command
+                </label>
+                <textarea
+                  value={trainingData.input}
+                  onChange={(e) => setTrainingData({ ...trainingData, input: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows="4"
+                  placeholder="e.g., Create a booking for 2 guests at Ella homestay from July 1-5"
+                />
+              </div>
+
+              {/* Expected Output */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Expected Agent Response
+                </label>
+                <textarea
+                  value={trainingData.expectedOutput}
+                  onChange={(e) => setTrainingData({ ...trainingData, expectedOutput: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows="4"
+                  placeholder="e.g., Booking created successfully with ID: BK-12345..."
+                />
+              </div>
+
+              {/* Context/Workflow */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Context / Workflow (Optional)
+                </label>
+                <textarea
+                  value={trainingData.context}
+                  onChange={(e) => setTrainingData({ ...trainingData, context: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows="6"
+                  placeholder="Additional context or workflow steps..."
+                />
+              </div>
+
+              {/* File Upload */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Upload Workflow File
+                </label>
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-gray-200 transition">
+                    <Upload className="w-5 h-5 mr-2" />
+                    <span>Choose File</span>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {uploadedFile && (
+                    <span className="text-sm text-gray-600">
+                      {uploadedFile.name}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                onClick={submitTraining}
+                disabled={isTraining || !trainingData.input || !trainingData.expectedOutput}
+                className={`w-full py-3 px-6 rounded-lg font-medium transition flex items-center justify-center ${
+                  isTraining || !trainingData.input || !trainingData.expectedOutput
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {isTraining ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Training Agent...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5 mr-2" />
+                    Submit Training Data
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Training History */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">Recent Training History</h3>
+              <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                {trainingHistory.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No training data yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {trainingHistory.map((item, index) => (
+                      <div key={index} className="bg-white rounded-lg p-4 shadow-sm">
+                        <div className="flex items-start justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Training #{trainingHistory.length - index}
+                          </span>
+                          {item.status === 'success' ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-red-500" />
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p><strong>Input:</strong> {item.input}</p>
+                          <p><strong>Expected:</strong> {item.expectedOutput.substring(0, 100)}...</p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(item.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Training Tips */}
+              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h4 className="font-semibold text-yellow-800 mb-2">💡 Training Tips</h4>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• Provide clear, specific examples</li>
+                  <li>• Include edge cases and error scenarios</li>
+                  <li>• Use consistent formatting in responses</li>
+                  <li>• Add context for complex workflows</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AIAgentTrainer;
+```
+
+## 6. Agent Trainer Backend
+
+### Backend Route: `/server/routes/ai/trainer.js`
+```javascript
+const express = require('express');
+const router = express.Router();
+const { authenticate, authorize } = require('../../middleware/auth');
+const OpenAI = require('openai');
+const Airtable = require('airtable');
+
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// Submit training data
+router.post('/agent-trainer', authenticate, authorize('admin'), async (req, res) => {
+  try {
+    const { agent, trainingData } = req.body;
+    
+    // Store training data in Airtable
+    const record = await base('AgentTraining').create([{
+      fields: {
+        Agent: agent,
+        Input: trainingData.input,
+        ExpectedOutput: trainingData.expectedOutput,
+        Context: trainingData.context,
+        TrainedBy: req.user.id,
+        Status: 'pending'
+      }
+    }]);
+
+    // Generate prompt tuning suggestions using OpenAI
+    const tuningPrompt = `
+      Analyze this training example for an AI agent and suggest prompt improvements:
+      
+      Agent Type: ${agent}
+      User Input: ${trainingData.input}
+      Expected Output: ${trainingData.expectedOutput}
+      Context: ${trainingData.context || 'None provided'}
+      
+      Provide:
+      1. Improved prompt template for this scenario
+      2. Key patterns to recognize
+      3. Response structure guidelines
+      4. Edge cases to consider
+      
+      Format as actionable prompt engineering advice.
+    `;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an AI prompt engineering expert. Provide specific, actionable advice for improving agent prompts." 
+        },
+        { role: "user", content: tuningPrompt }
+      ],
+      temperature: 0.3
+    });
+
+    const suggestions = completion.choices[0].message.content;
+
+    // Update record with suggestions
+    await base('AgentTraining').update(record[0].id, {
+      Suggestions: suggestions,
+      Status: 'processed'
+    });
+
+    res.json({
+      success: true,
+      trainingId: record[0].id,
+      suggestions: suggestions
+    });
+
+  } catch (error) {
+    console.error('Agent training error:', error);
+    res.status(500).json({ error: 'Failed to process training data' });
+  }
+});
+
+// Get training history
+router.get('/agent-trainer/history', authenticate, async (req, res) => {
+  try {
+    const { agent } = req.query;
+    
+    const records = await base('AgentTraining')
+      .select({
+        filterByFormula: agent ? `{Agent} = '${agent}'` : '',
+        sort: [{ field: 'CreatedAt', direction: 'desc' }],
+        maxRecords: 20
+      })
+      .all();
+
+    const history = records.map(record => ({
+      id: record.id,
+      agent: record.fields.Agent,
+      input: record.fields.Input,
+      expectedOutput: record.fields.ExpectedOutput,
+      status: record.fields.Status || 'pending',
+      timestamp: record.fields.CreatedAt
+    }));
+
+    res.json({ success: true, history });
+
+  } catch (error) {
+    console.error('Failed to fetch training history:', error);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+module.exports = router;
+```
+
+## 7. Environment Variables Update
+
+### `.env.example`
+```env
+# Server
+PORT=5000
+NODE_ENV=development
+
+# Airtable
+AIRTABLE_API_KEY=your_airtable_api_key
+AIRTABLE_BASE_ID=your_base_id
+
+# OpenAI
+OPENAI_API_KEY=sk-your-openai-api-key
+
+# Authentication
+JWT_SECRET=your-jwt-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret-key
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token
+TELEGRAM_ADMIN_CHAT_ID=your-admin-chat-id
+
+# Application
+APP_URL=https://your-app.replit.app
+
+# Session
+SESSION_SECRET=your-session-secret
+```
+
+## 8. Server Main File Update
+
+### `/server/server.js`
+```javascript
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+
+// Middleware
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.APP_URL 
+    : 'http://localhost:5173',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Routes
+app.use('/api/ai', require('./routes/ai/analytics'));
+app.use('/api/ai', require('./routes/ai/marketing'));
+app.use('/api/ai', require('./routes/ai/concierge'));
+app.use('/api/ai', require('./routes/ai/trainer'));
+app.use('/api/agent', require('./routes/agent/executor'));
+
+// Existing routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/vendors', require('./routes/vendors'));
+app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/admin', require('./routes/admin'));
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    services: {
+      airtable: !!process.env.AIRTABLE_API_KEY,
+      openai: !!process.env.OPENAI_API_KEY,
+      telegram: !!process.env.TELEGRAM_BOT_TOKEN
+    }
+  });
+});
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+  });
+}
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+
+## 9. README Files
+
+### `/client/README.md`
+```markdown
+# IslandLoaf Client
+
+React + Vite + Tailwind CSS frontend for the IslandLoaf tourism platform.
+
+## Setup
+```bash
+npm install
+npm run dev
+```
+
+## Key Features
+- Vendor dashboard
+- Admin panel
+- AI-powered tools
+- Real-time notifications
+
+## Environment Variables
+Create `.env`:
+```
+VITE_API_URL=http://localhost:5000/api
+```
+
+## Build
+```bash
+npm run build
+```
+```
+
+### `/server/README.md`
+```markdown
+# IslandLoaf Server
+
+Express.js backend with Airtable integration and AI capabilities.
+
+## Setup
+```bash
+npm install
+npm run dev
+```
+
+## Architecture
+- **Database**: Airtable
+- **AI**: OpenAI GPT-4
+- **Auth**: JWT with refresh tokens
+- **Notifications**: Telegram Bot API
+
+## API Endpoints
+
+### AI Endpoints
+- `POST /api/ai/vendor-analytics` - SWOT analysis
+- `POST /api/ai/analyze-feedback` - Sentiment analysis
+- `POST /api/ai/optimize-booking` - Smart matching
+- `POST /api/ai/marketing-pack` - Content generation
+- `POST /api/ai/trip-concierge` - Itinerary planning
+
+### Agent Endpoints
+- `POST /api/agent/execute` - Universal agent executor
+
+## Claude Agent Flow
+1. n8n webhook receives request
+2. Routes to `/api/agent/execute`
+3. Agent handler processes action
+4. Logs to Airtable
+5. Sends Telegram notification
+6. Returns structured response
+```
+
+This implementation provides a complete solution with Airtable as the database, all requested AI endpoints, agent routing, and the additional features. The code is production-ready and Replit-compatible.
