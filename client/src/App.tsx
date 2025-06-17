@@ -16,6 +16,10 @@ import AiMarketing from "@/pages/dashboard/ai-marketing";
 import AIFeatures from "@/pages/dashboard/AIFeatures";
 import AIAgentTrainer from "@/pages/dashboard/AIAgentTrainer";
 import AirtableManager from "@/pages/dashboard/AirtableManager";
+import ServicesManager from "@/pages/dashboard/ServicesManager";
+import FeedbackManager from "@/pages/dashboard/FeedbackManager";
+import CampaignsManager from "@/pages/dashboard/CampaignsManager";
+import SystemLogs from "@/pages/dashboard/SystemLogs";
 import Analytics from "@/pages/dashboard/analytics";
 import ProfileSettings from "@/pages/dashboard/profile-settings";
 import Notifications from "@/pages/dashboard/notifications";
@@ -63,6 +67,10 @@ function Router() {
               <Route path="/dashboard/ai-features" component={AIFeatures} />
               <Route path="/dashboard/ai-trainer" component={AIAgentTrainer} />
               <Route path="/dashboard/airtable" component={AirtableManager} />
+              <Route path="/dashboard/services" component={ServicesManager} />
+              <Route path="/dashboard/feedback" component={FeedbackManager} />
+              <Route path="/dashboard/campaigns" component={CampaignsManager} />
+              <Route path="/dashboard/system-logs" component={SystemLogs} />
               <Route path="/dashboard/analytics" component={Analytics} />
               <Route path="/dashboard/profile" component={ProfileSettings} />
               <Route path="/dashboard/notifications" component={Notifications} />
