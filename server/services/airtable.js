@@ -343,12 +343,40 @@ class AirtableService {
   // Test connection
   async testConnection() {
     try {
-      const records = await base('Vendors').select({ maxRecords: 1 }).all();
+      // First, try to list the base metadata to check permissions
+      const metadata = await base.table('Vendors').select({ maxRecords: 1 }).firstPage();
       logger.info('Airtable connection successful');
-      return { success: true, message: 'Connection successful', recordCount: records.length };
+      return { 
+        success: true, 
+        message: 'Connection successful', 
+        recordCount: metadata.length,
+        tableAccess: 'Vendors table accessible'
+      };
     } catch (error) {
       logger.error('Airtable connection failed:', error);
-      return { success: false, message: error.message };
+      
+      // Provide detailed error information
+      if (error.statusCode === 403) {
+        return { 
+          success: false, 
+          message: 'Permission denied - API token needs proper scopes',
+          error: 'NOT_AUTHORIZED',
+          details: 'Token requires: data.records:read, data.records:write, schema.bases:read permissions'
+        };
+      } else if (error.statusCode === 404) {
+        return { 
+          success: false, 
+          message: 'Base or table not found',
+          error: 'NOT_FOUND',
+          details: 'Check base ID and table names'
+        };
+      } else {
+        return { 
+          success: false, 
+          message: error.message,
+          error: error.error || 'UNKNOWN_ERROR'
+        };
+      }
     }
   }
 }
