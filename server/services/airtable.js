@@ -340,6 +340,259 @@ class AirtableService {
     }
   }
 
+  // Services Management
+  async getServices() {
+    try {
+      const records = await base('Services').select().all();
+      return records.map(record => ({
+        id: record.fields['Service ID'],
+        airtableId: record.id,
+        vendorId: record.fields['Vendor ID'],
+        serviceName: record.fields['Service Name'],
+        category: record.fields['Category'],
+        description: record.fields['Description'],
+        price: record.fields['Price (LKR)'],
+        currency: record.fields['Currency'] || 'LKR',
+        imageUrl: record.fields['Image URL'],
+        availability: record.fields['Availability'],
+        createdAt: record.fields['Created At'],
+        updatedAt: record.fields['Updated At']
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch services from Airtable:', error);
+      throw error;
+    }
+  }
+
+  async createService(serviceData) {
+    try {
+      const record = await base('Services').create([{
+        fields: {
+          'Service ID': serviceData.serviceId || `SVC${Date.now()}`,
+          'Vendor ID': serviceData.vendorId,
+          'Service Name': serviceData.serviceName,
+          'Category': serviceData.category,
+          'Description': serviceData.description,
+          'Price (LKR)': serviceData.price,
+          'Currency': serviceData.currency || 'LKR',
+          'Image URL': serviceData.imageUrl,
+          'Availability': serviceData.availability || 'Available',
+          'Created At': new Date().toISOString(),
+          'Updated At': new Date().toISOString()
+        }
+      }]);
+
+      logger.info('Service created in Airtable:', { serviceId: serviceData.serviceId });
+      return record[0];
+    } catch (error) {
+      logger.error('Failed to create service in Airtable:', error);
+      throw error;
+    }
+  }
+
+  // Customer Feedback Management
+  async getCustomerFeedback() {
+    try {
+      const records = await base('CustomerFeedback').select().all();
+      return records.map(record => ({
+        id: record.fields['Feedback ID'],
+        airtableId: record.id,
+        bookingId: record.fields['Booking ID'],
+        vendorId: record.fields['Vendor ID'],
+        customerName: record.fields['Customer Name'],
+        rating: record.fields['Rating'],
+        reviewText: record.fields['Review Text'],
+        sentiment: record.fields['Sentiment'],
+        responseByVendor: record.fields['Response By Vendor'],
+        responseTime: record.fields['Response Time'],
+        createdAt: record.fields['Created At']
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch customer feedback from Airtable:', error);
+      throw error;
+    }
+  }
+
+  async createCustomerFeedback(feedbackData) {
+    try {
+      const record = await base('CustomerFeedback').create([{
+        fields: {
+          'Feedback ID': feedbackData.feedbackId || `FB${Date.now()}`,
+          'Booking ID': feedbackData.bookingId,
+          'Vendor ID': feedbackData.vendorId,
+          'Customer Name': feedbackData.customerName,
+          'Rating': feedbackData.rating,
+          'Review Text': feedbackData.reviewText,
+          'Sentiment': feedbackData.sentiment || this.calculateSentiment(feedbackData.reviewText),
+          'Response By Vendor': '',
+          'Response Time': '',
+          'Created At': new Date().toISOString()
+        }
+      }]);
+
+      logger.info('Customer feedback created in Airtable:', { feedbackId: feedbackData.feedbackId });
+      return record[0];
+    } catch (error) {
+      logger.error('Failed to create customer feedback in Airtable:', error);
+      throw error;
+    }
+  }
+
+  // Marketing Campaigns Management
+  async getMarketingCampaigns() {
+    try {
+      const records = await base('MarketingCampaigns').select().all();
+      return records.map(record => ({
+        id: record.fields['Campaign ID'],
+        airtableId: record.id,
+        vendorId: record.fields['Vendor ID'],
+        campaignName: record.fields['Campaign Name'],
+        startDate: record.fields['Start Date'],
+        endDate: record.fields['End Date'],
+        budget: record.fields['Budget (LKR)'],
+        channel: record.fields['Channel'],
+        kpi: record.fields['KPI'],
+        leadsGenerated: record.fields['Leads Generated'] || 0,
+        status: record.fields['Status']
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch marketing campaigns from Airtable:', error);
+      throw error;
+    }
+  }
+
+  async createMarketingCampaign(campaignData) {
+    try {
+      const record = await base('MarketingCampaigns').create([{
+        fields: {
+          'Campaign ID': campaignData.campaignId || `CAMP${Date.now()}`,
+          'Vendor ID': campaignData.vendorId,
+          'Campaign Name': campaignData.campaignName,
+          'Start Date': campaignData.startDate,
+          'End Date': campaignData.endDate,
+          'Budget (LKR)': campaignData.budget,
+          'Channel': campaignData.channel,
+          'KPI': campaignData.kpi,
+          'Leads Generated': 0,
+          'Status': campaignData.status || 'Planned'
+        }
+      }]);
+
+      logger.info('Marketing campaign created in Airtable:', { campaignId: campaignData.campaignId });
+      return record[0];
+    } catch (error) {
+      logger.error('Failed to create marketing campaign in Airtable:', error);
+      throw error;
+    }
+  }
+
+  // Agent Training Management
+  async getAgentTraining() {
+    try {
+      const records = await base('AgentTraining').select().all();
+      return records.map(record => ({
+        id: record.fields['Training ID'],
+        airtableId: record.id,
+        agentName: record.fields['Agent Name'],
+        datasetSource: record.fields['Dataset Source'],
+        version: record.fields['Version'],
+        accuracy: record.fields['Accuracy'],
+        lastTrainDate: record.fields['Last Train Date'],
+        nextScheduledTrain: record.fields['Next Scheduled Train'],
+        notes: record.fields['Notes']
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch agent training from Airtable:', error);
+      throw error;
+    }
+  }
+
+  async logAgentTraining(trainingData) {
+    try {
+      const record = await base('AgentTraining').create([{
+        fields: {
+          'Training ID': trainingData.trainingId || `TR${Date.now()}`,
+          'Agent Name': trainingData.agentName,
+          'Dataset Source': trainingData.datasetSource || 'Live Business Data',
+          'Version': '1.0',
+          'Accuracy': trainingData.accuracy || 0,
+          'Last Train Date': new Date().toISOString(),
+          'Next Scheduled Train': new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          'Notes': trainingData.notes || ''
+        }
+      }]);
+
+      logger.info('Agent training logged in Airtable:', { trainingId: trainingData.trainingId });
+      return record[0];
+    } catch (error) {
+      logger.error('Failed to log agent training in Airtable:', error);
+      throw error;
+    }
+  }
+
+  // System Logs Management
+  async getSystemLogs() {
+    try {
+      const records = await base('SystemLogs').select({
+        sort: [{field: 'Event Time', direction: 'desc'}]
+      }).all();
+      
+      return records.map(record => ({
+        id: record.fields['Log ID'],
+        airtableId: record.id,
+        eventTime: record.fields['Event Time'],
+        eventType: record.fields['Event Type'],
+        table: record.fields['Table'],
+        recordId: record.fields['Record ID'],
+        userAgent: record.fields['User/Agent'],
+        description: record.fields['Description'],
+        status: record.fields['Status']
+      }));
+    } catch (error) {
+      logger.error('Failed to fetch system logs from Airtable:', error);
+      throw error;
+    }
+  }
+
+  async logSystemEvent(eventData) {
+    try {
+      const record = await base('SystemLogs').create([{
+        fields: {
+          'Log ID': `LOG${Date.now()}`,
+          'Event Time': new Date().toISOString(),
+          'Event Type': eventData.eventType,
+          'Table': eventData.action,
+          'Record ID': eventData.data ? JSON.stringify(eventData.data) : '',
+          'User/Agent': 'IslandLoaf System',
+          'Description': `${eventData.eventType} operation on ${eventData.action}`,
+          'Status': eventData.status || 'Success'
+        }
+      }]);
+
+      logger.info('System event logged in Airtable:', { eventType: eventData.eventType });
+      return record[0];
+    } catch (error) {
+      logger.error('Failed to log system event in Airtable:', error);
+      throw error;
+    }
+  }
+
+  // Sentiment Analysis Helper
+  calculateSentiment(text) {
+    if (!text) return 'Neutral';
+    
+    const positiveWords = ['excellent', 'great', 'good', 'amazing', 'wonderful', 'fantastic', 'love', 'best', 'perfect', 'outstanding'];
+    const negativeWords = ['bad', 'poor', 'terrible', 'awful', 'worst', 'hate', 'disappointed', 'horrible', 'disgusting'];
+    
+    const textLower = text.toLowerCase();
+    const positiveCount = positiveWords.filter(word => textLower.includes(word)).length;
+    const negativeCount = negativeWords.filter(word => textLower.includes(word)).length;
+    
+    if (positiveCount > negativeCount) return 'Positive';
+    if (negativeCount > positiveCount) return 'Negative';
+    return 'Neutral';
+  }
+
   // Test connection
   async testConnection() {
     try {

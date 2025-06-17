@@ -1755,6 +1755,260 @@ Format as comprehensive JSON:
     }
   });
 
+  // Services Management Endpoints
+  app.get("/api/services", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const services = await airtableService.getServices();
+      res.json({
+        success: true,
+        data: services,
+        count: services.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch services'
+      });
+    }
+  });
+
+  app.post("/api/services", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const serviceData = {
+        serviceId: `SVC${Date.now()}`,
+        vendorId: req.body.vendorId,
+        serviceName: req.body.serviceName,
+        category: req.body.category,
+        description: req.body.description,
+        price: req.body.price,
+        currency: req.body.currency || 'LKR',
+        imageUrl: req.body.imageUrl,
+        availability: req.body.availability || 'Available'
+      };
+      
+      const result = await airtableService.createService(serviceData);
+      await airtableService.logSystemEvent({
+        eventType: 'CREATE',
+        action: 'services',
+        data: { serviceId: serviceData.serviceId },
+        status: 'Success'
+      });
+      
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create service'
+      });
+    }
+  });
+
+  // Customer Feedback Management
+  app.get("/api/feedback", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const feedback = await airtableService.getCustomerFeedback();
+      res.json({
+        success: true,
+        data: feedback,
+        count: feedback.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch feedback'
+      });
+    }
+  });
+
+  app.post("/api/feedback", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      
+      // Calculate sentiment analysis
+      function calculateSentiment(text: string): string {
+        if (!text) return 'Neutral';
+        const positiveWords = ['excellent', 'great', 'good', 'amazing', 'wonderful', 'fantastic', 'love', 'best', 'perfect', 'outstanding'];
+        const negativeWords = ['bad', 'poor', 'terrible', 'awful', 'worst', 'hate', 'disappointed', 'horrible', 'disgusting'];
+        const textLower = text.toLowerCase();
+        const positiveCount = positiveWords.filter(word => textLower.includes(word)).length;
+        const negativeCount = negativeWords.filter(word => textLower.includes(word)).length;
+        if (positiveCount > negativeCount) return 'Positive';
+        if (negativeCount > positiveCount) return 'Negative';
+        return 'Neutral';
+      }
+
+      const feedbackData = {
+        feedbackId: `FB${Date.now()}`,
+        bookingId: req.body.bookingId,
+        vendorId: req.body.vendorId,
+        customerName: req.body.customerName,
+        rating: req.body.rating,
+        reviewText: req.body.reviewText,
+        sentiment: calculateSentiment(req.body.reviewText)
+      };
+      
+      const result = await airtableService.createCustomerFeedback(feedbackData);
+      await airtableService.logSystemEvent({
+        eventType: 'CREATE',
+        action: 'feedback',
+        data: { feedbackId: feedbackData.feedbackId },
+        status: 'Success'
+      });
+      
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create feedback'
+      });
+    }
+  });
+
+  app.get("/api/feedback/stats", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const feedback = await airtableService.getCustomerFeedback();
+      
+      const stats = {
+        totalFeedback: feedback.length,
+        averageRating: feedback.length > 0 
+          ? feedback.reduce((sum, f) => sum + parseFloat(f.rating || '0'), 0) / feedback.length 
+          : 0,
+        sentimentBreakdown: {
+          positive: feedback.filter(f => f.sentiment === 'Positive').length,
+          neutral: feedback.filter(f => f.sentiment === 'Neutral').length,
+          negative: feedback.filter(f => f.sentiment === 'Negative').length
+        },
+        responseRate: feedback.length > 0 
+          ? (feedback.filter(f => f.responseByVendor).length / feedback.length * 100) 
+          : 0
+      };
+      
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch feedback stats'
+      });
+    }
+  });
+
+  // Marketing Campaigns Management  
+  app.get("/api/campaigns", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const campaigns = await airtableService.getMarketingCampaigns();
+      res.json({
+        success: true,
+        data: campaigns,
+        count: campaigns.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch campaigns'
+      });
+    }
+  });
+
+  app.post("/api/campaigns", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const campaignData = {
+        campaignId: `CAMP${Date.now()}`,
+        vendorId: req.body.vendorId,
+        campaignName: req.body.campaignName,
+        startDate: req.body.startDate,
+        endDate: req.body.endDate,
+        budget: req.body.budget,
+        channel: req.body.channel,
+        kpi: req.body.kpi,
+        status: req.body.status || 'Planned'
+      };
+      
+      const result = await airtableService.createMarketingCampaign(campaignData);
+      await airtableService.logSystemEvent({
+        eventType: 'CREATE',
+        action: 'campaigns',
+        data: { campaignId: campaignData.campaignId },
+        status: 'Success'
+      });
+      
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create campaign'
+      });
+    }
+  });
+
+  app.get("/api/campaigns/active", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const campaigns = await airtableService.getMarketingCampaigns();
+      const today = new Date();
+      
+      const activeCampaigns = campaigns.filter(campaign => {
+        const start = new Date(campaign.startDate);
+        const end = new Date(campaign.endDate);
+        return start <= today && today <= end;
+      });
+      
+      res.json({
+        success: true,
+        data: activeCampaigns,
+        count: activeCampaigns.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch active campaigns'
+      });
+    }
+  });
+
+  // Agent Training Management
+  app.get("/api/ai/agent-training", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const trainingHistory = await airtableService.getAgentTraining();
+      
+      res.json({
+        success: true,
+        data: trainingHistory,
+        count: trainingHistory.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch training history'
+      });
+    }
+  });
+
+  // System Logs Endpoint
+  app.get("/api/system/logs", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
+      const logs = await airtableService.getSystemLogs();
+      
+      res.json({
+        success: true,
+        data: logs.slice(0, 100), // Last 100 logs
+        count: logs.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch system logs'
+      });
+    }
+  });
+
   // AI Agent Trainer Endpoints
   app.post("/api/ai/agent-trainer", requireAuth, async (req: Request, res: Response) => {
     try {
