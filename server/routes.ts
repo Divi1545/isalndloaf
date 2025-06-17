@@ -1344,21 +1344,43 @@ Format as comprehensive JSON:
     }
   });
 
-  // Agent action handlers
+  // Agent action handlers with Airtable integration
   async function executeVendorAgent(action: string, data: any) {
+    const airtableService = require('./services/airtable');
+    
     switch (action) {
       case 'analyze':
-        const vendor = await storage.getUser(data.vendorId);
-        if (!vendor) throw new Error('Vendor not found');
+        // Get vendor analytics from Airtable
+        const analytics = await airtableService.getVendorAnalytics(data.vendorId);
+        
+        await airtableService.logSystemEvent({
+          eventType: 'Agent Execution',
+          agent: 'vendor',
+          action: 'analyze',
+          data: { vendorId: data.vendorId },
+          status: 'Success'
+        });
         
         return {
           vendorId: data.vendorId,
-          status: vendor.role === 'vendor' ? 'active' : 'inactive',
-          businessName: vendor.businessName,
-          analysis: 'Vendor analysis completed'
+          status: 'active',
+          analytics: analytics,
+          analysis: `Vendor analysis: ${analytics.totalBookings} bookings, ${analytics.conversionRate}% conversion rate`
         };
 
       case 'approve':
+        await airtableService.updateVendor(data.vendorId, {
+          'Status': 'Approved'
+        });
+        
+        await airtableService.logSystemEvent({
+          eventType: 'Vendor Action',
+          agent: 'vendor',
+          action: 'approve',
+          data: { vendorId: data.vendorId },
+          status: 'Success'
+        });
+        
         return {
           vendorId: data.vendorId,
           status: 'approved',
@@ -1366,6 +1388,18 @@ Format as comprehensive JSON:
         };
 
       case 'suspend':
+        await airtableService.updateVendor(data.vendorId, {
+          'Status': 'Suspended'
+        });
+        
+        await airtableService.logSystemEvent({
+          eventType: 'Vendor Action',
+          agent: 'vendor',
+          action: 'suspend',
+          data: { vendorId: data.vendorId, reason: data.reason },
+          status: 'Success'
+        });
+        
         return {
           vendorId: data.vendorId,
           status: 'suspended',
@@ -1379,30 +1413,60 @@ Format as comprehensive JSON:
   }
 
   async function executeBookingAgent(action: string, data: any) {
+    const airtableService = require('./services/airtable');
+    
     switch (action) {
       case 'create':
-        const booking = await storage.createBooking({
-          userId: data.vendorId,
-          serviceId: data.serviceId,
+        const bookingId = `B${Date.now()}`;
+        
+        // Create booking in Airtable
+        await airtableService.createBooking({
+          bookingId,
+          vendorId: data.vendorId,
           customerName: data.customerName,
           customerEmail: data.customerEmail,
-          startDate: new Date(data.startDate),
-          endDate: new Date(data.endDate),
-          totalPrice: data.totalPrice,
-          commission: data.commission || data.totalPrice * 0.1,
-          status: 'pending'
+          guests: data.guests || 1,
+          checkIn: data.startDate,
+          checkOut: data.endDate,
+          status: 'Pending'
+        });
+
+        // Create corresponding payment entry
+        const paymentId = `P${Date.now()}`;
+        await airtableService.createPayment({
+          paymentId,
+          bookingId,
+          vendorId: data.vendorId,
+          amount: data.totalPrice,
+          status: 'Pending',
+          dueDate: data.endDate
+        });
+
+        await airtableService.logSystemEvent({
+          eventType: 'Booking Creation',
+          agent: 'booking',
+          action: 'create',
+          data: { bookingId, vendorId: data.vendorId, amount: data.totalPrice },
+          status: 'Success'
         });
 
         return {
-          bookingId: booking.id,
+          bookingId,
+          paymentId,
           status: 'created',
-          totalPrice: booking.totalPrice,
-          commission: booking.commission
+          totalPrice: data.totalPrice,
+          commission: data.totalPrice * 0.1
         };
 
       case 'confirm':
-        const confirmedBooking = await storage.updateBooking(data.bookingId, {
-          status: 'confirmed'
+        await airtableService.updateBookingStatus(data.bookingId, 'Confirmed');
+        
+        await airtableService.logSystemEvent({
+          eventType: 'Booking Confirmation',
+          agent: 'booking',
+          action: 'confirm',
+          data: { bookingId: data.bookingId },
+          status: 'Success'
         });
         
         return {
@@ -1412,8 +1476,14 @@ Format as comprehensive JSON:
         };
 
       case 'cancel':
-        await storage.updateBooking(data.bookingId, {
-          status: 'cancelled'
+        await airtableService.updateBookingStatus(data.bookingId, 'Cancelled');
+        
+        await airtableService.logSystemEvent({
+          eventType: 'Booking Cancellation',
+          agent: 'booking',
+          action: 'cancel',
+          data: { bookingId: data.bookingId, reason: data.reason },
+          status: 'Success'
         });
         
         return {
@@ -1534,6 +1604,153 @@ Format as comprehensive JSON:
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
         fallback: 'Manual processing required'
+      });
+    }
+  });
+
+  // Airtable Integration Endpoints
+  app.get("/api/airtable/test", async (req: Request, res: Response) => {
+    try {
+      const airtableService = require('./services/airtable');
+      const result = await airtableService.testConnection();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Connection failed'
+      });
+    }
+  });
+
+  app.get("/api/airtable/vendors", async (req: Request, res: Response) => {
+    try {
+      const airtableService = require('./services/airtable');
+      const vendors = await airtableService.getVendors();
+      res.json({
+        success: true,
+        data: vendors,
+        count: vendors.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch vendors'
+      });
+    }
+  });
+
+  app.get("/api/airtable/bookings", async (req: Request, res: Response) => {
+    try {
+      const airtableService = require('./services/airtable');
+      const bookings = await airtableService.getBookings();
+      res.json({
+        success: true,
+        data: bookings,
+        count: bookings.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch bookings'
+      });
+    }
+  });
+
+  app.get("/api/airtable/payments", async (req: Request, res: Response) => {
+    try {
+      const airtableService = require('./services/airtable');
+      const payments = await airtableService.getPayments();
+      res.json({
+        success: true,
+        data: payments,
+        count: payments.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch payments'
+      });
+    }
+  });
+
+  app.get("/api/airtable/reports", async (req: Request, res: Response) => {
+    try {
+      const airtableService = require('./services/airtable');
+      const { startDate, endDate } = req.query;
+      const reports = await airtableService.getDailyReports(
+        startDate as string, 
+        endDate as string
+      );
+      res.json({
+        success: true,
+        data: reports,
+        count: reports.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch reports'
+      });
+    }
+  });
+
+  app.get("/api/airtable/analytics/:vendorId", async (req: Request, res: Response) => {
+    try {
+      const airtableService = require('./services/airtable');
+      const { vendorId } = req.params;
+      const analytics = await airtableService.getVendorAnalytics(vendorId);
+      res.json({
+        success: true,
+        data: analytics
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch analytics'
+      });
+    }
+  });
+
+  app.post("/api/airtable/sync", async (req: Request, res: Response) => {
+    try {
+      const airtableService = require('./services/airtable');
+      const { syncType } = req.body;
+      
+      let result;
+      switch (syncType) {
+        case 'vendors':
+          result = await airtableService.getVendors();
+          break;
+        case 'bookings':
+          result = await airtableService.getBookings();
+          break;
+        case 'payments':
+          result = await airtableService.getPayments();
+          break;
+        case 'reports':
+          result = await airtableService.getDailyReports();
+          break;
+        default:
+          throw new Error('Invalid sync type');
+      }
+
+      await airtableService.logSystemEvent({
+        eventType: 'Data Sync',
+        action: syncType,
+        data: { recordCount: result.length },
+        status: 'Success'
+      });
+
+      res.json({
+        success: true,
+        message: `${syncType} synchronized successfully`,
+        data: result,
+        count: result.length
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Sync failed'
       });
     }
   });
