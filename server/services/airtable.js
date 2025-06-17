@@ -2,9 +2,13 @@ import Airtable from 'airtable';
 import { logger } from '../middleware/logging.js';
 
 // Initialize Airtable with your credentials
+if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE_ID) {
+  throw new Error('AIRTABLE_API_KEY and AIRTABLE_BASE_ID must be set');
+}
+
 const base = new Airtable({ 
-  apiKey: process.env.AIRTABLE_API_KEY || 'patXSNGjrXDhhqy9R.5f100a4589c2431cb934618ab69e0dc68dba17a94ffe3aa9cc437efed9571f17'
-}).base(process.env.AIRTABLE_BASE_ID || 'appXXXXXXXXXXXXXX');
+  apiKey: process.env.AIRTABLE_API_KEY
+}).base(process.env.AIRTABLE_BASE_ID);
 
 class AirtableService {
   // Vendors Management
