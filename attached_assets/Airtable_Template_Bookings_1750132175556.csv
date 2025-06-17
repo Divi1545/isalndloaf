@@ -1,0 +1,3 @@
+Booking ID,Vendor ID,Customer Name,Email,Guests,Check-in,Check-out,Status
+B001,V001,Alice Fernando,alice@example.com,2,2025-07-01,2025-07-05,Confirmed
+B002,V002,Danushka Silva,danushka@example.com,4,2025-07-10,2025-07-12,Pending

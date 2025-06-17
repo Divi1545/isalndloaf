@@ -1,0 +1,3 @@
+Payment ID,Booking ID,Vendor ID,Amount,Status,Due Date
+P001,B001,V001,50000,Paid,2025-07-05
+P002,B002,V002,70000,Pending,2025-07-12
