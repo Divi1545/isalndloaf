@@ -30,6 +30,7 @@ export default function Sidebar({ isOpen, onOpenChange, user }: SidebarProps) {
     { href: "/dashboard/ai-marketing", label: "AI Marketing", icon: "ri-robot-line" },
     { href: "/dashboard/ai-features", label: "AI Features", icon: "ri-brain-line" },
     { href: "/dashboard/ai-trainer", label: "AI Agent Trainer", icon: "ri-graduation-cap-line" },
+    { href: "/dashboard/airtable", label: "Business Data", icon: "ri-database-2-line" },
     { href: "/dashboard/analytics", label: "Analytics & Reports", icon: "ri-line-chart-line" },
     { href: "/dashboard/profile", label: "Profile Settings", icon: "ri-user-settings-line" },
     { href: "/dashboard/notifications", label: "Notifications & Logs", icon: "ri-notification-3-line" },

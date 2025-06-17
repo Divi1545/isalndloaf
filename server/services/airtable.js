@@ -1,5 +1,5 @@
-const Airtable = require('airtable');
-const { logger } = require('../middleware/logging');
+import Airtable from 'airtable';
+import { logger } from '../middleware/logging.js';
 
 // Initialize Airtable with your credentials
 const base = new Airtable({ 
@@ -349,4 +349,4 @@ class AirtableService {
   }
 }
 
-module.exports = new AirtableService();
+export default new AirtableService();

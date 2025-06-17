@@ -1346,7 +1346,7 @@ Format as comprehensive JSON:
 
   // Agent action handlers with Airtable integration
   async function executeVendorAgent(action: string, data: any) {
-    const airtableService = require('./services/airtable');
+    const airtableService = await import('./services/airtable.js').then(m => m.default);
     
     switch (action) {
       case 'analyze':
@@ -1413,7 +1413,7 @@ Format as comprehensive JSON:
   }
 
   async function executeBookingAgent(action: string, data: any) {
-    const airtableService = require('./services/airtable');
+    const airtableService = await import('./services/airtable.js').then(m => m.default);
     
     switch (action) {
       case 'create':
@@ -1611,7 +1611,7 @@ Format as comprehensive JSON:
   // Airtable Integration Endpoints
   app.get("/api/airtable/test", async (req: Request, res: Response) => {
     try {
-      const airtableService = require('./services/airtable');
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
       const result = await airtableService.testConnection();
       res.json(result);
     } catch (error) {
@@ -1624,7 +1624,7 @@ Format as comprehensive JSON:
 
   app.get("/api/airtable/vendors", async (req: Request, res: Response) => {
     try {
-      const airtableService = require('./services/airtable');
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
       const vendors = await airtableService.getVendors();
       res.json({
         success: true,
@@ -1641,7 +1641,7 @@ Format as comprehensive JSON:
 
   app.get("/api/airtable/bookings", async (req: Request, res: Response) => {
     try {
-      const airtableService = require('./services/airtable');
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
       const bookings = await airtableService.getBookings();
       res.json({
         success: true,
@@ -1658,7 +1658,7 @@ Format as comprehensive JSON:
 
   app.get("/api/airtable/payments", async (req: Request, res: Response) => {
     try {
-      const airtableService = require('./services/airtable');
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
       const payments = await airtableService.getPayments();
       res.json({
         success: true,
@@ -1675,7 +1675,7 @@ Format as comprehensive JSON:
 
   app.get("/api/airtable/reports", async (req: Request, res: Response) => {
     try {
-      const airtableService = require('./services/airtable');
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
       const { startDate, endDate } = req.query;
       const reports = await airtableService.getDailyReports(
         startDate as string, 
@@ -1696,7 +1696,7 @@ Format as comprehensive JSON:
 
   app.get("/api/airtable/analytics/:vendorId", async (req: Request, res: Response) => {
     try {
-      const airtableService = require('./services/airtable');
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
       const { vendorId } = req.params;
       const analytics = await airtableService.getVendorAnalytics(vendorId);
       res.json({
@@ -1713,7 +1713,7 @@ Format as comprehensive JSON:
 
   app.post("/api/airtable/sync", async (req: Request, res: Response) => {
     try {
-      const airtableService = require('./services/airtable');
+      const airtableService = await import('./services/airtable.js').then(m => m.default);
       const { syncType } = req.body;
       
       let result;
