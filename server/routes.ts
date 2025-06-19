@@ -104,8 +104,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Create the vendor with pending status
       const newVendor = await storage.createUser({
         ...userData,
-        role: 'vendor',
-        status: 'pending' // Pending admin approval
+        role: 'vendor'
       });
       
       // Create welcome notification for admin review
@@ -153,10 +152,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const newUser = await storage.createUser(userData);
       
       // Set session
-      req.session.user = {
-        userId: newUser.id,
-        userRole: newUser.role,
-      };
+      req.session.user = newUser;
 
       // Return user data (excluding password)
       const { password, ...newUserData } = newUser;
@@ -167,8 +163,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         title: "Welcome to IslandLoaf",
         message: `Welcome to IslandLoaf, ${newUser.fullName}! Your account has been created successfully. Get started by adding your first service.`,
         type: "info",
-        read: false,
-        createdAt: new Date()
+        read: false
       });
       
       res.status(201).json({
@@ -197,10 +192,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       // Set session
-      req.session.user = {
-        userId: user.id,
-        userRole: user.role,
-      };
+      req.session.user = user;
 
       // Return user data (excluding password)
       const { password, ...userData } = user;
@@ -224,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   app.get("/api/auth/me", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await storage.getUser(req.session.user.userId);
+      const user = await storage.getUser(req.session.user.id);
       if (!user) {
         req.session.destroy(() => {});
         return res.status(401).json({ error: "User not found" });
@@ -240,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Service Routes
   app.get("/api/services", requireAuth, async (req: Request, res: Response) => {
     try {
-      const services = await storage.getServices(req.session.user.userId);
+      const services = await storage.getServices(req.session.user.id);
       res.status(200).json(services);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch services" });
@@ -283,26 +275,26 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       // Create booking with user ID from session
       const booking = await storage.createBooking({
-        type,
-        details: JSON.stringify(details),
+        userId: req.session.user.id,
+        serviceId: details.serviceId || 1,
+        customerName: details.customerName || "Guest",
+        customerEmail: details.customerEmail || "",
+        startDate: new Date(details.startDate || Date.now()),
+        endDate: new Date(details.endDate || Date.now() + 86400000),
+        totalPrice: details.totalPrice || 0,
+        commission: details.commission || 0,
         status,
-        vendorId: req.session.user.userId,
-        customerName: details.customerName || "Guest", // Default name if not provided
-        customerEmail: details.customerEmail || null,
-        customerPhone: details.customerPhone || null,
-        totalAmount: details.totalPrice || 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        notes: details.notes || null
+
       });
       
       // Create a notification for new booking
       await storage.createNotification({
-        userId: req.session.user.userId,
+        userId: req.session.user.id,
         title: `New ${type} booking created`,
-        content: `A new ${type} booking has been created with status: ${status}`,
+        message: `A new ${type} booking has been created with status: ${status}`,
         type: "booking",
-        read: false,
-        createdAt: new Date()
+        read: false
       });
       
       res.status(201).json(booking);
