@@ -37,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       console.log(`🔒 Unauthorized access attempt to ${req.path} from IP: ${req.ip}`);
       return res.status(401).json({ error: "Not authenticated" });
     }
-    console.log(`✅ Authenticated request to ${req.path} by user ${req.session.user.userId} (${req.session.user.userRole})`);
+    console.log(`✅ Authenticated request to ${req.path} by user ${req.session.user.id} (${req.session.user.role})`);
     next();
   };
 
@@ -49,12 +49,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      if (!allowedRoles.includes(req.session.user.userRole)) {
-        console.log(`🚫 Role violation: ${req.session.user.userRole} tried to access ${req.path} (requires: ${allowedRoles.join('|')})`);
+      if (!allowedRoles.includes(req.session.user.role)) {
+        console.log(`🚫 Role violation: ${req.session.user.role} tried to access ${req.path} (requires: ${allowedRoles.join('|')})`);
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
-      console.log(`✅ Role authorized: ${req.session.user.userRole} accessing ${req.path}`);
+      console.log(`✅ Role authorized: ${req.session.user.role} accessing ${req.path}`);
       next();
     };
   };
