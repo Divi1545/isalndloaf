@@ -641,14 +641,14 @@ Respond in JSON format:
 
 VENDOR PROFILE:
 - Business: ${user?.businessName || 'Tourism Vendor'}
-- Location: ${user?.location || 'Sri Lanka'}
+- Location: Sri Lanka
 - Services Offered: ${services.length} active listings
 
 SERVICE PORTFOLIO:
-${services.map(s => `- ${s.title} (${s.type}): $${s.price}/night - ${s.description.substring(0, 100)}...`).join('\n')}
+${services.map(s => `- ${s.name} (${s.type}): $${s.basePrice}/night - ${s.description.substring(0, 100)}...`).join('\n')}
 
 BOOKING PERFORMANCE (Last ${recentBookings.length} bookings):
-${recentBookings.map(b => `- ${b.serviceType}: ${b.checkIn} → ${b.checkOut}, ${b.guests} guests, ${b.status.toUpperCase()}, $${b.totalPrice || 'N/A'}`).join('\n')}
+${recentBookings.map(b => `- Service ${b.serviceId}: ${b.startDate.toISOString().split('T')[0]} → ${b.endDate.toISOString().split('T')[0]}, ${b.status.toUpperCase()}, $${b.totalPrice || 'N/A'}`).join('\n')}
 
 ANALYSIS REQUIREMENTS:
 1. Performance trends and patterns
