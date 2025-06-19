@@ -318,7 +318,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(404).json({ error: "Booking not found" });
       }
       
-      if (booking.vendorId !== req.session.user.userId) {
+      if (booking.userId !== req.session.user.id) {
         return res.status(403).json({ error: "Not authorized to update this booking" });
       }
       
@@ -335,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const startDate = req.query.start ? new Date(req.query.start as string) : undefined;
       const endDate = req.query.end ? new Date(req.query.end as string) : undefined;
       
-      const events = await storage.getCalendarEvents(req.session.user.userId, startDate, endDate);
+      const events = await storage.getCalendarEvents(req.session.user.id, startDate, endDate);
       res.status(200).json(events);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch calendar events" });
@@ -344,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   app.get("/api/calendar-sources", requireAuth, async (req: Request, res: Response) => {
     try {
-      const sources = await storage.getCalendarSources(req.session.user.userId);
+      const sources = await storage.getCalendarSources(req.session.user.id);
       res.status(200).json(sources);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch calendar sources" });
@@ -362,8 +362,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(result.success ? 200 : 400).json(result);
       }
       
-      // Fallback to simple lastSynced update if iCal sync is not available
-      const source = await storage.updateCalendarSource(id, { lastSynced: new Date() });
+      // Fallback to simple update if iCal sync is not available
+      const source = await storage.updateCalendarSource(id, {});
       
       if (!source) {
         return res.status(404).json({ error: "Calendar source not found" });
@@ -371,8 +371,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.status(200).json({ 
         success: true, 
-        message: "Calendar sync completed successfully",
-        lastSynced: source.lastSynced
+        message: "Calendar sync completed successfully"
       });
     } catch (error) {
       console.error("Error syncing calendar:", error);
@@ -383,7 +382,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Notification Routes
   app.get("/api/notifications", requireAuth, async (req: Request, res: Response) => {
     try {
-      const notifications = await storage.getNotifications(req.session.user.userId);
+      const notifications = await storage.getNotifications(req.session.user.id);
       res.status(200).json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch notifications" });
@@ -392,7 +391,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   app.get("/api/notifications/unread", requireAuth, async (req: Request, res: Response) => {
     try {
-      const notifications = await storage.getUnreadNotifications(req.session.user.userId);
+      const notifications = await storage.getUnreadNotifications(req.session.user.id);
       res.status(200).json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch unread notifications" });
@@ -401,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   app.post("/api/notifications/mark-all-read", requireAuth, async (req: Request, res: Response) => {
     try {
-      const notifications = await storage.getUnreadNotifications(req.session.user.userId);
+      const notifications = await storage.getUnreadNotifications(req.session.user.id);
       
       // Mark each notification as read
       for (const notification of notifications) {
