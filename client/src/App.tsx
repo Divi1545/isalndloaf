@@ -52,6 +52,8 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/vendor-signup" component={VendorSignup} />
+      <Route path="/vendor/register" component={VendorRegistration} />
+      <Route path="/vendor/login" component={VendorLogin} />
       
       {/* Dashboard routes */}
       <Route path="/dashboard">

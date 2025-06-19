@@ -99,7 +99,7 @@ export default function VendorRegistration() {
             <div className="space-y-2">
               <Button 
                 className="w-full" 
-                onClick={() => window.location.href = '/login'}
+                onClick={() => window.location.href = '/vendor/login'}
               >
                 Continue to Login
               </Button>
@@ -261,7 +261,7 @@ export default function VendorRegistration() {
 
           <div className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{" "}
-            <a href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+            <a href="/vendor/login" className="text-blue-600 hover:text-blue-800 font-medium">
               Sign in here
             </a>
           </div>

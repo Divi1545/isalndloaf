@@ -5,6 +5,7 @@ import path from "path";
 import { storage } from "./storage";
 import { bookingStatuses, loginSchema, insertUserSchema } from "@shared/schema";
 import OpenAI from "openai";
+import vendorAuthRouter from "./vendor-auth";
 
 interface SessionData {
   userId: number;
@@ -21,6 +22,9 @@ declare module "express-session" {
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function registerRoutes(app: Express): Promise<void> {
+  // Enhanced vendor authentication routes
+  app.use("/api/vendor", vendorAuthRouter);
+
   // API Reports endpoint for generating CSV reports
   app.get("/api/reports/generate", (req: Request, res: Response) => {
     // Generate report data - in a real app, this would fetch from database
