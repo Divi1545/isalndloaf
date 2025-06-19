@@ -1,0 +1,70 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const axios = require('axios');
+const app = express();
+
+app.use(express.json());
+
+// Airtable config
+const AIRTABLE_BASE = 'YOUR_AIRTABLE_BASE_ID';
+const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
+const VENDORS_TABLE = 'Vendors';
+
+// Helper: create random password
+function randomPassword(length = 8) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#';
+  return Array.from({length}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+// Register vendor (admin or self)
+app.post('/api/vendors/register', async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  // Check if already exists
+  const searchResp = await axios.get(
+    `https://api.airtable.com/v0/${AIRTABLE_BASE}/${VENDORS_TABLE}?filterByFormula={Email}="${email}"`,
+    { headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` } }
+  );
+  if (searchResp.data.records.length > 0)
+    return res.status(409).json({ error: 'Vendor already exists' });
+
+  // Generate password if not provided (admin use)
+  const plainPassword = password || randomPassword(10);
+  const hashed = await bcrypt.hash(plainPassword, 10);
+
+  // Save to Airtable
+  await axios.post(
+    `https://api.airtable.com/v0/${AIRTABLE_BASE}/${VENDORS_TABLE}`,
+    { fields: { Name: name || '', Email: email, Password: hashed, Status: 'Active' } },
+    { headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}`, 'Content-Type': 'application/json' } }
+  );
+
+  // TODO: Send email to vendor (integrate n8n/SendGrid/Mailgun)
+  // Example: sendVendorEmail(email, plainPassword);
+
+  res.json({ success: true, email, password: plainPassword });
+});
+
+// Vendor login
+app.post('/api/vendors/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+  // Fetch vendor from Airtable
+  const searchResp = await axios.get(
+    `https://api.airtable.com/v0/${AIRTABLE_BASE}/${VENDORS_TABLE}?filterByFormula={Email}="${email}"`,
+    { headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` } }
+  );
+  if (searchResp.data.records.length === 0)
+    return res.status(401).json({ error: 'Vendor not found' });
+
+  const vendor = searchResp.data.records[0].fields;
+  const match = await bcrypt.compare(password, vendor.Password);
+  if (!match) return res.status(403).json({ error: 'Invalid password' });
+
+  // TODO: Generate JWT/session here if needed
+  res.json({ success: true, vendor: { name: vendor.Name, email: vendor.Email } });
+});
+
+app.listen(3000, () => console.log('Vendor API running on 3000'));
