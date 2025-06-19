@@ -242,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Booking Routes
   app.get("/api/bookings", requireAuth, async (req: Request, res: Response) => {
     try {
-      const bookings = await storage.getBookings(req.session.user.userId);
+      const bookings = await storage.getBookings(req.session.user.id);
       res.status(200).json(bookings);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch bookings" });
@@ -252,7 +252,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get("/api/bookings/recent", requireAuth, async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
-      const bookings = await storage.getRecentBookings(req.session.user.userId, limit);
+      const bookings = await storage.getRecentBookings(req.session.user.id, limit);
       res.status(200).json(bookings);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch recent bookings" });
@@ -476,7 +476,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       // Store the generated content
       const marketingContent = await storage.createMarketingContent({
-        userId: req.session.user.userId,
+        userId: req.session.user.id,
         title: `${contentTypeTitle} - ${new Date().toLocaleDateString()}`,
         contentType,
         content: generatedContent,
@@ -498,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   app.get("/api/ai/marketing-contents", requireAuth, async (req: Request, res: Response) => {
     try {
-      const contents = await storage.getMarketingContents(req.session.user.userId);
+      const contents = await storage.getMarketingContents(req.session.user.id);
       res.status(200).json(contents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch marketing contents" });
@@ -622,7 +622,7 @@ Respond in JSON format:
   // AI Vendor Performance Analytics
   app.post("/api/ai/vendor-analytics", requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = req.session.user!.userId;
+      const userId = req.session.user!.id;
       const { analysisType = 'comprehensive', period = 'monthly' } = req.body;
       
       if (!process.env.OPENAI_API_KEY) {
@@ -1022,7 +1022,7 @@ Format as comprehensive JSON:
   app.post("/api/ai/agent-executor", requireAuth, async (req: Request, res: Response) => {
     try {
       const { agent, action, data } = req.body;
-      const userId = req.session.user!.userId;
+      const userId = req.session.user!.id;
       
       if (!agent || !action || !data) {
         return res.status(400).json({ error: "Missing required fields: agent, action, data" });
@@ -2004,7 +2004,7 @@ Format as comprehensive JSON:
   app.post("/api/ai/agent-trainer", requireAuth, async (req: Request, res: Response) => {
     try {
       const { agent, trainingData } = req.body;
-      const userId = req.session.user!.userId;
+      const userId = req.session.user!.id;
       
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ error: "AI training service not available" });
@@ -2078,7 +2078,7 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
   app.get("/api/ai/agent-trainer/history", requireAuth, async (req: Request, res: Response) => {
     try {
       const { agent } = req.query;
-      const userId = req.session.user!.userId;
+      const userId = req.session.user!.id;
 
       // Get training history from notifications
       const notifications = await storage.getNotifications(userId);
