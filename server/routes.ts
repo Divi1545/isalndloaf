@@ -18,8 +18,8 @@ declare module "express-session" {
   }
 }
 
-// Initialize OpenAI
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize OpenAI (optional for development)
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 export async function registerRoutes(app: Express): Promise<void> {
   // Enhanced vendor authentication routes
@@ -464,6 +464,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       // Call OpenAI API
+      if (!openai) {
+        return res.status(500).json({ error: "AI service is currently unavailable" });
+      }
+      
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
@@ -576,6 +580,10 @@ Respond in JSON format:
   "alternatives": "suggestion for alternative dates or options if beneficial"
 }`;
 
+      if (!openai) {
+        return res.status(500).json({ error: "AI service is currently unavailable" });
+      }
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -693,6 +701,10 @@ Provide comprehensive business insights in JSON:
   "riskAlerts": ["urgent issues requiring attention"]
 }`;
 
+      if (!openai) {
+        return res.status(500).json({ error: "AI service is currently unavailable" });
+      }
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -816,6 +828,10 @@ Provide detailed analysis in JSON:
   }
 }`;
 
+      if (!openai) {
+        return res.status(500).json({ error: "AI service is currently unavailable" });
+      }
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -954,6 +970,10 @@ Format as comprehensive JSON:
   }
 }`;
 
+      if (!openai) {
+        return res.status(500).json({ error: "AI service is currently unavailable" });
+      }
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -1112,7 +1132,7 @@ Format as comprehensive JSON:
         },
         marketing: {
           generateContent: async (params: any) => {
-            if (!process.env.OPENAI_API_KEY) {
+            if (!openai) {
               throw new Error("OpenAI API not configured");
             }
             
@@ -2035,6 +2055,10 @@ Provide structured analysis:
 
 Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lankan tourism platform.`;
 
+      if (!openai) {
+        return res.status(500).json({ error: "AI service is currently unavailable" });
+      }
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
