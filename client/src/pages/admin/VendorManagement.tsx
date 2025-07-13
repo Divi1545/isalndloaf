@@ -133,10 +133,15 @@ const VendorDetailDialog = ({ vendor, onVerify, onDeactivate }: { vendor: User; 
             </Button>
           </div>
           <div className="space-x-2">
-            <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={onDeactivate}>
-              Deactivate
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={vendor.role === 'inactive' ? "text-green-600 border-green-200 hover:bg-green-50" : "text-red-600 border-red-200 hover:bg-red-50"} 
+              onClick={onDeactivate}
+            >
+              {vendor.role === 'inactive' ? 'Activate' : 'Deactivate'}
             </Button>
-            <Button size="sm">Edit</Button>
+            <Button size="sm" onClick={() => window.alert('Edit functionality will be implemented soon')}>Edit</Button>
           </div>
         </div>
       </DialogContent>
@@ -540,7 +545,7 @@ const VendorManagement = () => {
                         <VendorDetailDialog 
                           vendor={vendor} 
                           onVerify={() => updateVendorStatus(vendor.id, 'verified')}
-                          onDeactivate={() => toggleVendorActive(vendor.id, false)}
+                          onDeactivate={() => toggleVendorActive(vendor.id, vendor.role === 'inactive')}
                         />
                         
                         <Button 
@@ -548,8 +553,11 @@ const VendorManagement = () => {
                           size="sm" 
                           className="h-8 w-8 p-0"
                           onClick={() => {
-                            // Navigate to edit vendor page
-                            setLocation(`/admin/vendors/edit/${vendor.id}`);
+                            // Placeholder for edit functionality
+                            toast({
+                              title: "Coming Soon",
+                              description: "Edit vendor functionality will be implemented soon"
+                            });
                           }}
                         >
                           <span className="sr-only">Edit</span>
