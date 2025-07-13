@@ -228,6 +228,7 @@ import TransactionHistory from "@/pages/admin/TransactionHistory";
 import SupportDashboard from "@/pages/admin/SupportDashboard";
 import NewCampaignPage from "@/pages/admin/NewCampaignPage";
 import NewSupportTicketPage from "@/pages/admin/NewSupportTicketPage";
+import Settings from "@/pages/admin/Settings";
 
 // Import Vendor Form Pages
 import AddBookingForm from "@/pages/vendor/AddBookingForm";
@@ -405,29 +406,7 @@ const SimpleApp = () => {
       case "settings":
         return (
           <div className="py-20 px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center text-center py-16">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <i className="ri-settings-3-line text-3xl text-slate-500"></i>
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Platform Settings</h2>
-              <p className="text-slate-500 max-w-lg mb-6">
-                Configure global platform settings, user permissions, and notification preferences.
-              </p>
-              <div className="flex gap-4">
-                <button 
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md"
-                  onClick={() => setCurrentAdminPath('general-settings')}
-                >
-                  General Settings
-                </button>
-                <button 
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-md"
-                  onClick={() => setCurrentAdminPath('user-management')}
-                >
-                  User Management
-                </button>
-              </div>
-            </div>
+            <Settings />
           </div>
         );
       default:

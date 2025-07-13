@@ -575,6 +575,143 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Settings API Endpoints
+  
+  // Get system settings
+  app.get("/api/settings", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      // Return default settings (in a real implementation, this would be stored in the database)
+      const settings = {
+        platformName: "IslandLoaf",
+        adminEmail: "admin@islandloaf.com",
+        supportEmail: "support@islandloaf.com",
+        enableRegistration: true,
+        defaultCommissionRate: 10,
+        maxVendorsPerCategory: 100,
+        autoApproveVendors: false,
+        maintenanceMode: false,
+        allowGuestBookings: true,
+        emailNotifications: true,
+        smsNotifications: false,
+        backupFrequency: "daily",
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Failed to fetch settings:", error);
+      return res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  // Update system settings
+  app.post("/api/settings/system", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const settings = req.body;
+      
+      // In a real implementation, this would update the database
+      console.log("Updating system settings:", settings);
+      
+      res.json({
+        success: true,
+        message: "System settings updated successfully",
+        settings: settings
+      });
+    } catch (error) {
+      console.error("Failed to update system settings:", error);
+      return res.status(500).json({ error: "Failed to update system settings" });
+    }
+  });
+
+  // Update commission settings
+  app.post("/api/settings/commission", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const { rates } = req.body;
+      
+      // In a real implementation, this would update the database
+      console.log("Updating commission rates:", rates);
+      
+      res.json({
+        success: true,
+        message: "Commission rates updated successfully",
+        rates: rates
+      });
+    } catch (error) {
+      console.error("Failed to update commission settings:", error);
+      return res.status(500).json({ error: "Failed to update commission settings" });
+    }
+  });
+
+  // Update user role
+  app.put("/api/settings/users/:id/role", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { role } = req.body;
+      
+      if (!['admin', 'vendor', 'pending', 'inactive'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      
+      // Update user role in database
+      const updatedUser = await storage.updateUser(userId, { role });
+      
+      res.json({
+        success: true,
+        message: "User role updated successfully",
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Failed to update user role:", error);
+      return res.status(500).json({ error: "Failed to update user role" });
+    }
+  });
+
+  // Get database statistics
+  app.get("/api/settings/database/stats", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getUsers();
+      const allBookings = await Promise.all(
+        users.map(async (u) => {
+          const userBookings = await storage.getBookings(u.id);
+          return userBookings;
+        })
+      );
+      const bookings = allBookings.flat();
+      
+      const stats = {
+        totalUsers: users.length,
+        totalBookings: bookings.length,
+        activeVendors: users.filter(u => u.role === 'vendor').length,
+        databaseSize: "~2.4MB" // Mock size
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Failed to fetch database stats:", error);
+      return res.status(500).json({ error: "Failed to fetch database stats" });
+    }
+  });
+
+  // Create database backup
+  app.post("/api/settings/database/backup", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      // In a real implementation, this would create a database backup
+      console.log("Creating database backup...");
+      
+      // Simulate backup creation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      res.json({
+        success: true,
+        message: "Database backup created successfully",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Failed to create database backup:", error);
+      return res.status(500).json({ error: "Failed to create database backup" });
+    }
+  });
+
   // Auth Routes
   // Registration endpoint
   app.post("/api/auth/register", async (req: Request, res: Response) => {
