@@ -98,19 +98,19 @@ export class MemStorage implements IStorage {
       password: "admin123",
       email: "admin@islandloaf.com",
       fullName: "Admin User",
-      businessName: "IslandLoaf",
-      businessType: "stays",
+      businessName: "IslandLoaf Admin",
+      businessType: "administration",
       role: "admin"
     });
     
     // Initialize with default vendor
     this.createUser({
       username: "vendor",
-      password: "vendor123",
-      email: "vendor@beachsidevillas.com",
-      fullName: "John Smith",
-      businessName: "Beachside Villas",
-      businessType: "stays",
+      password: "password123",
+      email: "vendor@islandloaf.com",
+      fullName: "Island Vendor",
+      businessName: "Beach Paradise Villa",
+      businessType: "accommodation",
       role: "vendor"
     });
   }

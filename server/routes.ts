@@ -63,30 +63,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     };
   };
 
-  // Create a sample user if none exists (for development purposes)
-  const createSampleUser = async () => {
-    try {
-      const users = await storage.getUsers();
-      if (users.length === 0) {
-        console.log("Creating sample user...");
-        await storage.createUser({
-          username: "vendor",
-          email: "vendor@islandloaf.com",
-          password: "password123", // This is just for development
-          fullName: "Island Vendor",
-          businessName: "Beach Paradise Villa",
-          businessType: "accommodation",
-          role: "vendor",
-        });
-        console.log("Sample user created successfully");
-      }
-    } catch (error) {
-      console.error("Error creating sample user:", error);
-    }
-  };
-
-  // Create sample user on startup
-  await createSampleUser();
+  // Sample users are already created in the MemStorage constructor
 
   // Vendor Registration Route (new dedicated endpoint)
   app.post("/api/vendors/register", async (req: Request, res: Response) => {
@@ -2132,6 +2109,66 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
       console.error("Failed to fetch training history:", error);
       res.status(500).json({ error: "Failed to fetch training history" });
     }
+  });
+
+  // Stay/Accommodation API endpoints
+  app.get("/api/stay/types", (req: Request, res: Response) => {
+    const stayTypes = [
+      'One Room', 'Double Bed', 'Twin Room', 'Triple Room', 'Family Room', 
+      'Deluxe Room', 'Suite', 'Junior Suite', 'Studio', 'Entire Villa', 
+      'Entire Apartment', 'Private Cottage', 'Shared Dorm', 'Capsule Room',
+      'Tent', 'Bungalow', 'Chalet', 'Houseboat', 'Cabana', 'Treehouse'
+    ];
+    res.json(stayTypes);
+  });
+
+  app.get("/api/stay/property-types", (req: Request, res: Response) => {
+    const propertyTypes = [
+      'Hotel', 'Villa', 'Resort', 'Apartment', 'Bungalow', 'Boutique Hotel',
+      'Homestay', 'Hostel', 'Cottage', 'Treehouse', 'Guesthouse'
+    ];
+    res.json(propertyTypes);
+  });
+
+  app.get("/api/stay/property-spaces", (req: Request, res: Response) => {
+    const propertySpaces = [
+      'Beachfront', 'Mountain View', 'City Center', 'Countryside', 'Lakeside',
+      'Riverside', 'Forest', 'Desert', 'Island', 'Oceanfront'
+    ];
+    res.json(propertySpaces);
+  });
+
+  app.get("/api/stay/themes", (req: Request, res: Response) => {
+    const themes = [
+      'Romantic', 'Family-friendly', 'Business', 'Luxury', 'Budget',
+      'Adventure', 'Eco-friendly', 'Historic', 'Modern', 'Traditional'
+    ];
+    res.json(themes);
+  });
+
+  app.get("/api/stay/amenities", (req: Request, res: Response) => {
+    const amenities = [
+      { id: '1', name: 'WiFi' },
+      { id: '2', name: 'Air Conditioning' },
+      { id: '3', name: 'Swimming Pool' },
+      { id: '4', name: 'Beach Access' },
+      { id: '5', name: 'Kitchen' },
+      { id: '6', name: 'Breakfast Included' },
+      { id: '7', name: 'Private Bathroom' },
+      { id: '8', name: 'Balcony' },
+      { id: '9', name: 'Ocean View' },
+      { id: '10', name: 'Gym Access' }
+    ];
+    res.json(amenities);
+  });
+
+  // Vehicle/Transport API endpoints
+  app.get("/api/vehicles/types", (req: Request, res: Response) => {
+    const vehicleTypes = [
+      'Car', 'Van', 'Bus', 'Motorcycle', 'Bicycle', 'Tuk-tuk',
+      'Luxury Car', 'SUV', 'Minibus', 'Boat', 'Helicopter', 'Taxi'
+    ];
+    res.json(vehicleTypes);
   });
 
   // For handling errors
