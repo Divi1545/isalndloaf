@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 // Create a basic stat card component for the admin dashboard
 const StatCard = ({ title, value, icon, iconColor, iconBgColor, trend, subtitle }: {
@@ -73,16 +76,27 @@ const StatCard = ({ title, value, icon, iconColor, iconBgColor, trend, subtitle 
 };
 
 const AdminDashboard = () => {
-  const [selectedVendor, setSelectedVendor] = useState<string>('all');
+  const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [_, setLocation] = useLocation();
-  
+
+  // Fetch dashboard statistics
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['/api/dashboard/stats'],
+    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+  });
+
+  // Fetch booking analytics
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['/api/dashboard/booking-analytics'],
+    refetchInterval: 30000,
+  });
+
   // Handle additional admin actions when needed
   useEffect(() => {
     // Clear any persisted vendor ID when returning to the dashboard
     localStorage.removeItem("vendorId");
   }, []);
-  
+
   // Handle report generation using the API endpoint
   const handleGenerateReport = async () => {
     try {
@@ -122,489 +136,245 @@ const AdminDashboard = () => {
       });
     }
   };
+
+  if (statsLoading || analyticsLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Chart colors
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+  // Prepare data for charts
+  const businessTypeData = analytics?.businessTypes ? 
+    Object.entries(analytics.businessTypes).map(([name, value]) => ({ name, value })) : [];
+  
+  const statusData = analytics?.statusDistribution ? 
+    Object.entries(analytics.statusDistribution).map(([name, value]) => ({ name, value })) : [];
   
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <div className="flex items-center gap-3">
-          <Button 
-            className="bg-purple-600 hover:bg-purple-700"
-            onClick={handleGenerateReport}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="12" y1="8" x2="12" y2="16"></line>
-              <line x1="8" y1="12" x2="16" y2="12"></line>
-            </svg>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex gap-2">
+          <Button onClick={handleGenerateReport} variant="outline">
             Generate Report
+          </Button>
+          <Button onClick={() => navigate('/admin/vendor-management')}>
+            Manage Vendors
           </Button>
         </div>
       </div>
-      
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard 
+
+      {/* Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
           title="Total Vendors"
-          value="18"
+          value={stats?.totalVendors?.toString() || '0'}
           icon="users"
-          iconColor="text-purple-600"
-          iconBgColor="bg-purple-100"
-          trend={{ value: "+3", isPositive: true }}
-          subtitle="vs. last month"
-        />
-        <StatCard 
-          title="Platform Revenue"
-          value="$24,680"
-          icon="dollar-sign"
-          iconColor="text-green-600"
-          iconBgColor="bg-green-100"
-          trend={{ value: "+15.8%", isPositive: true }}
-          subtitle="vs. last month"
-        />
-        <StatCard 
-          title="Total Bookings"
-          value="1,423"
-          icon="calendar"
           iconColor="text-blue-600"
           iconBgColor="bg-blue-100"
-          trend={{ value: "+12.4%", isPositive: true }}
-          subtitle="vs. last month"
+          trend={{ value: `${stats?.activeVendors || 0} active`, isPositive: true }}
         />
-        <StatCard 
-          title="Customer Growth"
-          value="22.5%"
+        <StatCard
+          title="Total Bookings"
+          value={stats?.totalBookings?.toString() || '0'}
+          icon="calendar"
+          iconColor="text-green-600"
+          iconBgColor="bg-green-100"
+          trend={{ value: `${stats?.confirmedBookings || 0} confirmed`, isPositive: true }}
+        />
+        <StatCard
+          title="Total Revenue"
+          value={`$${stats?.totalRevenue || 0}`}
+          icon="dollar-sign"
+          iconColor="text-purple-600"
+          iconBgColor="bg-purple-100"
+          trend={{ value: `${stats?.completedBookings || 0} completed`, isPositive: true }}
+        />
+        <StatCard
+          title="Pending Approvals"
+          value={stats?.pendingVendors?.toString() || '0'}
           icon="trending-up"
-          iconColor="text-amber-600"
-          iconBgColor="bg-amber-100"
-          trend={{ value: "+3.2%", isPositive: true }}
-          subtitle="vs. last month"
+          iconColor="text-orange-600"
+          iconBgColor="bg-orange-100"
+          trend={{ value: `${stats?.inactiveVendors || 0} inactive`, isPositive: false }}
         />
       </div>
-      
-      <Tabs defaultValue="vendors" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="vendors">Vendors</TabsTrigger>
-          <TabsTrigger value="bookings">Bookings</TabsTrigger>
-          <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="settings">Platform Settings</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="vendors" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-                <h3 className="text-lg font-semibold">Vendor Management</h3>
-                <div className="flex items-center gap-3">
-                  <Input 
-                    placeholder="Search vendors..." 
-                    className="w-full md:w-64"
-                  />
-                  <Select value={selectedVendor} onValueChange={setSelectedVendor}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="stays">Accommodation</SelectItem>
-                      <SelectItem value="transport">Transport</SelectItem>
-                      <SelectItem value="tours">Tours & Activities</SelectItem>
-                      <SelectItem value="wellness">Wellness</SelectItem>
-                    </SelectContent>
-                  </Select>
 
-                </div>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-sm">Vendor ID</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Business Name</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Owner</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Type</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Revenue</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Status</th>
-                      <th className="text-right py-3 px-4 font-medium text-sm">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { id: 'V-1001', name: 'Beach Paradise Villa', owner: 'Island Vendor', type: 'Accommodation', revenue: '$12,628', status: 'active' },
-                      { id: 'V-1002', name: 'Island Adventures', owner: 'John Smith', type: 'Tours', revenue: '$8,450', status: 'active' },
-                      { id: 'V-1003', name: 'Coastal Scooters', owner: 'Maria Rodriguez', type: 'Transport', revenue: '$5,920', status: 'active' },
-                      { id: 'V-1004', name: 'Serenity Spa', owner: 'Raj Patel', type: 'Wellness', revenue: '$7,340', status: 'pending' },
-                      { id: 'V-1005', name: 'Mountain Retreat', owner: 'Sarah Johnson', type: 'Accommodation', revenue: '$9,125', status: 'active' },
-                    ].map((vendor, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="py-4 px-4 text-sm">{vendor.id}</td>
-                        <td className="py-4 px-4 text-sm font-medium">{vendor.name}</td>
-                        <td className="py-4 px-4 text-sm">{vendor.owner}</td>
-                        <td className="py-4 px-4 text-sm">{vendor.type}</td>
-                        <td className="py-4 px-4 text-sm">{vendor.revenue}</td>
-                        <td className="py-4 px-4 text-sm">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            vendor.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {vendor.status.charAt(0).toUpperCase() + vendor.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => {
-                                localStorage.setItem("adminAction", "editVendor");
-                                localStorage.setItem("vendorId", vendor.id);
-                                window.location.href = "/dashboard";
-                              }}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path>
-                              </svg>
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => {
-                                localStorage.setItem("adminAction", "viewVendor");
-                                localStorage.setItem("vendorId", vendor.id);
-                                window.location.href = "/dashboard";
-                              }}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                              </svg>
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => {
-                                if (confirm(`Are you sure you want to delete ${vendor.name}?`)) {
-                                  toast({
-                                    title: "Vendor deleted",
-                                    description: `${vendor.name} has been removed from the platform`,
-                                  });
-                                  // In a real app, this would make an API call
-                                  console.log("Vendor deleted:", vendor.id);
-                                }
-                              }}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
-                                <path d="M3 6h18"></path>
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                              </svg>
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
+      {/* Charts Grid */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Monthly Revenue Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Revenue</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats?.monthlyRevenue || []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+                  <Line type="monotone" dataKey="revenue" stroke="#0088FE" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Business Types Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Business Types</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={businessTypeData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({name, value}) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {businessTypeData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="flex justify-between items-center mt-4">
-                <div className="text-sm text-muted-foreground">Showing 5 of 18 vendors</div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled>
-                    Previous
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="bookings" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold">Platform Bookings</h3>
-                <div className="flex items-center gap-3">
-                  <Select defaultValue="all">
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" x2="12" y1="15" y2="3"></line>
-                    </svg>
-                    Export Data
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-sm">Booking ID</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Customer</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Vendor</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Service</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Dates</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Total</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Commission</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { id: 'B-3001', customer: 'Sarah Johnson', vendor: 'Beach Paradise Villa', service: 'Beach Villa', dates: 'May 20-23, 2025', total: '$449.97', commission: '$44.99', status: 'confirmed' },
-                      { id: 'B-3002', customer: 'Michael Chen', vendor: 'Beach Paradise Villa', service: 'Beach Villa', dates: 'May 25-28, 2025', total: '$449.97', commission: '$44.99', status: 'confirmed' },
-                      { id: 'B-3003', customer: 'Emma Williams', vendor: 'Beach Paradise Villa', service: 'Garden Room', dates: 'Jun 1-5, 2025', total: '$359.96', commission: '$35.99', status: 'pending' },
-                      { id: 'B-3004', customer: 'James Taylor', vendor: 'Beach Paradise Villa', service: 'Ocean View Suite', dates: 'Jun 10-15, 2025', total: '$999.95', commission: '$99.99', status: 'confirmed' },
-                      { id: 'B-3005', customer: 'Sophie Dubois', vendor: 'Beach Paradise Villa', service: 'Beach Villa', dates: 'Jun 20-25, 2025', total: '$749.95', commission: '$74.99', status: 'pending' },
-                    ].map((booking, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="py-3 px-4 text-sm">{booking.id}</td>
-                        <td className="py-3 px-4 text-sm">{booking.customer}</td>
-                        <td className="py-3 px-4 text-sm">{booking.vendor}</td>
-                        <td className="py-3 px-4 text-sm">{booking.service}</td>
-                        <td className="py-3 px-4 text-sm">{booking.dates}</td>
-                        <td className="py-3 px-4 text-sm">{booking.total}</td>
-                        <td className="py-3 px-4 text-sm">{booking.commission}</td>
-                        <td className="py-3 px-4 text-sm">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            booking.status === 'confirmed' 
-                            ? 'bg-green-100 text-green-800' 
-                            : booking.status === 'pending'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-red-100 text-red-800'
-                          }`}>
-                            {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="revenue" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold">Revenue Management</h3>
-                <div className="flex items-center gap-3">
-                  <Select defaultValue="thisMonth">
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Time period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="thisMonth">This Month</SelectItem>
-                      <SelectItem value="lastMonth">Last Month</SelectItem>
-                      <SelectItem value="lastQuarter">Last Quarter</SelectItem>
-                      <SelectItem value="ytd">Year to Date</SelectItem>
-                      <SelectItem value="custom">Custom Range</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-4">Platform Commission Settings</h4>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Accommodation Rate</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                          <Input defaultValue="10" className="pl-7" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Transport Rate</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                          <Input defaultValue="12" className="pl-7" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Tours & Activities Rate</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                          <Input defaultValue="15" className="pl-7" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Wellness Rate</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                          <Input defaultValue="10" className="pl-7" />
-                        </div>
-                      </div>
-                    </div>
-                    <Button className="w-full">Update Commission Rates</Button>
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Booking Status Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Booking Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statusData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#00C49F" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Vendors */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Performing Vendors</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {analytics?.topVendors?.map((vendor, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium">{vendor.name}</p>
+                    <p className="text-sm text-gray-600">{vendor.bookings} bookings</p>
                   </div>
+                  <Badge variant="secondary">#{index + 1}</Badge>
                 </div>
-                
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-4">Revenue Breakdown by Category</h4>
-                  <div className="space-y-4">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                      <div className="flex-1">
-                        <div className="flex justify-between mb-1">
-                          <p className="text-sm font-medium">Accommodation</p>
-                          <p className="text-sm font-medium">$14,280 (58%)</p>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="h-2 rounded-full bg-blue-500" style={{ width: '58%' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                      <div className="flex-1">
-                        <div className="flex justify-between mb-1">
-                          <p className="text-sm font-medium">Tours & Activities</p>
-                          <p className="text-sm font-medium">$5,920 (24%)</p>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="h-2 rounded-full bg-green-500" style={{ width: '24%' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
-                      <div className="flex-1">
-                        <div className="flex justify-between mb-1">
-                          <p className="text-sm font-medium">Transport</p>
-                          <p className="text-sm font-medium">$2,470 (10%)</p>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="h-2 rounded-full bg-amber-500" style={{ width: '10%' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                      <div className="flex-1">
-                        <div className="flex justify-between mb-1">
-                          <p className="text-sm font-medium">Wellness</p>
-                          <p className="text-sm font-medium">$2,010 (8%)</p>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="h-2 rounded-full bg-purple-500" style={{ width: '8%' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              )) || (
+                <p className="text-gray-500">No booking data available</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Bookings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Bookings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {stats?.recentBookings?.map((booking, index) => (
+              <div key={index} className="flex items-center justify-between p-3 border-b">
+                <div>
+                  <p className="font-medium">Booking #{booking.id}</p>
+                  <p className="text-sm text-gray-600">
+                    {new Date(booking.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <Badge 
+                    variant={booking.status === 'confirmed' ? 'default' : 
+                            booking.status === 'pending' ? 'secondary' : 
+                            booking.status === 'completed' ? 'outline' : 'destructive'}
+                  >
+                    {booking.status}
+                  </Badge>
+                  <p className="text-sm text-gray-600 mt-1">${booking.price || 0}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="settings" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold mb-6">Platform Settings</h3>
-              
-              <div className="space-y-6">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-4">General Settings</h4>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Maintenance Mode</p>
-                        <p className="text-sm text-muted-foreground">
-                          Put the platform in maintenance mode. All users will see a maintenance message.
-                        </p>
-                      </div>
-                      <Switch id="maintenance-mode" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Allow New Registrations</p>
-                        <p className="text-sm text-muted-foreground">
-                          Enable or disable new vendor registrations.
-                        </p>
-                      </div>
-                      <Switch id="allow-registrations" defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Vendor Approval Required</p>
-                        <p className="text-sm text-muted-foreground">
-                          Require admin approval for new vendor accounts.
-                        </p>
-                      </div>
-                      <Switch id="vendor-approval" defaultChecked />
-                    </div>
-                  </div>
+            )) || (
+              <p className="text-gray-500">No recent bookings</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Vendor Statistics */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Vendor Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {stats?.vendorStats?.map((vendor, index) => (
+              <div key={index} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium">{vendor.name}</p>
+                  <Badge 
+                    variant={vendor.role === 'vendor' ? 'default' : 
+                            vendor.role === 'pending' ? 'secondary' : 'outline'}
+                  >
+                    {vendor.role}
+                  </Badge>
                 </div>
-                
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-4">Payment Settings</h4>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Automatic Payouts</p>
-                        <p className="text-sm text-muted-foreground">
-                          Automatically process payouts on the 1st of each month.
-                        </p>
-                      </div>
-                      <Switch id="auto-payouts" defaultChecked />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Default Payout Method</label>
-                      <Select defaultValue="bank">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select payment method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="bank">Bank Transfer</SelectItem>
-                          <SelectItem value="paypal">PayPal</SelectItem>
-                          <SelectItem value="stripe">Stripe</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Payment Processing Fee</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                        <Input defaultValue="2.5" className="pl-7" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end gap-3">
-                  <Button variant="outline">Cancel</Button>
-                  <Button>Save Settings</Button>
-                </div>
+                <p className="text-sm text-gray-600 mb-1">{vendor.businessType}</p>
+                <p className="text-sm text-gray-600">{vendor.bookingCount} bookings</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            )) || (
+              <p className="text-gray-500">No vendor data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
