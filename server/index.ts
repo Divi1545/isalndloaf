@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { extendStorageWithIcalSupport } from "./storage/icalExtensions";
-import { storage } from "./storage-provider"; // Updated to use storage provider
+import { storage } from "./storage"; // Updated to use storage
 import session from "express-session";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";

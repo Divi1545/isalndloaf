@@ -7,6 +7,8 @@ import {
   notifications, type Notification, type InsertNotification,
   marketingContents, type MarketingContent, type InsertMarketingContent
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -56,6 +58,213 @@ export interface IStorage {
   createMarketingContent(content: InsertMarketingContent): Promise<MarketingContent>;
   updateMarketingContent(id: number, content: Partial<InsertMarketingContent>): Promise<MarketingContent | undefined>;
   deleteMarketingContent(id: number): Promise<boolean>;
+}
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async getService(id: number): Promise<Service | undefined> {
+    const [service] = await db.select().from(services).where(eq(services.id, id));
+    return service || undefined;
+  }
+
+  async getServices(userId: number): Promise<Service[]> {
+    return await db.select().from(services).where(eq(services.userId, userId));
+  }
+
+  async createService(insertService: InsertService): Promise<Service> {
+    const [service] = await db
+      .insert(services)
+      .values(insertService)
+      .returning();
+    return service;
+  }
+
+  async updateService(id: number, updateService: Partial<InsertService>): Promise<Service | undefined> {
+    const [service] = await db
+      .update(services)
+      .set(updateService)
+      .where(eq(services.id, id))
+      .returning();
+    return service || undefined;
+  }
+
+  async deleteService(id: number): Promise<boolean> {
+    const result = await db.delete(services).where(eq(services.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getCalendarEvents(userId: number, startDate?: Date, endDate?: Date): Promise<CalendarEvent[]> {
+    let query = db.select().from(calendarEvents).where(eq(calendarEvents.userId, userId));
+    return await query;
+  }
+
+  async getCalendarEventsByService(serviceId: number): Promise<CalendarEvent[]> {
+    return await db.select().from(calendarEvents).where(eq(calendarEvents.serviceId, serviceId));
+  }
+
+  async createCalendarEvent(insertEvent: InsertCalendarEvent): Promise<CalendarEvent> {
+    const [event] = await db
+      .insert(calendarEvents)
+      .values(insertEvent)
+      .returning();
+    return event;
+  }
+
+  async updateCalendarEvent(id: number, updateEvent: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined> {
+    const [event] = await db
+      .update(calendarEvents)
+      .set(updateEvent)
+      .where(eq(calendarEvents.id, id))
+      .returning();
+    return event || undefined;
+  }
+
+  async deleteCalendarEvent(id: number): Promise<boolean> {
+    const result = await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getCalendarSources(userId: number): Promise<CalendarSource[]> {
+    return await db.select().from(calendarSources).where(eq(calendarSources.userId, userId));
+  }
+
+  async createCalendarSource(insertSource: InsertCalendarSource): Promise<CalendarSource> {
+    const [source] = await db
+      .insert(calendarSources)
+      .values(insertSource)
+      .returning();
+    return source;
+  }
+
+  async updateCalendarSource(id: number, updateSource: Partial<InsertCalendarSource>): Promise<CalendarSource | undefined> {
+    const [source] = await db
+      .update(calendarSources)
+      .set(updateSource)
+      .where(eq(calendarSources.id, id))
+      .returning();
+    return source || undefined;
+  }
+
+  async deleteCalendarSource(id: number): Promise<boolean> {
+    const result = await db.delete(calendarSources).where(eq(calendarSources.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getBooking(id: number): Promise<Booking | undefined> {
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
+    return booking || undefined;
+  }
+
+  async getBookings(userId: number): Promise<Booking[]> {
+    return await db.select().from(bookings).where(eq(bookings.userId, userId));
+  }
+
+  async getRecentBookings(userId: number, limit: number): Promise<Booking[]> {
+    return await db.select().from(bookings).where(eq(bookings.userId, userId)).limit(limit);
+  }
+
+  async createBooking(insertBooking: InsertBooking): Promise<Booking> {
+    const [booking] = await db
+      .insert(bookings)
+      .values(insertBooking)
+      .returning();
+    return booking;
+  }
+
+  async updateBooking(id: number, updateBooking: Partial<InsertBooking>): Promise<Booking | undefined> {
+    const [booking] = await db
+      .update(bookings)
+      .set(updateBooking)
+      .where(eq(bookings.id, id))
+      .returning();
+    return booking || undefined;
+  }
+
+  async deleteBooking(id: number): Promise<boolean> {
+    const result = await db.delete(bookings).where(eq(bookings.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getNotifications(userId: number): Promise<Notification[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId));
+  }
+
+  async getUnreadNotifications(userId: number): Promise<Notification[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId));
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values(insertNotification)
+      .returning();
+    return notification;
+  }
+
+  async markNotificationRead(id: number): Promise<boolean> {
+    const result = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async deleteNotification(id: number): Promise<boolean> {
+    const result = await db.delete(notifications).where(eq(notifications.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getMarketingContents(userId: number): Promise<MarketingContent[]> {
+    return await db.select().from(marketingContents).where(eq(marketingContents.userId, userId));
+  }
+
+  async createMarketingContent(insertContent: InsertMarketingContent): Promise<MarketingContent> {
+    const [content] = await db
+      .insert(marketingContents)
+      .values(insertContent)
+      .returning();
+    return content;
+  }
+
+  async updateMarketingContent(id: number, updateContent: Partial<InsertMarketingContent>): Promise<MarketingContent | undefined> {
+    const [content] = await db
+      .update(marketingContents)
+      .set(updateContent)
+      .where(eq(marketingContents.id, id))
+      .returning();
+    return content || undefined;
+  }
+
+  async deleteMarketingContent(id: number): Promise<boolean> {
+    const result = await db.delete(marketingContents).where(eq(marketingContents.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -381,5 +590,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Use the in-memory storage implementation for now
-export const storage = new MemStorage();
+// Use database storage if DATABASE_URL is available, otherwise use in-memory storage
+export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();

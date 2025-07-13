@@ -1,27 +1,15 @@
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import ws from "ws";
+import * as schema from "@shared/schema";
 
-import { MongoClient } from 'mongodb';
+neonConfig.webSocketConstructor = ws;
 
-const uri = "mongodb+srv://alcodeagency:AiKiZd5vzUeiOliZi@islandloaf0.f6gf5t.mongodb.net/?retryWrites=true&w=majority";
-
-const client = new MongoClient(uri, {
-  minPoolSize: 0,
-  maxPoolSize: 10,
-  retryWrites: true,
-  retryReads: true,
-  maxIdleTimeMS: 120000,
-  connectTimeoutMS: 10000,
-  serverSelectionTimeoutMS: 10000,
-});
-
-export async function connectDB() {
-  try {
-    await client.connect();
-    console.log("Connected to MongoDB Atlas");
-    return client.db("islandloaf");
-  } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
-    throw error;
-  }
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
 }
 
-export const db = client.db("islandloaf");
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const db = drizzle({ client: pool, schema });
