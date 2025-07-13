@@ -230,7 +230,7 @@ const VendorManagement = () => {
   // Add vendor mutation
   const addVendorMutation = useMutation({
     mutationFn: async (vendorData: any) => {
-      const response = await apiRequest('POST', '/api/auth/register', vendorData);
+      const response = await apiRequest('POST', '/api/vendors', vendorData);
       return response.json();
     },
     onSuccess: (data) => {
@@ -254,7 +254,7 @@ const VendorManagement = () => {
       
       toast({
         title: "Success",
-        description: `${data.user.fullName} has been added successfully to the platform.`
+        description: `${data.fullName} has been added successfully to the platform.`
       });
     },
     onError: (error: any) => {
