@@ -57,7 +57,7 @@ const useVendors = () => {
 };
 
 // Vendor Detail Dialog component
-const VendorDetailDialog = ({ vendor, onVerify, onDeactivate }: { vendor: User; onVerify: () => void; onDeactivate: () => void }) => {
+const VendorDetailDialog = ({ vendor, onVerify, onDeactivate, onEdit }: { vendor: User; onVerify: () => void; onDeactivate: () => void; onEdit: () => void }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -141,7 +141,7 @@ const VendorDetailDialog = ({ vendor, onVerify, onDeactivate }: { vendor: User; 
             >
               {vendor.role === 'inactive' ? 'Activate' : 'Deactivate'}
             </Button>
-            <Button size="sm" onClick={() => window.alert('Edit functionality will be implemented soon')}>Edit</Button>
+            <Button size="sm" onClick={onEdit}>Edit</Button>
           </div>
         </div>
       </DialogContent>
@@ -155,6 +155,8 @@ const VendorManagement = () => {
   const [businessTypeFilter, setBusinessTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
+  const [isEditVendorOpen, setIsEditVendorOpen] = useState(false);
+  const [editingVendor, setEditingVendor] = useState<User | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -312,7 +314,9 @@ const VendorManagement = () => {
       (vendor.businessType || '').toLowerCase() === businessTypeFilter.toLowerCase();
     
     const matchesStatus = statusFilter === 'all' || 
-      vendor.role.toLowerCase() === statusFilter.toLowerCase();
+      (statusFilter === 'active' && vendor.role === 'vendor') ||
+      (statusFilter === 'pending' && vendor.role === 'pending') ||
+      (statusFilter === 'inactive' && vendor.role === 'inactive');
     
     return matchesSearch && matchesBusinessType && matchesStatus;
   });
@@ -443,6 +447,110 @@ const VendorManagement = () => {
             </div>
           </DialogContent>
         </Dialog>
+        
+        {/* Edit Vendor Dialog */}
+        <Dialog open={isEditVendorOpen} onOpenChange={setIsEditVendorOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Vendor</DialogTitle>
+            </DialogHeader>
+            {editingVendor && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Business Name</Label>
+                    <Input 
+                      value={editingVendor.businessName || ''}
+                      onChange={(e) => setEditingVendor({...editingVendor, businessName: e.target.value})}
+                      placeholder="Paradise Beach Resort"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Owner Name</Label>
+                    <Input 
+                      value={editingVendor.fullName || ''}
+                      onChange={(e) => setEditingVendor({...editingVendor, fullName: e.target.value})}
+                      placeholder="John Smith"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input 
+                      type="email"
+                      value={editingVendor.email || ''}
+                      onChange={(e) => setEditingVendor({...editingVendor, email: e.target.value})}
+                      placeholder="john@resort.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Username</Label>
+                    <Input 
+                      value={editingVendor.username || ''}
+                      onChange={(e) => setEditingVendor({...editingVendor, username: e.target.value})}
+                      placeholder="john_resort"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Business Type</Label>
+                    <Select value={editingVendor.businessType} onValueChange={(value) => setEditingVendor({...editingVendor, businessType: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="accommodation">Accommodation</SelectItem>
+                        <SelectItem value="transport">Transport</SelectItem>
+                        <SelectItem value="tours">Tours & Activities</SelectItem>
+                        <SelectItem value="wellness">Wellness</SelectItem>
+                        <SelectItem value="dining">Dining</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={editingVendor.role} onValueChange={(value) => setEditingVendor({...editingVendor, role: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vendor">Active</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button variant="outline" onClick={() => setIsEditVendorOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => {
+                    updateVendorMutation.mutate({ 
+                      vendorId: editingVendor.id, 
+                      updates: {
+                        businessName: editingVendor.businessName,
+                        fullName: editingVendor.fullName,
+                        email: editingVendor.email,
+                        username: editingVendor.username,
+                        businessType: editingVendor.businessType,
+                        role: editingVendor.role
+                      }
+                    });
+                    setIsEditVendorOpen(false);
+                  }} disabled={updateVendorMutation.isPending}>
+                    {updateVendorMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
       
       <Tabs 
@@ -451,10 +559,11 @@ const VendorManagement = () => {
         value={statusFilter}
         onValueChange={setStatusFilter}
       >
-        <TabsList className="w-full max-w-md grid grid-cols-3">
+        <TabsList className="w-full max-w-md grid grid-cols-4">
           <TabsTrigger value="all">All Vendors</TabsTrigger>
           <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="pending">Pending Approval</TabsTrigger>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive</TabsTrigger>
         </TabsList>
       </Tabs>
       
@@ -491,7 +600,7 @@ const VendorManagement = () => {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -536,8 +645,16 @@ const VendorManagement = () => {
                       <td className="py-4 px-4 text-sm">{vendor.businessType || 'N/A'}</td>
                       <td className="py-4 px-4 text-sm">{vendor.email}</td>
                       <td className="py-4 px-4 text-sm">
-                        <Badge className="bg-green-100 text-green-800">
-                          {vendor.role.charAt(0).toUpperCase() + vendor.role.slice(1)}
+                        <Badge className={
+                          vendor.role === 'vendor' ? "bg-green-100 text-green-800" :
+                          vendor.role === 'pending' ? "bg-yellow-100 text-yellow-800" :
+                          vendor.role === 'inactive' ? "bg-gray-100 text-gray-800" :
+                          "bg-blue-100 text-blue-800"
+                        }>
+                          {vendor.role === 'vendor' ? 'Active' : 
+                           vendor.role === 'pending' ? 'Pending' :
+                           vendor.role === 'inactive' ? 'Inactive' : 
+                           vendor.role.charAt(0).toUpperCase() + vendor.role.slice(1)}
                         </Badge>
                       </td>
                     <td className="py-4 px-4 text-sm">
@@ -546,6 +663,10 @@ const VendorManagement = () => {
                           vendor={vendor} 
                           onVerify={() => updateVendorStatus(vendor.id, 'verified')}
                           onDeactivate={() => toggleVendorActive(vendor.id, vendor.role === 'inactive')}
+                          onEdit={() => {
+                            setEditingVendor(vendor);
+                            setIsEditVendorOpen(true);
+                          }}
                         />
                         
                         <Button 
@@ -553,11 +674,8 @@ const VendorManagement = () => {
                           size="sm" 
                           className="h-8 w-8 p-0"
                           onClick={() => {
-                            // Placeholder for edit functionality
-                            toast({
-                              title: "Coming Soon",
-                              description: "Edit vendor functionality will be implemented soon"
-                            });
+                            setEditingVendor(vendor);
+                            setIsEditVendorOpen(true);
                           }}
                         >
                           <span className="sr-only">Edit</span>
