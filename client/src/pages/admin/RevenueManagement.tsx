@@ -205,10 +205,8 @@ const CommissionSettings = () => {
 
   const updateCommissionMutation = useMutation({
     mutationFn: async (newRates: any) => {
-      return await apiRequest('/api/revenue/update-commission', {
-        method: 'POST',
-        body: { rates: newRates }
-      });
+      const response = await apiRequest('POST', '/api/revenue/update-commission', { rates: newRates });
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -320,10 +318,8 @@ const VendorPayoutList = ({ revenueData }: { revenueData: any }) => {
 
   const processPayoutsMutation = useMutation({
     mutationFn: async (vendorIds: number[]) => {
-      return await apiRequest('/api/revenue/process-payouts', {
-        method: 'POST',
-        body: { vendorIds }
-      });
+      const response = await apiRequest('POST', '/api/revenue/process-payouts', { vendorIds });
+      return await response.json();
     },
     onSuccess: (data) => {
       toast({
