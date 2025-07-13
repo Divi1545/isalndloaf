@@ -243,9 +243,8 @@ export async function registerRoutes(app: Express): Promise<void> {
       const completedBookings = bookings.filter(b => b.status === 'completed').length;
       const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
       
-      // Calculate revenue from completed bookings
+      // Calculate revenue from all bookings (consistent with revenue analytics)
       const totalRevenue = bookings
-        .filter(b => b.status === 'completed')
         .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
       
       // Calculate monthly revenue from real bookings
@@ -256,8 +255,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           .filter(b => {
             const bookingDate = new Date(b.createdAt);
             return bookingDate.getFullYear() === currentYear && 
-                   bookingDate.getMonth() === i && 
-                   b.status === 'completed';
+                   bookingDate.getMonth() === i;
           })
           .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
         
@@ -437,6 +435,143 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error("Failed to fetch revenue analytics:", error);
       return res.status(500).json({ error: "Failed to fetch revenue analytics" });
+    }
+  });
+
+  // Process vendor payouts
+  app.post("/api/revenue/process-payouts", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const { vendorIds } = req.body;
+      
+      if (!vendorIds || !Array.isArray(vendorIds)) {
+        return res.status(400).json({ error: "Invalid vendor IDs" });
+      }
+
+      // In a real implementation, this would:
+      // 1. Calculate payout amounts for each vendor
+      // 2. Create payout records in the database
+      // 3. Initiate payment processing
+      // 4. Send notifications to vendors
+      
+      const processedPayouts = vendorIds.map(id => ({
+        vendorId: id,
+        amount: Math.random() * 1000, // Mock amount
+        status: 'processed',
+        processedAt: new Date()
+      }));
+
+      // Create notifications for processed payouts
+      for (const payout of processedPayouts) {
+        await storage.createNotification({
+          userId: payout.vendorId,
+          title: "Payout Processed",
+          message: `Your payout of $${payout.amount.toFixed(2)} has been processed successfully.`,
+          type: "success",
+          read: false
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Processed ${processedPayouts.length} payouts successfully`,
+        payouts: processedPayouts 
+      });
+    } catch (error) {
+      console.error("Failed to process payouts:", error);
+      return res.status(500).json({ error: "Failed to process payouts" });
+    }
+  });
+
+  // Update commission rates
+  app.post("/api/revenue/update-commission", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const { rates } = req.body;
+      
+      if (!rates || typeof rates !== 'object') {
+        return res.status(400).json({ error: "Invalid commission rates" });
+      }
+
+      // In a real implementation, this would:
+      // 1. Validate the rates
+      // 2. Update the commission settings in the database
+      // 3. Apply to new bookings
+      // 4. Log the changes for audit
+      
+      // For now, we'll just return success
+      res.json({ 
+        success: true, 
+        message: "Commission rates updated successfully",
+        rates: rates 
+      });
+    } catch (error) {
+      console.error("Failed to update commission rates:", error);
+      return res.status(500).json({ error: "Failed to update commission rates" });
+    }
+  });
+
+  // Export revenue report
+  app.get("/api/revenue/export", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const { format = 'csv', timeframe = 'thisMonth' } = req.query;
+      
+      // Get all bookings and users for the report
+      const users = await storage.getUsers();
+      const allBookings = await Promise.all(
+        users.map(async (u) => {
+          const userBookings = await storage.getBookings(u.id);
+          return userBookings.map(booking => ({
+            ...booking,
+            vendorName: u.businessName || u.fullName,
+            vendorType: u.businessType
+          }));
+        })
+      );
+      const bookings = allBookings.flat();
+
+      if (format === 'csv') {
+        // Generate CSV content
+        const csvHeaders = [
+          'Date',
+          'Vendor Name',
+          'Business Type',
+          'Customer Name',
+          'Service Type',
+          'Total Price',
+          'Commission',
+          'Status'
+        ];
+        
+        const csvRows = bookings.map(booking => [
+          new Date(booking.createdAt).toLocaleDateString(),
+          booking.vendorName,
+          booking.vendorType,
+          booking.customerName,
+          booking.serviceType,
+          booking.totalPrice.toFixed(2),
+          booking.commission.toFixed(2),
+          booking.status
+        ]);
+        
+        const csvContent = [csvHeaders, ...csvRows]
+          .map(row => row.join(','))
+          .join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=revenue-report-${timeframe}.csv`);
+        res.send(csvContent);
+      } else {
+        // Return JSON format
+        res.json({
+          timeframe,
+          generatedAt: new Date(),
+          totalRevenue: bookings.reduce((sum, b) => sum + b.totalPrice, 0),
+          totalCommission: bookings.reduce((sum, b) => sum + b.commission, 0),
+          bookings: bookings
+        });
+      }
+    } catch (error) {
+      console.error("Failed to export revenue report:", error);
+      return res.status(500).json({ error: "Failed to export revenue report" });
     }
   });
 

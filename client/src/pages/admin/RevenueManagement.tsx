@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // Revenue summary component
 const RevenueSummary = ({ revenueData }: { revenueData: any }) => {
@@ -198,14 +200,38 @@ const CommissionSettings = () => {
     processing: 2.5
   });
 
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const updateCommissionMutation = useMutation({
+    mutationFn: async (newRates: any) => {
+      return await apiRequest('/api/revenue/update-commission', {
+        method: 'POST',
+        body: { rates: newRates }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Commission rates updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/revenue/analytics'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update commission rates",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleRateChange = (category: string, value: string) => {
     setRates(prev => ({ ...prev, [category]: parseFloat(value) || 0 }));
   };
 
   const handleUpdateRates = () => {
-    // Here you would send the updated rates to your backend
-    console.log('Updated rates:', rates);
-    // You can add a toast notification here
+    updateCommissionMutation.mutate(rates);
   };
 
   return (
@@ -272,7 +298,13 @@ const CommissionSettings = () => {
               />
             </div>
           </div>
-          <Button onClick={handleUpdateRates} className="w-full">Update Commission Rates</Button>
+          <Button 
+            onClick={handleUpdateRates} 
+            className="w-full" 
+            disabled={updateCommissionMutation.isPending}
+          >
+            {updateCommissionMutation.isPending ? 'Updating...' : 'Update Commission Rates'}
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -282,6 +314,33 @@ const CommissionSettings = () => {
 // Vendor Payout List component
 const VendorPayoutList = ({ revenueData }: { revenueData: any }) => {
   const [selectedPayouts, setSelectedPayouts] = useState<number[]>([]);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const processPayoutsMutation = useMutation({
+    mutationFn: async (vendorIds: number[]) => {
+      return await apiRequest('/api/revenue/process-payouts', {
+        method: 'POST',
+        body: { vendorIds }
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: `${data.message}`,
+      });
+      setSelectedPayouts([]);
+      queryClient.invalidateQueries({ queryKey: ['/api/revenue/analytics'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process payouts",
+        variant: "destructive"
+      });
+    }
+  });
   
   if (!revenueData) return <div>Loading...</div>;
 
@@ -305,9 +364,8 @@ const VendorPayoutList = ({ revenueData }: { revenueData: any }) => {
   };
 
   const handleProcessPayouts = () => {
-    // Here you would process the selected payouts
-    console.log('Processing payouts for vendors:', selectedPayouts);
-    // You can add a toast notification here
+    if (selectedPayouts.length === 0) return;
+    processPayoutsMutation.mutate(selectedPayouts);
   };
   
   return (
@@ -316,11 +374,11 @@ const VendorPayoutList = ({ revenueData }: { revenueData: any }) => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-medium text-lg">Vendor Payouts</h3>
           <Button 
-            disabled={selectedPayouts.length === 0} 
+            disabled={selectedPayouts.length === 0 || processPayoutsMutation.isPending} 
             size="sm"
             onClick={handleProcessPayouts}
           >
-            Process Selected ({selectedPayouts.length})
+            {processPayoutsMutation.isPending ? 'Processing...' : `Process Selected (${selectedPayouts.length})`}
           </Button>
         </div>
         
@@ -373,6 +431,8 @@ const VendorPayoutList = ({ revenueData }: { revenueData: any }) => {
 const RevenueManagement = () => {
   const [timeframe, setTimeframe] = useState('thisMonth');
   
+  const { toast } = useToast();
+
   const { data: revenueData, isLoading, error } = useQuery({
     queryKey: ['/api/revenue/analytics', timeframe],
     queryFn: async () => {
@@ -384,6 +444,36 @@ const RevenueManagement = () => {
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  const handleExportReport = async () => {
+    try {
+      const response = await fetch(`/api/revenue/export?format=csv&timeframe=${timeframe}`);
+      if (!response.ok) {
+        throw new Error('Failed to export report');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `revenue-report-${timeframe}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Success",
+        description: "Revenue report exported successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to export revenue report",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -418,7 +508,7 @@ const RevenueManagement = () => {
               <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExportReport}>
             Export Report
           </Button>
         </div>
