@@ -81,14 +81,14 @@ export const bookings = pgTable("bookings", {
   serviceId: integer("service_id").notNull().references(() => services.id),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
+  startDate: timestamp("start_date", { mode: 'date' }).notNull(),
+  endDate: timestamp("end_date", { mode: 'date' }).notNull(),
   status: text("status").notNull().default("pending"), // from bookingStatuses
   totalPrice: real("total_price").notNull(),
   commission: real("commission").notNull(),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { mode: 'date' }).defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: 'date' }).defaultNow(),
 });
 
 // Notifications

@@ -264,9 +264,65 @@ export class DatabaseStorage implements IStorage {
   
   async updateBooking(id: number, bookingUpdate: Partial<InsertBooking>): Promise<Booking | undefined> {
     try {
+      // Log the incoming data for debugging
+      console.log('Updating booking with data:', bookingUpdate);
+      
+      // Build the update object manually to avoid type issues
+      const updateData: any = {
+        updatedAt: new Date()
+      };
+      
+      // Only add fields that are being updated with proper type checking
+      if (bookingUpdate.customerName !== undefined) {
+        updateData.customerName = String(bookingUpdate.customerName);
+      }
+      if (bookingUpdate.customerEmail !== undefined) {
+        updateData.customerEmail = String(bookingUpdate.customerEmail);
+      }
+      if (bookingUpdate.status !== undefined) {
+        updateData.status = String(bookingUpdate.status);
+      }
+      if (bookingUpdate.notes !== undefined) {
+        updateData.notes = String(bookingUpdate.notes);
+      }
+      
+      // Handle dates with validation
+      if (bookingUpdate.startDate !== undefined) {
+        const startDate = new Date(bookingUpdate.startDate);
+        if (isNaN(startDate.getTime())) {
+          throw new Error('Invalid startDate');
+        }
+        updateData.startDate = startDate;
+      }
+      if (bookingUpdate.endDate !== undefined) {
+        const endDate = new Date(bookingUpdate.endDate);
+        if (isNaN(endDate.getTime())) {
+          throw new Error('Invalid endDate');
+        }
+        updateData.endDate = endDate;
+      }
+      
+      // Handle numeric values with validation
+      if (bookingUpdate.totalPrice !== undefined) {
+        const price = parseFloat(String(bookingUpdate.totalPrice));
+        if (isNaN(price)) {
+          throw new Error('Invalid totalPrice');
+        }
+        updateData.totalPrice = price;
+      }
+      if (bookingUpdate.commission !== undefined) {
+        const commission = parseFloat(String(bookingUpdate.commission));
+        if (isNaN(commission)) {
+          throw new Error('Invalid commission');
+        }
+        updateData.commission = commission;
+      }
+      
+      console.log('Processed update data:', updateData);
+      
       const [updated] = await db
         .update(bookings)
-        .set({ ...bookingUpdate, updatedAt: new Date() })
+        .set(updateData)
         .where(eq(bookings.id, id))
         .returning();
       return updated || undefined;

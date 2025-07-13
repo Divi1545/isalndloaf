@@ -605,18 +605,32 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(403).json({ error: "Access denied" });
       }
       
-      // Validate dates if provided
-      if (updateData.startDate && updateData.endDate) {
-        const startDate = new Date(updateData.startDate);
-        const endDate = new Date(updateData.endDate);
-        
-        if (startDate >= endDate) {
+      // Process and validate dates if provided
+      const processedUpdateData = { ...updateData };
+      if (updateData.startDate) {
+        processedUpdateData.startDate = new Date(updateData.startDate);
+      }
+      if (updateData.endDate) {
+        processedUpdateData.endDate = new Date(updateData.endDate);
+      }
+      
+      // Validate dates if both are provided
+      if (processedUpdateData.startDate && processedUpdateData.endDate) {
+        if (processedUpdateData.startDate >= processedUpdateData.endDate) {
           return res.status(400).json({ error: "End date must be after start date" });
         }
       }
       
+      // Convert string numbers to actual numbers
+      if (updateData.totalPrice) {
+        processedUpdateData.totalPrice = parseFloat(updateData.totalPrice);
+      }
+      if (updateData.commission) {
+        processedUpdateData.commission = parseFloat(updateData.commission);
+      }
+      
       // Update booking
-      const updatedBooking = await storage.updateBooking(bookingId, updateData);
+      const updatedBooking = await storage.updateBooking(bookingId, processedUpdateData);
       
       if (!updatedBooking) {
         return res.status(500).json({ error: "Failed to update booking" });
