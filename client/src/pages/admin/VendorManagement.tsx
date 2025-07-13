@@ -216,39 +216,83 @@ const VendorManagement = () => {
   
   const [newVendor, setNewVendor] = useState({
     businessName: '',
-    ownerName: '',
+    fullName: '',
     email: '',
     phone: '',
     password: '',
     businessType: 'accommodation',
     location: '',
     description: '',
-    website: ''
+    website: '',
+    username: ''
+  });
+
+  // Add vendor mutation
+  const addVendorMutation = useMutation({
+    mutationFn: async (vendorData: any) => {
+      const response = await apiRequest('POST', '/api/auth/register', vendorData);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Reset form
+      setNewVendor({
+        businessName: '',
+        fullName: '',
+        email: '',
+        phone: '',
+        password: '',
+        businessType: 'accommodation',
+        location: '',
+        description: '',
+        website: '',
+        username: ''
+      });
+      
+      setIsAddVendorOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/vendors'] });
+      refetch();
+      
+      toast({
+        title: "Success",
+        description: `${data.user.fullName} has been added successfully to the platform.`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error adding vendor",
+        description: error.message || "Failed to add vendor",
+        variant: "destructive"
+      });
+    }
   });
 
   const handleAddNewVendor = () => {
-    // Add the new vendor to the system
-    console.log('Adding new vendor:', newVendor);
+    // Validate required fields
+    if (!newVendor.businessName || !newVendor.fullName || !newVendor.email || !newVendor.password) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Generate username from email
+    const username = newVendor.email.split('@')[0];
     
-    // Reset form
-    setNewVendor({
-      businessName: '',
-      ownerName: '',
-      email: '',
-      phone: '',
-      password: '',
-      businessType: 'accommodation',
-      location: '',
-      description: '',
-      website: ''
-    });
+    // Prepare vendor data for backend
+    const vendorData = {
+      username: username,
+      password: newVendor.password,
+      fullName: newVendor.fullName,
+      businessName: newVendor.businessName,
+      email: newVendor.email,
+      businessType: newVendor.businessType,
+      categoriesAllowed: [newVendor.businessType, 'tours'] // Default categories
+    };
     
-    setIsAddVendorOpen(false);
-    
-    toast({
-      title: "Success",
-      description: "New vendor has been added successfully and will be reviewed for approval."
-    });
+    console.log('Adding new vendor:', vendorData);
+    addVendorMutation.mutate(vendorData);
   };
   
   // Filter vendors based on search query and filters
@@ -301,8 +345,8 @@ const VendorManagement = () => {
                 <div className="space-y-2">
                   <Label>Owner Name</Label>
                   <Input 
-                    value={newVendor.ownerName}
-                    onChange={(e) => setNewVendor({...newVendor, ownerName: e.target.value})}
+                    value={newVendor.fullName}
+                    onChange={(e) => setNewVendor({...newVendor, fullName: e.target.value})}
                     placeholder="John Smith"
                   />
                 </div>
@@ -387,8 +431,8 @@ const VendorManagement = () => {
                 <Button variant="outline" onClick={() => setIsAddVendorOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleAddNewVendor}>
-                  Add Vendor
+                <Button onClick={handleAddNewVendor} disabled={addVendorMutation.isPending}>
+                  {addVendorMutation.isPending ? 'Adding...' : 'Add Vendor'}
                 </Button>
               </div>
             </div>
