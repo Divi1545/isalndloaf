@@ -115,11 +115,54 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get("/api/vendors", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
     try {
       const vendors = await storage.getUsers();
-      const vendorUsers = vendors.filter(user => user.role === 'vendor');
+      const vendorUsers = vendors.filter(user => user.role !== 'admin');
       res.status(200).json(vendorUsers);
     } catch (error) {
       console.error("Error fetching vendors:", error);
       res.status(500).json({ error: "Failed to fetch vendors" });
+    }
+  });
+
+  app.put("/api/vendors/:id", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const vendorId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      // Don't allow updating the admin user
+      if (vendorId === 1) {
+        return res.status(403).json({ error: "Cannot modify admin user" });
+      }
+      
+      const updatedVendor = await storage.updateUser(vendorId, updates);
+      if (!updatedVendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+      
+      res.status(200).json(updatedVendor);
+    } catch (error) {
+      console.error("Error updating vendor:", error);
+      res.status(500).json({ error: "Failed to update vendor" });
+    }
+  });
+
+  app.delete("/api/vendors/:id", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const vendorId = parseInt(req.params.id);
+      
+      // Don't allow deleting the admin user
+      if (vendorId === 1) {
+        return res.status(403).json({ error: "Cannot delete admin user" });
+      }
+      
+      const success = await storage.deleteUser(vendorId);
+      if (!success) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+      
+      res.status(200).json({ message: "Vendor deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting vendor:", error);
+      res.status(500).json({ error: "Failed to delete vendor" });
     }
   });
 

@@ -77,6 +77,30 @@ export class DatabaseStorage implements IStorage {
   async getUsers(): Promise<User[]> {
     return await prisma.user.findMany();
   }
+
+  async updateUser(id: number, userUpdate: Partial<InsertUser>): Promise<User | undefined> {
+    try {
+      return await prisma.user.update({
+        where: { id },
+        data: userUpdate
+      });
+    } catch (error) {
+      console.error(`Failed to update user ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      await prisma.user.delete({
+        where: { id }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete user ${id}:`, error);
+      return false;
+    }
+  }
   
   // Service operations
   async getService(id: number): Promise<Service | undefined> {

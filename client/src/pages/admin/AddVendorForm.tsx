@@ -41,7 +41,7 @@ const AddVendorForm = () => {
 
   const createVendorMutation = useMutation({
     mutationFn: async (vendorData: any) => {
-      const response = await apiRequest('POST', '/api/vendors', vendorData);
+      const response = await apiRequest('POST', '/api/auth/register', vendorData);
       return response.json();
     },
     onSuccess: (data) => {

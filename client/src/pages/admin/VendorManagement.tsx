@@ -17,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import type { User } from '@shared/schema';
 
 // Fetch vendors from database
@@ -55,7 +57,7 @@ const useVendors = () => {
 };
 
 // Vendor Detail Dialog component
-const VendorDetailDialog = ({ vendor }: { vendor: User }) => {
+const VendorDetailDialog = ({ vendor, onVerify, onDeactivate }: { vendor: User; onVerify: () => void; onDeactivate: () => void }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -126,12 +128,12 @@ const VendorDetailDialog = ({ vendor }: { vendor: User }) => {
         <div className="flex justify-between mt-6">
           <div className="space-x-2">
             <Button variant="outline" size="sm">Message</Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={onVerify}>
               Verify Vendor
             </Button>
           </div>
           <div className="space-x-2">
-            <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+            <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={onDeactivate}>
               Deactivate
             </Button>
             <Button size="sm">Edit</Button>
@@ -149,9 +151,66 @@ const VendorManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Fetch vendors from database
   const { data: vendors = [], isLoading, error } = useVendors();
+
+  // Delete vendor mutation
+  const deleteVendorMutation = useMutation({
+    mutationFn: async (vendorId: number) => {
+      const response = await apiRequest('DELETE', `/api/vendors/${vendorId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/vendors'] });
+      toast({ title: "Vendor deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting vendor",
+        description: error.message || "Failed to delete vendor",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update vendor mutation
+  const updateVendorMutation = useMutation({
+    mutationFn: async ({ vendorId, updates }: { vendorId: number; updates: any }) => {
+      const response = await apiRequest('PUT', `/api/vendors/${vendorId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/vendors'] });
+      toast({ title: "Vendor updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating vendor",
+        description: error.message || "Failed to update vendor",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteVendor = (vendorId: number) => {
+    deleteVendorMutation.mutate(vendorId);
+  };
+
+  const updateVendorStatus = (vendorId: number, status: string) => {
+    updateVendorMutation.mutate({ 
+      vendorId, 
+      updates: { role: status === 'verified' ? 'vendor' : 'pending' } 
+    });
+  };
+
+  const toggleVendorActive = (vendorId: number, isActive: boolean) => {
+    updateVendorMutation.mutate({ 
+      vendorId, 
+      updates: { role: isActive ? 'vendor' : 'inactive' } 
+    });
+  };
   
   const [newVendor, setNewVendor] = useState({
     businessName: '',
@@ -432,7 +491,11 @@ const VendorManagement = () => {
                       </td>
                     <td className="py-4 px-4 text-sm">
                       <div className="flex justify-center space-x-2">
-                        <VendorDetailDialog vendor={vendor} />
+                        <VendorDetailDialog 
+                          vendor={vendor} 
+                          onVerify={() => updateVendorStatus(vendor.id, 'verified')}
+                          onDeactivate={() => toggleVendorActive(vendor.id, false)}
+                        />
                         
                         <Button 
                           variant="ghost" 
@@ -456,8 +519,7 @@ const VendorManagement = () => {
                           className="h-8 w-8 p-0 text-red-500"
                           onClick={() => {
                             if (confirm(`Are you sure you want to delete ${vendor.businessName || vendor.fullName}?`)) {
-                              // Add delete functionality here
-                              console.log(`Deleting vendor: ${vendor.id}`);
+                              deleteVendor(vendor.id);
                             }
                           }}
                         >
