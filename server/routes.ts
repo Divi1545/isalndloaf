@@ -336,6 +336,107 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Revenue analytics endpoint
+  app.get("/api/revenue/analytics", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get all bookings for revenue calculations
+      const allBookings = await storage.getBookings(userId);
+      
+      // Calculate total revenue
+      const totalRevenue = allBookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
+      const totalCommission = allBookings.reduce((sum, booking) => sum + booking.commission, 0);
+      
+      // Calculate revenue by category
+      const allUsers = await storage.getUsers();
+      const userBusinessTypes = allUsers.reduce((acc, user) => {
+        acc[user.id] = user.businessType || 'other';
+        return acc;
+      }, {} as Record<number, string>);
+      
+      const revenueByCategory = allBookings.reduce((acc, booking) => {
+        const businessType = userBusinessTypes[booking.userId] || 'other';
+        if (!acc[businessType]) {
+          acc[businessType] = { revenue: 0, count: 0 };
+        }
+        acc[businessType].revenue += booking.totalPrice;
+        acc[businessType].count += 1;
+        return acc;
+      }, {} as Record<string, { revenue: number; count: number }>);
+
+      // Get top earning vendors
+      const vendorRevenue = allBookings.reduce((acc, booking) => {
+        const vendor = allUsers.find(u => u.id === booking.userId);
+        if (vendor) {
+          if (!acc[vendor.id]) {
+            acc[vendor.id] = {
+              id: vendor.id,
+              name: vendor.businessName || vendor.fullName || vendor.username,
+              businessType: vendor.businessType || 'other',
+              revenue: 0,
+              bookingCount: 0
+            };
+          }
+          acc[vendor.id].revenue += booking.totalPrice;
+          acc[vendor.id].bookingCount += 1;
+        }
+        return acc;
+      }, {} as Record<number, any>);
+
+      const topVendors = Object.values(vendorRevenue)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+
+      // Calculate monthly revenue trends
+      const monthlyRevenue = allBookings.reduce((acc, booking) => {
+        const month = new Date(booking.createdAt).toLocaleString('default', { month: 'short' });
+        if (!acc[month]) {
+          acc[month] = 0;
+        }
+        acc[month] += booking.totalPrice;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const monthlyTrends = Object.entries(monthlyRevenue).map(([month, revenue]) => ({
+        month,
+        revenue
+      }));
+
+      // Calculate status-based metrics
+      const statusMetrics = allBookings.reduce((acc, booking) => {
+        if (!acc[booking.status]) {
+          acc[booking.status] = { count: 0, revenue: 0 };
+        }
+        acc[booking.status].count += 1;
+        acc[booking.status].revenue += booking.totalPrice;
+        return acc;
+      }, {} as Record<string, { count: number; revenue: number }>);
+
+      // Calculate pending payouts (completed bookings)
+      const pendingPayouts = allBookings
+        .filter(booking => booking.status === 'completed')
+        .reduce((sum, booking) => sum + (booking.totalPrice - booking.commission), 0);
+
+      return res.json({
+        totalRevenue,
+        totalCommission,
+        pendingPayouts,
+        revenueByCategory,
+        topVendors,
+        monthlyTrends,
+        statusMetrics,
+        totalBookings: allBookings.length
+      });
+    } catch (error) {
+      console.error("Failed to fetch revenue analytics:", error);
+      return res.status(500).json({ error: "Failed to fetch revenue analytics" });
+    }
+  });
+
   // Auth Routes
   // Registration endpoint
   app.post("/api/auth/register", async (req: Request, res: Response) => {
