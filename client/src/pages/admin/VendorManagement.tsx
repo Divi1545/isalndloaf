@@ -154,7 +154,7 @@ const VendorManagement = () => {
   const queryClient = useQueryClient();
   
   // Fetch vendors from database
-  const { data: vendors = [], isLoading, error } = useVendors();
+  const { data: vendors = [], isLoading, error, refetch } = useVendors();
 
   // Delete vendor mutation
   const deleteVendorMutation = useMutation({
@@ -164,6 +164,7 @@ const VendorManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/vendors'] });
+      refetch();
       toast({ title: "Vendor deleted successfully" });
     },
     onError: (error: any) => {
@@ -183,6 +184,7 @@ const VendorManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/vendors'] });
+      refetch();
       toast({ title: "Vendor updated successfully" });
     },
     onError: (error: any) => {

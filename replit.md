@@ -16,9 +16,9 @@ IslandLoaf is a comprehensive tourism booking platform designed for Sri Lanka wi
 
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
-- **Storage Layer**: Dual storage system (in-memory and PostgreSQL via Drizzle ORM)
+- **Storage Layer**: PostgreSQL database with Drizzle ORM (fully migrated from in-memory)
 - **Authentication**: Session-based with JWT support for API access
-- **Database**: PostgreSQL with Prisma client (configurable fallback to in-memory)
+- **Database**: PostgreSQL with full CRUD operations and real-time data persistence
 - **AI Integration**: OpenAI API for content generation and booking optimization
 
 ### Deployment Strategy
@@ -110,6 +110,8 @@ The application uses a flexible storage provider that switches between in-memory
 
 ## Changelog
 
+- July 13, 2025. Successfully migrated from Replit Agent to Replit environment with PostgreSQL database
+- July 13, 2025. Completed vendor management CRUD operations with real-time UI updates
 - June 17, 2025. Initial setup
 
 ## User Preferences
