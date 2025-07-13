@@ -1,0 +1,60 @@
+🛠️ Fix Plan for Island Loaf Dashboard (No Backend Saving Issue)
+	1.	User Authentication
+
+	•	Make sure login system connects to the database.
+	•	Vendor login (password123) and Admin login (admin123) should be verified against stored credentials.
+	•	When creating new users (vendors, admins, etc.), hash passwords before saving and ensure proper user roles are stored.
+
+	2.	Add New Vendor
+
+	•	Implement a backend POST endpoint to receive vendor form data.
+	•	Connect it to a database (PostgreSQL, Airtable, etc.) and insert the data properly.
+	•	Ensure vendor list fetches from the database.
+
+	3.	Activity Pending Approval
+
+	•	Create a backend route that saves new activities with a “pending” status.
+	•	Admin should be able to approve or reject these, triggering status updates in the database.
+
+	4.	Create Booking
+
+	•	Set up a booking endpoint in the backend that receives customer/vendor booking data and saves it.
+	•	Retrieve and display the booking data in Booking Manager for vendors and admins.
+
+	5.	New Campaign
+
+	•	Add an endpoint to receive campaign details and store them in the database.
+	•	Store type, target audience, dates, and content.
+	•	Optional: Connect to an automation system to trigger campaign emails or ads.
+
+	6.	Booking Manager
+
+	•	Fetch all bookings from the database and allow updates or filtering by vendor, date, or status.
+	•	Changes like status updates or cancellations must update the database.
+
+	7.	Calendar Sync
+
+	•	Add a field in the vendor profile for their iCal or Google Calendar URL.
+	•	Use a scheduled backend task (cron or webhook) to sync availability daily.
+	•	Store sync results and timestamps.
+
+	8.	Price Engine
+
+	•	Save property price inputs and AI-generated price suggestions to the backend.
+	•	Allow price edits and dynamic price updates to reflect in the frontend instantly.
+
+	9.	AI Marketing
+
+	•	Save campaign input fields to the backend.
+	•	Store AI-generated suggestions (captions, target groups, platform selection).
+	•	Allow admins or vendors to approve and push these suggestions live.
+
+	10.	Profile Settings
+
+	•	Save updates to name, email, contact number, password, and other details directly to the database.
+	•	Add input validation and update logic to prevent overwriting other fields by mistake.
+
+	11.	Live Dashboard Updates
+
+	•	Enable real-time updates using WebSockets (recommended) or polling every 10–30 seconds.
+	•	Any new booking, campaign, or vendor addition should reflect without a full page reload.

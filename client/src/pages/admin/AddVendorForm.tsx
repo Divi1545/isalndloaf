@@ -13,27 +13,55 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 const AddVendorForm = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
+    password: '',
+    fullName: '',
+    businessName: '',
     email: '',
-    phone: '',
-    address: '',
     businessType: '',
     categories: {
       stay: false,
       vehicle: false,
       tickets: false,
-      wellness: false
-    },
-    commission: '10',
-    status: 'active'
+      wellness: false,
+      tours: false,
+      products: false
+    }
   });
   
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+
+  const createVendorMutation = useMutation({
+    mutationFn: async (vendorData: any) => {
+      return await apiRequest('/api/vendors', {
+        method: 'POST',
+        body: vendorData
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Vendor created successfully",
+        description: `${data.fullName} has been added to the platform`
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/vendors'] });
+      setLocation('/admin/vendors');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error creating vendor",
+        description: error.message || "Failed to create vendor",
+        variant: "destructive"
+      });
+    }
+  });
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,28 +91,32 @@ const AddVendorForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
+    if (!formData.username || !formData.password || !formData.fullName || !formData.businessName || !formData.email) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Convert categories to array format
     const categoriesAllowed = Object.keys(formData.categories).filter(
       key => formData.categories[key as keyof typeof formData.categories]
     );
     
     const vendorData = {
-      ...formData,
-      categories_allowed: categoriesAllowed
+      username: formData.username,
+      password: formData.password,
+      fullName: formData.fullName,
+      businessName: formData.businessName,
+      email: formData.email,
+      businessType: formData.businessType,
+      categoriesAllowed
     };
     
-    // In a real app, this would make an API call
-    console.log("Creating vendor:", vendorData);
-    
-    toast({
-      title: "Vendor created successfully",
-      description: `${formData.name} has been added to the platform`
-    });
-    
-    // Redirect back to admin dashboard after a short delay
-    setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 1500);
+    createVendorMutation.mutate(vendorData);
   };
   
   return (
@@ -108,11 +140,48 @@ const AddVendorForm = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <Label htmlFor="name">Business Name</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder="Enter username"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter password"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="Enter full name"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="businessName">Business Name</Label>
+                <Input
+                  id="businessName"
+                  name="businessName"
+                  value={formData.businessName}
                   onChange={handleChange}
                   placeholder="Enter business name"
                   required
@@ -128,30 +197,6 @@ const AddVendorForm = () => {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter email address"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Enter phone number"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="address">Business Address</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter business address"
                   required
                 />
               </div>
@@ -175,25 +220,11 @@ const AddVendorForm = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="commission">Platform Commission (%)</Label>
-                <Input
-                  id="commission"
-                  name="commission"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.commission}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
             </div>
             
             <div className="space-y-3">
               <Label>Booking Categories Access</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="stay"
@@ -257,36 +288,59 @@ const AddVendorForm = () => {
                     Wellness
                   </label>
                 </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="tours"
+                    checked={formData.categories.tours}
+                    onCheckedChange={(checked) => 
+                      handleCategoryChange('tours', checked as boolean)
+                    }
+                  />
+                  <label
+                    htmlFor="tours"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Tours
+                  </label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="products"
+                    checked={formData.categories.products}
+                    onCheckedChange={(checked) => 
+                      handleCategoryChange('products', checked as boolean)
+                    }
+                  />
+                  <label
+                    htmlFor="products"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Products
+                  </label>
+                </div>
               </div>
-            </div>
-            
-            <div className="space-y-3">
-              <Label htmlFor="status">Status</Label>
-              <Select 
-                value={formData.status}
-                onValueChange={(value) => handleSelectChange('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vendor status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="pending">Pending Approval</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             
             <div className="flex justify-end space-x-4 pt-6">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setLocation("/admin/dashboard")}
+                onClick={() => setLocation("/admin/vendors")}
+                disabled={createVendorMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                Create Vendor
+              <Button type="submit" disabled={createVendorMutation.isPending}>
+                {createVendorMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Vendor"
+                )}
               </Button>
             </div>
           </form>

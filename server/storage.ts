@@ -349,7 +349,7 @@ export class MemStorage implements IStorage {
     let categoriesAllowed = user.categoriesAllowed || [];
     
     // If it's a vendor and no categories are specified, assign default categories
-    if (user.role === 'vendor' && (!categoriesAllowed || categoriesAllowed.length === 0)) {
+    if (user.role === 'vendor' && (!Array.isArray(categoriesAllowed) || categoriesAllowed.length === 0)) {
       // Default categories based on business type
       categoriesAllowed = ['stays', 'transport', 'tours'];
       
@@ -371,7 +371,8 @@ export class MemStorage implements IStorage {
       ...user, 
       id, 
       createdAt,
-      categoriesAllowed 
+      categoriesAllowed,
+      role: user.role || 'vendor'
     };
     
     this.usersData.set(id, newUser);
@@ -396,7 +397,12 @@ export class MemStorage implements IStorage {
   async createService(service: InsertService): Promise<Service> {
     const id = this.serviceIdCounter++;
     const createdAt = new Date();
-    const newService: Service = { ...service, id, createdAt };
+    const newService: Service = { 
+      ...service, 
+      id, 
+      createdAt,
+      available: service.available ?? true
+    };
     this.servicesData.set(id, newService);
     return newService;
   }
@@ -440,7 +446,17 @@ export class MemStorage implements IStorage {
   async createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent> {
     const id = this.calendarEventIdCounter++;
     const createdAt = new Date();
-    const newEvent: CalendarEvent = { ...event, id, createdAt };
+    const newEvent: CalendarEvent = { 
+      ...event, 
+      id, 
+      createdAt,
+      serviceId: event.serviceId ?? null,
+      isBooked: event.isBooked ?? false,
+      isPending: event.isPending ?? false,
+      isBlocked: event.isBlocked ?? false,
+      source: event.source ?? null,
+      externalId: event.externalId ?? null
+    };
     this.calendarEventsData.set(id, newEvent);
     return newEvent;
   }
@@ -468,7 +484,13 @@ export class MemStorage implements IStorage {
   async createCalendarSource(source: InsertCalendarSource): Promise<CalendarSource> {
     const id = this.calendarSourceIdCounter++;
     const createdAt = new Date();
-    const newSource: CalendarSource = { ...source, id, createdAt, lastSynced: null };
+    const newSource: CalendarSource = { 
+      ...source, 
+      id, 
+      createdAt, 
+      lastSynced: null,
+      serviceId: source.serviceId ?? null
+    };
     this.calendarSourcesData.set(id, newSource);
     return newSource;
   }
@@ -508,7 +530,14 @@ export class MemStorage implements IStorage {
     const id = this.bookingIdCounter++;
     const createdAt = new Date();
     const updatedAt = new Date();
-    const newBooking: Booking = { ...booking, id, createdAt, updatedAt };
+    const newBooking: Booking = { 
+      ...booking, 
+      id, 
+      createdAt, 
+      updatedAt,
+      status: booking.status || 'pending',
+      notes: booking.notes || null
+    };
     this.bookingsData.set(id, newBooking);
     return newBooking;
   }
@@ -543,7 +572,12 @@ export class MemStorage implements IStorage {
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const id = this.notificationIdCounter++;
     const createdAt = new Date();
-    const newNotification: Notification = { ...notification, id, createdAt };
+    const newNotification: Notification = { 
+      ...notification, 
+      id, 
+      createdAt,
+      read: notification.read ?? false
+    };
     this.notificationsData.set(id, newNotification);
     return newNotification;
   }
@@ -571,7 +605,12 @@ export class MemStorage implements IStorage {
   async createMarketingContent(content: InsertMarketingContent): Promise<MarketingContent> {
     const id = this.marketingContentIdCounter++;
     const createdAt = new Date();
-    const newContent: MarketingContent = { ...content, id, createdAt };
+    const newContent: MarketingContent = { 
+      ...content, 
+      id, 
+      createdAt,
+      serviceId: content.serviceId ?? null
+    };
     this.marketingContentsData.set(id, newContent);
     return newContent;
   }
@@ -590,5 +629,8 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Use database storage if DATABASE_URL is available, otherwise use in-memory storage
-export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();
+// Import database storage implementation
+import { dbStorage } from './database-storage';
+
+// Always use database storage for production
+export const storage = dbStorage;

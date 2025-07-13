@@ -111,6 +111,64 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Vendor Management Routes - for admin users
+  app.get("/api/vendors", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const vendors = await storage.getUsers();
+      const vendorUsers = vendors.filter(user => user.role === 'vendor');
+      res.status(200).json(vendorUsers);
+    } catch (error) {
+      console.error("Error fetching vendors:", error);
+      res.status(500).json({ error: "Failed to fetch vendors" });
+    }
+  });
+
+  app.post("/api/vendors", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const { username, email, password, fullName, businessName, businessType, categoriesAllowed } = req.body;
+      
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already in use" });
+      }
+      
+      // Check if username already exists
+      const existingUsername = await storage.getUserByUsername(username);
+      if (existingUsername) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+      
+      // Create the vendor
+      const newVendor = await storage.createUser({
+        username,
+        email,
+        password,
+        fullName,
+        businessName,
+        businessType,
+        role: 'vendor',
+        categoriesAllowed: categoriesAllowed || []
+      });
+      
+      // Create notification for new vendor
+      await storage.createNotification({
+        userId: newVendor.id,
+        title: "Welcome to IslandLoaf",
+        message: `Welcome to IslandLoaf, ${newVendor.fullName}! Your vendor account has been created successfully.`,
+        type: "info",
+        read: false
+      });
+      
+      // Return vendor data (excluding password)
+      const { password: _, ...vendorData } = newVendor;
+      res.status(201).json(vendorData);
+    } catch (error) {
+      console.error("Error creating vendor:", error);
+      res.status(500).json({ error: "Failed to create vendor" });
+    }
+  });
+
   // Auth Routes
   // Registration endpoint
   app.post("/api/auth/register", async (req: Request, res: Response) => {
