@@ -107,15 +107,26 @@ const TransactionHistory = () => {
   // Process payout mutation
   const processPayoutMutation = useMutation({
     mutationFn: async (vendorId: number) => {
-      return apiRequest('/api/revenue/process-payouts', {
+      const response = await fetch('/api/revenue/process-payouts', {
         method: 'POST',
-        body: { vendorIds: [vendorId] }
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for authentication
+        body: JSON.stringify({ vendorIds: [vendorId] })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process payout');
+      }
+      
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Payout processed",
-        description: "The payout has been processed successfully"
+        description: data.message || "The payout has been processed successfully"
       });
       refetchBookings();
       queryClient.invalidateQueries({ queryKey: ['/api/revenue/analytics'] });
@@ -124,7 +135,7 @@ const TransactionHistory = () => {
       console.error('Payout processing error:', error);
       toast({
         title: "Error",
-        description: "Failed to process payout. Please try again.",
+        description: error.message || "Failed to process payout. Please try again.",
         variant: "destructive"
       });
     }
