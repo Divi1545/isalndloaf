@@ -14,6 +14,7 @@ import {
 import { 
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -105,10 +106,10 @@ const TransactionHistory = () => {
 
   // Process payout mutation
   const processPayoutMutation = useMutation({
-    mutationFn: async (transactionId: number) => {
+    mutationFn: async (vendorId: number) => {
       return apiRequest('/api/revenue/process-payouts', {
         method: 'POST',
-        body: { vendorIds: [transactionId] }
+        body: { vendorIds: [vendorId] }
       });
     },
     onSuccess: () => {
@@ -120,9 +121,10 @@ const TransactionHistory = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/revenue/analytics'] });
     },
     onError: (error) => {
+      console.error('Payout processing error:', error);
       toast({
         title: "Error",
-        description: "Failed to process payout",
+        description: "Failed to process payout. Please try again.",
         variant: "destructive"
       });
     }
@@ -142,7 +144,8 @@ const TransactionHistory = () => {
         amount: booking.totalPrice,
         commission: booking.commission || (booking.totalPrice * 0.1),
         status: booking.status === 'completed' ? 'completed' : 
-                booking.status === 'cancelled' ? 'failed' : 'pending',
+                booking.status === 'cancelled' ? 'failed' : 
+                booking.status === 'refunded' ? 'refunded' : 'pending',
         paymentMethod: 'Direct Deposit',
         date: booking.createdAt,
         createdAt: booking.createdAt,
@@ -171,26 +174,33 @@ const TransactionHistory = () => {
       
       const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
       
-      // Basic date filtering
-      const matchesDate = dateRangeFilter === 'all' || (() => {
+      // Date filtering
+      const matchesDate = (() => {
+        if (dateRangeFilter === 'all') {
+          return true;
+        }
+        
         const transactionDate = new Date(transaction.date);
         const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset to start of day
         
         switch (dateRangeFilter) {
           case 'today':
-            return transactionDate.toDateString() === today.toDateString();
+            const todayEnd = new Date(today);
+            todayEnd.setHours(23, 59, 59, 999);
+            return transactionDate >= today && transactionDate <= todayEnd;
           case 'week':
             const weekAgo = new Date(today);
             weekAgo.setDate(today.getDate() - 7);
-            return transactionDate >= weekAgo;
+            return transactionDate >= weekAgo && transactionDate <= new Date();
           case 'month':
             const monthAgo = new Date(today);
             monthAgo.setMonth(today.getMonth() - 1);
-            return transactionDate >= monthAgo;
+            return transactionDate >= monthAgo && transactionDate <= new Date();
           case 'quarter':
             const quarterAgo = new Date(today);
             quarterAgo.setMonth(today.getMonth() - 3);
-            return transactionDate >= quarterAgo;
+            return transactionDate >= quarterAgo && transactionDate <= new Date();
           default:
             return true;
         }
@@ -287,8 +297,8 @@ const TransactionHistory = () => {
     setIsDialogOpen(true);
   };
 
-  const handleProcessPayout = (transactionId: number) => {
-    processPayoutMutation.mutate(transactionId);
+  const handleProcessPayout = (vendorId: number) => {
+    processPayoutMutation.mutate(vendorId);
   };
 
   const isLoading = bookingsLoading || vendorsLoading || revenueLoading;
@@ -418,7 +428,7 @@ const TransactionHistory = () => {
               </Select>
               <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
                 <SelectTrigger className="w-[150px]">
-                  <SelectValue />
+                  <SelectValue placeholder="Date Range" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Time</SelectItem>
@@ -519,6 +529,9 @@ const TransactionHistory = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
+            <DialogDescription>
+              View comprehensive transaction information including booking details and payment information.
+            </DialogDescription>
           </DialogHeader>
           {selectedTransaction && (
             <Tabs defaultValue="overview" className="w-full">

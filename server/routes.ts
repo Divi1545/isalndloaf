@@ -447,28 +447,45 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "Invalid vendor IDs" });
       }
 
-      // In a real implementation, this would:
-      // 1. Calculate payout amounts for each vendor
-      // 2. Create payout records in the database
-      // 3. Initiate payment processing
-      // 4. Send notifications to vendors
+      // Get all bookings for the specified vendors
+      const bookings = await storage.getBookings(0); // Get all bookings (admin access)
       
-      const processedPayouts = vendorIds.map(id => ({
-        vendorId: id,
-        amount: Math.random() * 1000, // Mock amount
-        status: 'processed',
-        processedAt: new Date()
-      }));
-
-      // Create notifications for processed payouts
-      for (const payout of processedPayouts) {
-        await storage.createNotification({
-          userId: payout.vendorId,
-          title: "Payout Processed",
-          message: `Your payout of $${payout.amount.toFixed(2)} has been processed successfully.`,
-          type: "success",
-          read: false
+      // Calculate payouts for each vendor
+      const processedPayouts = [];
+      
+      for (const vendorId of vendorIds) {
+        const vendorBookings = bookings.filter(booking => 
+          booking.userId === vendorId && booking.status === 'completed'
+        );
+        
+        if (vendorBookings.length === 0) {
+          continue;
+        }
+        
+        const totalAmount = vendorBookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
+        const totalCommission = vendorBookings.reduce((sum, booking) => sum + (booking.commission || booking.totalPrice * 0.1), 0);
+        const payoutAmount = totalAmount - totalCommission;
+        
+        processedPayouts.push({
+          vendorId,
+          amount: payoutAmount,
+          bookingCount: vendorBookings.length,
+          status: 'processed',
+          processedAt: new Date()
         });
+        
+        // Create notification for the vendor
+        try {
+          await storage.createNotification({
+            userId: vendorId,
+            title: "Payout Processed",
+            message: `Your payout of $${payoutAmount.toFixed(2)} for ${vendorBookings.length} bookings has been processed successfully.`,
+            type: "success",
+            read: false
+          });
+        } catch (notificationError) {
+          console.error(`Failed to create notification for vendor ${vendorId}:`, notificationError);
+        }
       }
 
       res.json({ 
