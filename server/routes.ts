@@ -2666,66 +2666,66 @@ Format as comprehensive JSON:
     }
   });
 
+  // In-memory store for campaigns (in production this would be database)
+  let campaignsStore = [
+    {
+      id: 1,
+      title: 'Summer Special 2025',
+      type: 'email',
+      status: 'active',
+      message: 'Book your summer getaway with 25% off all accommodation bookings!',
+      startDate: '2025-06-01T00:00:00Z',
+      endDate: '2025-08-31T23:59:59Z',
+      targetAudience: 'all',
+      promoCode: 'SUMMER25',
+      discount: 25,
+      sent: 450,
+      opened: 387,
+      clicks: 142,
+      conversions: 28,
+      createdAt: '2025-05-15T10:30:00Z',
+      updatedAt: '2025-05-15T10:30:00Z'
+    },
+    {
+      id: 2,
+      title: 'Last Minute Deals',
+      type: 'email',
+      status: 'scheduled',
+      message: 'Grab these last-minute deals before they\'re gone!',
+      startDate: '2025-07-20T00:00:00Z',
+      endDate: '2025-07-25T23:59:59Z',
+      targetAudience: 'customers',
+      promoCode: 'LASTMIN15',
+      discount: 15,
+      sent: 0,
+      opened: 0,
+      clicks: 0,
+      conversions: 0,
+      createdAt: '2025-07-10T14:20:00Z',
+      updatedAt: '2025-07-10T14:20:00Z'
+    },
+    {
+      id: 3,
+      title: 'Vendor Spotlight',
+      type: 'email',
+      status: 'completed',
+      message: 'Discover amazing local vendors and their unique offerings.',
+      startDate: '2025-05-01T00:00:00Z',
+      endDate: '2025-05-31T23:59:59Z',
+      targetAudience: 'all',
+      sent: 892,
+      opened: 623,
+      clicks: 178,
+      conversions: 45,
+      createdAt: '2025-04-25T09:15:00Z',
+      updatedAt: '2025-04-25T09:15:00Z'
+    }
+  ];
+
   // Marketing Campaigns Management  
   app.get("/api/campaigns", requireAuth, async (req: Request, res: Response) => {
     try {
-      // Mock campaigns data for now - in production this would come from database
-      const mockCampaigns = [
-        {
-          id: 1,
-          title: 'Summer Special 2025',
-          type: 'email',
-          status: 'active',
-          message: 'Book your summer getaway with 25% off all accommodation bookings!',
-          startDate: '2025-06-01T00:00:00Z',
-          endDate: '2025-08-31T23:59:59Z',
-          targetAudience: 'all',
-          promoCode: 'SUMMER25',
-          discount: 25,
-          sent: 450,
-          opened: 387,
-          clicks: 142,
-          conversions: 28,
-          createdAt: '2025-05-15T10:30:00Z',
-          updatedAt: '2025-05-15T10:30:00Z'
-        },
-        {
-          id: 2,
-          title: 'Last Minute Deals',
-          type: 'email',
-          status: 'scheduled',
-          message: 'Grab these last-minute deals before they\'re gone!',
-          startDate: '2025-07-20T00:00:00Z',
-          endDate: '2025-07-25T23:59:59Z',
-          targetAudience: 'customers',
-          promoCode: 'LASTMIN15',
-          discount: 15,
-          sent: 0,
-          opened: 0,
-          clicks: 0,
-          conversions: 0,
-          createdAt: '2025-07-10T14:20:00Z',
-          updatedAt: '2025-07-10T14:20:00Z'
-        },
-        {
-          id: 3,
-          title: 'Vendor Spotlight',
-          type: 'email',
-          status: 'completed',
-          message: 'Discover amazing local vendors and their unique offerings.',
-          startDate: '2025-05-01T00:00:00Z',
-          endDate: '2025-05-31T23:59:59Z',
-          targetAudience: 'all',
-          sent: 892,
-          opened: 623,
-          clicks: 178,
-          conversions: 45,
-          createdAt: '2025-04-25T09:15:00Z',
-          updatedAt: '2025-04-25T09:15:00Z'
-        }
-      ];
-
-      res.json(mockCampaigns);
+      res.json(campaignsStore);
     } catch (error) {
       console.error("Failed to fetch campaigns:", error);
       res.status(500).json({ error: "Failed to fetch campaigns" });
@@ -2737,7 +2737,6 @@ Format as comprehensive JSON:
     try {
       const campaignData = req.body;
       
-      // In production, this would save to database
       const newCampaign = {
         id: Date.now(), // Mock ID generation
         ...campaignData,
@@ -2750,6 +2749,9 @@ Format as comprehensive JSON:
         updatedAt: new Date().toISOString()
       };
 
+      // Add to in-memory store
+      campaignsStore.push(newCampaign);
+      
       console.log("Creating new campaign:", newCampaign);
       
       res.json({
@@ -2769,13 +2771,24 @@ Format as comprehensive JSON:
       const campaignId = parseInt(req.params.id);
       const updates = req.body;
       
-      // In production, this would update the database
+      // Find and update campaign in store
+      const campaignIndex = campaignsStore.findIndex(c => c.id === campaignId);
+      if (campaignIndex === -1) {
+        return res.status(404).json({ error: "Campaign not found" });
+      }
+      
+      campaignsStore[campaignIndex] = {
+        ...campaignsStore[campaignIndex],
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+      
       console.log(`Updating campaign ${campaignId}:`, updates);
       
       res.json({
         success: true,
         message: "Campaign updated successfully",
-        data: { id: campaignId, ...updates, updatedAt: new Date().toISOString() }
+        data: campaignsStore[campaignIndex]
       });
     } catch (error) {
       console.error("Failed to update campaign:", error);
@@ -2788,7 +2801,14 @@ Format as comprehensive JSON:
     try {
       const campaignId = parseInt(req.params.id);
       
-      // In production, this would delete from database
+      // Find and remove campaign from store
+      const campaignIndex = campaignsStore.findIndex(c => c.id === campaignId);
+      if (campaignIndex === -1) {
+        return res.status(404).json({ error: "Campaign not found" });
+      }
+      
+      campaignsStore.splice(campaignIndex, 1);
+      
       console.log(`Deleting campaign ${campaignId}`);
       
       res.json({
@@ -2806,7 +2826,15 @@ Format as comprehensive JSON:
     try {
       const campaignId = parseInt(req.params.id);
       
-      // In production, this would update status and trigger email sending
+      // Find and update campaign status in store
+      const campaignIndex = campaignsStore.findIndex(c => c.id === campaignId);
+      if (campaignIndex === -1) {
+        return res.status(404).json({ error: "Campaign not found" });
+      }
+      
+      campaignsStore[campaignIndex].status = 'active';
+      campaignsStore[campaignIndex].updatedAt = new Date().toISOString();
+      
       console.log(`Launching campaign ${campaignId}`);
       
       res.json({
@@ -2868,19 +2896,8 @@ Format as comprehensive JSON:
 
   app.get("/api/campaigns/active", requireAuth, async (req: Request, res: Response) => {
     try {
-      // Mock active campaigns data - in production this would come from database
-      const activeCampaigns = [
-        {
-          id: 1,
-          title: 'Summer Special 2025',
-          type: 'email',
-          status: 'active',
-          sent: 450,
-          opened: 387,
-          clicks: 142
-        }
-      ];
-
+      // Filter active campaigns from store
+      const activeCampaigns = campaignsStore.filter(campaign => campaign.status === 'active');
       res.json(activeCampaigns);
     } catch (error) {
       console.error("Failed to fetch active campaigns:", error);

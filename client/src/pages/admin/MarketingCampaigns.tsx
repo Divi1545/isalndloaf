@@ -106,7 +106,9 @@ const MarketingCampaigns = () => {
         title: "Success",
         description: "Campaign created successfully",
       });
+      // Invalidate both campaigns queries to ensure UI refreshes
       queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/campaigns/active'] });
       setIsNewCampaignOpen(false);
       resetNewCampaignForm();
     },
@@ -130,7 +132,9 @@ const MarketingCampaigns = () => {
         title: "Success",
         description: "Campaign updated successfully",
       });
+      // Invalidate both campaigns queries to ensure UI refreshes
       queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/campaigns/active'] });
       setIsEditMode(false);
       setSelectedCampaign(null);
     },
@@ -154,7 +158,9 @@ const MarketingCampaigns = () => {
         title: "Success",
         description: "Campaign deleted successfully",
       });
+      // Invalidate both campaigns queries to ensure UI refreshes
       queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/campaigns/active'] });
     },
     onError: (error: any) => {
       toast({
@@ -176,7 +182,9 @@ const MarketingCampaigns = () => {
         title: "Success",
         description: "Campaign launched successfully",
       });
+      // Invalidate both campaigns queries to ensure UI refreshes
       queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/campaigns/active'] });
     },
     onError: (error: any) => {
       toast({
@@ -199,6 +207,9 @@ const MarketingCampaigns = () => {
         description: "Email blast sent successfully",
       });
       setQuickEmailData({ title: '', message: '', audience: 'all' });
+      // Refresh campaign data to show updated statistics
+      queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/campaigns/active'] });
     },
     onError: (error: any) => {
       toast({
