@@ -1,5 +1,7 @@
 import { IStorage } from './storage';
 import prisma from './prisma-client';
+import { db } from './db';
+import { eq, desc } from 'drizzle-orm';
 import {
   User, InsertUser,
   Service, InsertService,
@@ -7,7 +9,8 @@ import {
   CalendarSource, InsertCalendarSource,
   Booking, InsertBooking,
   Notification, InsertNotification,
-  MarketingContent, InsertMarketingContent
+  MarketingContent, InsertMarketingContent,
+  bookings
 } from '@shared/schema';
 
 /**
@@ -239,48 +242,34 @@ export class DatabaseStorage implements IStorage {
   
   // Booking operations
   async getBooking(id: number): Promise<Booking | undefined> {
-    const booking = await prisma.booking.findUnique({
-      where: { id }
-    });
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
     return booking || undefined;
   }
   
   async getBookings(userId: number): Promise<Booking[]> {
-    return await prisma.booking.findMany({
-      where: { userId }
-    });
+    return await db.select().from(bookings).where(eq(bookings.userId, userId));
   }
   
   async getRecentBookings(userId: number, limit: number): Promise<Booking[]> {
-    return await prisma.booking.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: limit
-    });
+    return await db.select().from(bookings)
+      .where(eq(bookings.userId, userId))
+      .orderBy(desc(bookings.createdAt))
+      .limit(limit);
   }
   
   async createBooking(booking: InsertBooking): Promise<Booking> {
-    // Ensure we have current date for createdAt and updatedAt
-    const now = new Date();
-    return await prisma.booking.create({
-      data: {
-        ...booking,
-        createdAt: booking.createdAt || now,
-        updatedAt: booking.updatedAt || now
-      }
-    });
+    const [newBooking] = await db.insert(bookings).values(booking).returning();
+    return newBooking;
   }
   
   async updateBooking(id: number, bookingUpdate: Partial<InsertBooking>): Promise<Booking | undefined> {
     try {
-      // Always update the updatedAt timestamp
-      return await prisma.booking.update({
-        where: { id },
-        data: {
-          ...bookingUpdate,
-          updatedAt: new Date()
-        }
-      });
+      const [updated] = await db
+        .update(bookings)
+        .set({ ...bookingUpdate, updatedAt: new Date() })
+        .where(eq(bookings.id, id))
+        .returning();
+      return updated || undefined;
     } catch (error) {
       console.error(`Failed to update booking ${id}:`, error);
       return undefined;
@@ -289,9 +278,7 @@ export class DatabaseStorage implements IStorage {
   
   async deleteBooking(id: number): Promise<boolean> {
     try {
-      await prisma.booking.delete({
-        where: { id }
-      });
+      await db.delete(bookings).where(eq(bookings.id, id));
       return true;
     } catch (error) {
       console.error(`Failed to delete booking ${id}:`, error);

@@ -223,37 +223,54 @@ export async function registerRoutes(app: Express): Promise<void> {
       const pendingVendors = users.filter(u => u.role === 'pending').length;
       const inactiveVendors = users.filter(u => u.role === 'inactive').length;
       
-      // Generate monthly revenue data based on current month
-      const monthlyRevenue = [
-        { month: 'Jan', revenue: 2400 },
-        { month: 'Feb', revenue: 3200 },
-        { month: 'Mar', revenue: 2800 },
-        { month: 'Apr', revenue: 4200 },
-        { month: 'May', revenue: 3800 },
-        { month: 'Jun', revenue: 4600 },
-        { month: 'Jul', revenue: 5200 },
-        { month: 'Aug', revenue: 4800 },
-        { month: 'Sep', revenue: 3600 },
-        { month: 'Oct', revenue: 4100 },
-        { month: 'Nov', revenue: 3900 },
-        { month: 'Dec', revenue: 5400 }
-      ];
+      // Get all bookings from database
+      const allBookings = await Promise.all(
+        users.map(async (u) => {
+          const userBookings = await storage.getBookings(u.id);
+          return userBookings.map(booking => ({
+            ...booking,
+            vendorName: u.businessName || u.fullName,
+            vendorType: u.businessType
+          }));
+        })
+      );
+      const bookings = allBookings.flat();
       
-      // Sample recent bookings
-      const recentBookings = [
-        { id: 1, status: 'confirmed', totalPrice: 150, createdAt: new Date('2025-07-12') },
-        { id: 2, status: 'pending', totalPrice: 200, createdAt: new Date('2025-07-11') },
-        { id: 3, status: 'completed', totalPrice: 350, createdAt: new Date('2025-07-10') },
-        { id: 4, status: 'completed', totalPrice: 280, createdAt: new Date('2025-07-09') },
-        { id: 5, status: 'cancelled', totalPrice: 120, createdAt: new Date('2025-07-08') },
-      ];
+      // Calculate real booking statistics
+      const totalBookings = bookings.length;
+      const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
+      const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+      const completedBookings = bookings.filter(b => b.status === 'completed').length;
+      const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
       
-      const totalBookings = 47;
-      const confirmedBookings = 12;
-      const pendingBookings = 8;
-      const completedBookings = 23;
-      const cancelledBookings = 4;
-      const totalRevenue = monthlyRevenue.reduce((sum, m) => sum + m.revenue, 0);
+      // Calculate revenue from completed bookings
+      const totalRevenue = bookings
+        .filter(b => b.status === 'completed')
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+      
+      // Calculate monthly revenue from real bookings
+      const currentYear = new Date().getFullYear();
+      const monthlyRevenue = Array.from({length: 12}, (_, i) => {
+        const month = i + 1;
+        const revenue = bookings
+          .filter(b => {
+            const bookingDate = new Date(b.createdAt);
+            return bookingDate.getFullYear() === currentYear && 
+                   bookingDate.getMonth() === i && 
+                   b.status === 'completed';
+          })
+          .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+        
+        return {
+          month: new Date(2024, i).toLocaleDateString('en-US', { month: 'short' }),
+          revenue
+        };
+      });
+      
+      // Get recent bookings
+      const recentBookings = bookings
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5);
       
       res.json({
         totalVendors,
@@ -273,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           name: u.businessName || u.fullName,
           businessType: u.businessType,
           role: u.role,
-          bookingCount: Math.floor(Math.random() * 8) + 1 // Random booking count for demo
+          bookingCount: bookings.filter(b => b.userId === u.id).length
         }))
       });
     } catch (error) {
@@ -428,16 +445,41 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Booking Routes
+  // Comprehensive Booking Management Routes
+  
+  // Get all bookings (admin) or user's bookings (vendor)
   app.get("/api/bookings", requireAuth, async (req: Request, res: Response) => {
     try {
-      const bookings = await storage.getBookings(req.session.user.id);
-      res.status(200).json(bookings);
+      const user = req.session.user;
+      let bookings;
+      
+      if (user.role === 'admin') {
+        // Admin can see all bookings
+        const users = await storage.getUsers();
+        const allBookings = await Promise.all(
+          users.map(async (u) => {
+            const userBookings = await storage.getBookings(u.id);
+            return userBookings.map(booking => ({
+              ...booking,
+              vendorName: u.businessName || u.fullName,
+              vendorType: u.businessType
+            }));
+          })
+        );
+        bookings = allBookings.flat();
+      } else {
+        // Vendor can only see their own bookings
+        bookings = await storage.getBookings(user.id);
+      }
+      
+      res.json(bookings);
     } catch (error) {
+      console.error("Error fetching bookings:", error);
       res.status(500).json({ error: "Failed to fetch bookings" });
     }
   });
   
+  // Get recent bookings
   app.get("/api/bookings/recent", requireAuth, async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
@@ -448,72 +490,210 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  // Get a specific booking
+  app.get("/api/bookings/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const user = req.session.user;
+      
+      const booking = await storage.getBooking(bookingId);
+      
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Check if user can access this booking
+      if (user.role !== 'admin' && booking.userId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      res.json(booking);
+    } catch (error) {
+      console.error("Error fetching booking:", error);
+      res.status(500).json({ error: "Failed to fetch booking" });
+    }
+  });
+  
+  // Create a new booking
   app.post("/api/bookings", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { type, details, status } = req.body;
+      const user = req.session.user;
+      const bookingData = req.body;
       
-      // Validate booking type
-      if (!['stay', 'vehicle', 'ticket', 'wellness'].includes(type)) {
-        return res.status(400).json({ error: "Invalid booking type" });
+      // Validate required fields
+      if (!bookingData.customerName || !bookingData.customerEmail || !bookingData.startDate || !bookingData.endDate || !bookingData.totalPrice) {
+        return res.status(400).json({ error: "Missing required fields" });
       }
       
-      // Validate booking status
-      if (!bookingStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid booking status" });
+      // Validate dates
+      const startDate = new Date(bookingData.startDate);
+      const endDate = new Date(bookingData.endDate);
+      
+      if (startDate >= endDate) {
+        return res.status(400).json({ error: "End date must be after start date" });
       }
       
-      // Create booking with user ID from session
-      const booking = await storage.createBooking({
-        userId: req.session.user.id,
-        serviceId: details.serviceId || 1,
-        customerName: details.customerName || "Guest",
-        customerEmail: details.customerEmail || "",
-        startDate: new Date(details.startDate || Date.now()),
-        endDate: new Date(details.endDate || Date.now() + 86400000),
-        totalPrice: details.totalPrice || 0,
-        commission: details.commission || 0,
-        status,
-        notes: details.notes || null
+      if (startDate < new Date()) {
+        return res.status(400).json({ error: "Start date cannot be in the past" });
+      }
+      
+      // Get or create default service
+      let serviceId = bookingData.serviceId;
+      if (!serviceId) {
+        // Create a default service if none exists
+        const userServices = await storage.getServices(user.id);
+        if (userServices.length === 0) {
+          const defaultService = await storage.createService({
+            userId: user.id,
+            name: "Default Service",
+            description: "Default service for bookings",
+            type: "stays",
+            basePrice: 0,
+            available: true
+          });
+          serviceId = defaultService.id;
+        } else {
+          serviceId = userServices[0].id;
+        }
+      }
 
+      // Create booking
+      const newBooking = await storage.createBooking({
+        userId: user.id,
+        serviceId: serviceId,
+        customerName: bookingData.customerName,
+        customerEmail: bookingData.customerEmail,
+        startDate: startDate,
+        endDate: endDate,
+        status: bookingData.status || "pending",
+        totalPrice: parseFloat(bookingData.totalPrice),
+        commission: parseFloat(bookingData.commission) || parseFloat(bookingData.totalPrice) * 0.1, // 10% default commission
+        notes: bookingData.notes || null
       });
       
-      // Create a notification for new booking
+      // Create notification
       await storage.createNotification({
-        userId: req.session.user.id,
-        title: `New ${type} booking created`,
-        message: `A new ${type} booking has been created with status: ${status}`,
-        type: "booking",
+        userId: user.id,
+        title: "New booking created",
+        message: `A new booking for ${bookingData.customerName} has been created`,
+        type: "info",
         read: false
       });
       
-      res.status(201).json(booking);
+      res.status(201).json(newBooking);
     } catch (error) {
       console.error("Error creating booking:", error);
       res.status(500).json({ error: "Failed to create booking" });
     }
   });
-
-  app.patch("/api/bookings/:id/status", requireAuth, async (req: Request, res: Response) => {
+  
+  // Update a booking
+  app.put("/api/bookings/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const id = parseInt(req.params.id);
-      const status = req.body.status;
+      const bookingId = parseInt(req.params.id);
+      const user = req.session.user;
+      const updateData = req.body;
       
-      if (!bookingStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid booking status" });
-      }
-      
-      const booking = await storage.getBooking(id);
-      if (!booking) {
+      // Check if booking exists
+      const existingBooking = await storage.getBooking(bookingId);
+      if (!existingBooking) {
         return res.status(404).json({ error: "Booking not found" });
       }
       
-      if (booking.userId !== req.session.user.id) {
-        return res.status(403).json({ error: "Not authorized to update this booking" });
+      // Check permissions
+      if (user.role !== 'admin' && existingBooking.userId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
       }
       
-      const updatedBooking = await storage.updateBooking(id, { status });
-      res.status(200).json(updatedBooking);
+      // Validate dates if provided
+      if (updateData.startDate && updateData.endDate) {
+        const startDate = new Date(updateData.startDate);
+        const endDate = new Date(updateData.endDate);
+        
+        if (startDate >= endDate) {
+          return res.status(400).json({ error: "End date must be after start date" });
+        }
+      }
+      
+      // Update booking
+      const updatedBooking = await storage.updateBooking(bookingId, updateData);
+      
+      if (!updatedBooking) {
+        return res.status(500).json({ error: "Failed to update booking" });
+      }
+      
+      res.json(updatedBooking);
     } catch (error) {
+      console.error("Error updating booking:", error);
+      res.status(500).json({ error: "Failed to update booking" });
+    }
+  });
+  
+  // Delete a booking
+  app.delete("/api/bookings/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const user = req.session.user;
+      
+      // Check if booking exists
+      const existingBooking = await storage.getBooking(bookingId);
+      if (!existingBooking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Check permissions
+      if (user.role !== 'admin' && existingBooking.userId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Delete booking
+      const success = await storage.deleteBooking(bookingId);
+      
+      if (!success) {
+        return res.status(500).json({ error: "Failed to delete booking" });
+      }
+      
+      res.json({ message: "Booking deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting booking:", error);
+      res.status(500).json({ error: "Failed to delete booking" });
+    }
+  });
+  
+  // Update booking status
+  app.patch("/api/bookings/:id/status", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const user = req.session.user;
+      const { status } = req.body;
+      
+      // Validate status
+      const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'refunded'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      
+      // Check if booking exists
+      const existingBooking = await storage.getBooking(bookingId);
+      if (!existingBooking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Check permissions
+      if (user.role !== 'admin' && existingBooking.userId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Update booking status
+      const updatedBooking = await storage.updateBooking(bookingId, { status });
+      
+      if (!updatedBooking) {
+        return res.status(500).json({ error: "Failed to update booking status" });
+      }
+      
+      res.json(updatedBooking);
+    } catch (error) {
+      console.error("Error updating booking status:", error);
       res.status(500).json({ error: "Failed to update booking status" });
     }
   });
