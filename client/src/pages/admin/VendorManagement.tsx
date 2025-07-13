@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,98 +17,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import type { User } from '@shared/schema';
 
-// Sample vendor data
-const vendors = [
-  { 
-    id: 'V-1001', 
-    name: 'Beach Paradise Villa', 
-    owner: 'Island Vendor', 
-    email: 'vendor@islandloaf.com',
-    phone: '+94 76 123 4567',
-    business: 'Accommodation', 
-    revenue: '$12,628', 
-    status: 'active',
-    verified: true,
-    joinDate: '2024-01-15',
-    location: 'Mirissa, Sri Lanka',
-    rating: 4.8,
-    listings: 3,
-    completedBookings: 78,
-    description: 'Luxury beachfront villas with private pools and stunning ocean views. Perfect for couples and families looking for privacy and comfort.'
-  },
-  { 
-    id: 'V-1002', 
-    name: 'Island Adventures', 
-    owner: 'John Smith', 
-    email: 'john@islandadventures.com',
-    phone: '+94 77 234 5678',
-    business: 'Tours', 
-    revenue: '$8,450', 
-    status: 'active',
-    verified: true,
-    joinDate: '2024-02-10',
-    location: 'Unawatuna, Sri Lanka',
-    rating: 4.6,
-    listings: 5,
-    completedBookings: 124,
-    description: 'Exciting guided tours including whale watching, jungle safaris, and cultural heritage trips around southern Sri Lanka.'
-  },
-  { 
-    id: 'V-1003', 
-    name: 'Coastal Scooters', 
-    owner: 'Maria Rodriguez', 
-    email: 'maria@coastalscooters.com',
-    phone: '+94 75 345 6789',
-    business: 'Transport', 
-    revenue: '$5,920', 
-    status: 'active',
-    verified: true,
-    joinDate: '2024-02-25',
-    location: 'Galle, Sri Lanka',
-    rating: 4.5,
-    listings: 2,
-    completedBookings: 210,
-    description: 'Scooter and motorcycle rentals with delivery to hotels and villas. Free helmets and safety gear included with all rentals.'
-  },
-  { 
-    id: 'V-1004', 
-    name: 'Serenity Spa', 
-    owner: 'Raj Patel', 
-    email: 'raj@serenityspa.com',
-    phone: '+94 71 456 7890',
-    business: 'Wellness', 
-    revenue: '$7,340', 
-    status: 'pending',
-    verified: false,
-    joinDate: '2024-03-05',
-    location: 'Weligama, Sri Lanka',
-    rating: null,
-    listings: 1,
-    completedBookings: 0,
-    description: 'Traditional Ayurvedic treatments and modern spa services in a serene environment. Specializing in traditional Sri Lankan wellness techniques.'
-  },
-  { 
-    id: 'V-1005', 
-    name: 'Mountain Retreat', 
-    owner: 'Sarah Johnson', 
-    email: 'sarah@mountainretreat.com',
-    phone: '+94 78 567 8901',
-    business: 'Accommodation', 
-    revenue: '$9,125', 
-    status: 'active',
-    verified: true,
-    joinDate: '2024-01-20',
-    location: 'Ella, Sri Lanka',
-    rating: 4.7,
-    listings: 2,
-    completedBookings: 55,
-    description: 'Secluded mountain cabins with panoramic views of tea plantations and waterfalls. Perfect for hiking enthusiasts and nature lovers.'
-  },
-];
+// Fetch vendors from database
+const useVendors = () => {
+  return useQuery({
+    queryKey: ['/api/vendors'],
+    queryFn: async () => {
+      const response = await fetch('/api/vendors');
+      if (!response.ok) {
+        throw new Error('Failed to fetch vendors');
+      }
+      return response.json() as Promise<User[]>;
+    },
+  });
+};
 
 // Vendor Detail Dialog component
-const VendorDetailDialog = ({ vendor }: { vendor: typeof vendors[0] }) => {
+const VendorDetailDialog = ({ vendor }: { vendor: User }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -122,16 +49,9 @@ const VendorDetailDialog = ({ vendor }: { vendor: typeof vendors[0] }) => {
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <span>{vendor.name}</span>
-            {vendor.verified && (
-              <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
-                Verified
-              </Badge>
-            )}
-            <Badge className={`ml-2 ${
-              vendor.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-            }`}>
-              {vendor.status.charAt(0).toUpperCase() + vendor.status.slice(1)}
+            <span>{vendor.businessName || vendor.fullName}</span>
+            <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
+              {vendor.role}
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -142,23 +62,23 @@ const VendorDetailDialog = ({ vendor }: { vendor: typeof vendors[0] }) => {
             <div className="space-y-3">
               <div>
                 <p className="text-xs text-gray-500">ID</p>
-                <p className="text-sm font-medium">{vendor.id}</p>
+                <p className="text-sm font-medium">#{vendor.id}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Business Name</p>
+                <p className="text-sm font-medium">{vendor.businessName || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Business Type</p>
-                <p className="text-sm font-medium">{vendor.business}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Location</p>
-                <p className="text-sm font-medium">{vendor.location}</p>
+                <p className="text-sm font-medium">{vendor.businessType || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Join Date</p>
-                <p className="text-sm font-medium">{new Date(vendor.joinDate).toLocaleDateString()}</p>
+                <p className="text-sm font-medium">{new Date(vendor.createdAt).toLocaleDateString()}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Description</p>
-                <p className="text-sm">{vendor.description}</p>
+                <p className="text-xs text-gray-500">Categories</p>
+                <p className="text-sm font-medium">{vendor.categoriesAllowed?.join(', ') || 'None'}</p>
               </div>
             </div>
           </div>
@@ -168,35 +88,15 @@ const VendorDetailDialog = ({ vendor }: { vendor: typeof vendors[0] }) => {
             <div className="space-y-3">
               <div>
                 <p className="text-xs text-gray-500">Owner</p>
-                <p className="text-sm font-medium">{vendor.owner}</p>
+                <p className="text-sm font-medium">{vendor.fullName}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Email</p>
                 <p className="text-sm font-medium">{vendor.email}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Phone</p>
-                <p className="text-sm font-medium">{vendor.phone}</p>
-              </div>
-            </div>
-            
-            <h3 className="text-sm font-medium text-gray-500 mt-6 mb-2">Performance</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-500">Revenue</p>
-                <p className="text-sm font-medium">{vendor.revenue}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Listings</p>
-                <p className="text-sm font-medium">{vendor.listings}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Completed Bookings</p>
-                <p className="text-sm font-medium">{vendor.completedBookings}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Rating</p>
-                <p className="text-sm font-medium">{vendor.rating ? `${vendor.rating}/5.0` : 'No ratings yet'}</p>
+                <p className="text-xs text-gray-500">Username</p>
+                <p className="text-sm font-medium">{vendor.username}</p>
               </div>
             </div>
           </div>
@@ -206,12 +106,12 @@ const VendorDetailDialog = ({ vendor }: { vendor: typeof vendors[0] }) => {
           <div className="space-x-2">
             <Button variant="outline" size="sm">Message</Button>
             <Button variant="outline" size="sm">
-              {vendor.verified ? 'Remove Verification' : 'Verify Vendor'}
+              Verify Vendor
             </Button>
           </div>
           <div className="space-x-2">
             <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
-              {vendor.status === 'active' ? 'Deactivate' : 'Activate'}
+              Deactivate
             </Button>
             <Button size="sm">Edit</Button>
           </div>
@@ -228,6 +128,9 @@ const VendorManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const { toast } = useToast();
+  
+  // Fetch vendors from database
+  const { data: vendors = [], isLoading, error } = useVendors();
   
   const [newVendor, setNewVendor] = useState({
     businessName: '',
@@ -269,15 +172,16 @@ const VendorManagement = () => {
   // Filter vendors based on search query and filters
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = 
-      vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.id.toLowerCase().includes(searchQuery.toLowerCase());
+      (vendor.businessName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vendor.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vendor.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vendor.id.toString().includes(searchQuery.toLowerCase());
     
     const matchesBusinessType = businessTypeFilter === 'all' || 
-      vendor.business.toLowerCase() === businessTypeFilter.toLowerCase();
+      (vendor.businessType || '').toLowerCase() === businessTypeFilter.toLowerCase();
     
     const matchesStatus = statusFilter === 'all' || 
-      vendor.status.toLowerCase() === statusFilter.toLowerCase();
+      vendor.role.toLowerCase() === statusFilter.toLowerCase();
     
     return matchesSearch && matchesBusinessType && matchesStatus;
   });
@@ -463,45 +367,48 @@ const VendorManagement = () => {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-sm">ID</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm">Business</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm">Owner</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm">Type</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm">Revenue</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm">Status</th>
-                  <th className="text-center py-3 px-4 font-medium text-sm">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredVendors.map((vendor) => (
-                  <tr key={vendor.id} className="border-b">
-                    <td className="py-4 px-4 text-sm">{vendor.id}</td>
-                    <td className="py-4 px-4 text-sm font-medium">
-                      <div className="flex items-center">
-                        {vendor.name}
-                        {vendor.verified && (
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-600">
+                Failed to load vendors. Please try again.
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-sm">ID</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm">Business</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm">Owner</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm">Type</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm">Email</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm">Role</th>
+                    <th className="text-center py-3 px-4 font-medium text-sm">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredVendors.map((vendor) => (
+                    <tr key={vendor.id} className="border-b">
+                      <td className="py-4 px-4 text-sm">#{vendor.id}</td>
+                      <td className="py-4 px-4 text-sm font-medium">
+                        <div className="flex items-center">
+                          {vendor.businessName || vendor.fullName}
                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1 text-blue-500">
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="m9 12 2 2 4-4"></path>
                           </svg>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-sm">{vendor.owner}</td>
-                    <td className="py-4 px-4 text-sm">{vendor.business}</td>
-                    <td className="py-4 px-4 text-sm">{vendor.revenue}</td>
-                    <td className="py-4 px-4 text-sm">
-                      <Badge className={`${
-                        vendor.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {vendor.status.charAt(0).toUpperCase() + vendor.status.slice(1)}
-                      </Badge>
-                    </td>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-sm">{vendor.fullName}</td>
+                      <td className="py-4 px-4 text-sm">{vendor.businessType || 'N/A'}</td>
+                      <td className="py-4 px-4 text-sm">{vendor.email}</td>
+                      <td className="py-4 px-4 text-sm">
+                        <Badge className="bg-green-100 text-green-800">
+                          {vendor.role.charAt(0).toUpperCase() + vendor.role.slice(1)}
+                        </Badge>
+                      </td>
                     <td className="py-4 px-4 text-sm">
                       <div className="flex justify-center space-x-2">
                         <VendorDetailDialog vendor={vendor} />
@@ -527,7 +434,7 @@ const VendorManagement = () => {
                           size="sm" 
                           className="h-8 w-8 p-0 text-red-500"
                           onClick={() => {
-                            if (confirm(`Are you sure you want to delete ${vendor.name}?`)) {
+                            if (confirm(`Are you sure you want to delete ${vendor.businessName || vendor.fullName}?`)) {
                               // Add delete functionality here
                               console.log(`Deleting vendor: ${vendor.id}`);
                             }
@@ -543,9 +450,17 @@ const VendorManagement = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                  ))}
+                  {filteredVendors.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="text-center py-8 text-gray-500">
+                        No vendors found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
           
           <div className="flex justify-between items-center mt-4">
