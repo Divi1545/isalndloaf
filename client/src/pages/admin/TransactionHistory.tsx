@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,185 +11,414 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { 
+  Download, 
+  Eye, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  RefreshCw,
+  Filter,
+  Search
+} from 'lucide-react';
 
-// Transactions page according to the checklist
+interface Transaction {
+  id: number;
+  bookingId: number;
+  vendorId: number;
+  vendorName: string;
+  amount: number;
+  commission: number;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  paymentMethod: string;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+  booking?: {
+    id: number;
+    customerName: string;
+    customerEmail: string;
+    serviceType: string;
+    totalPrice: number;
+  };
+}
+
+interface TransactionStats {
+  totalTransactions: number;
+  totalAmount: number;
+  totalCommission: number;
+  pendingAmount: number;
+  completedAmount: number;
+  failedAmount: number;
+  refundedAmount: number;
+}
+
 const TransactionHistory = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRangeFilter, setDateRangeFilter] = useState('all');
-  const { toast } = useToast();
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Sample transactions data for demonstration
-  const transactions = [
-    {
-      id: 'TRX-2025-001',
-      vendorId: 'V-1001',
-      vendorName: 'Beach Paradise Villa',
-      amount: 384.97,
-      bookingId: 'B-3001',
-      status: 'completed',
-      date: '2025-04-15',
-      paymentMethod: 'Direct deposit',
-      commission: 38.50
-    },
-    {
-      id: 'TRX-2025-002',
-      vendorId: 'V-1002',
-      vendorName: 'Island Adventures',
-      amount: 127.46,
-      bookingId: 'B-3005',
-      status: 'pending',
-      date: '2025-04-18',
-      paymentMethod: 'Bank transfer',
-      commission: 19.12
-    },
-    {
-      id: 'TRX-2025-003',
-      vendorId: 'V-1003',
-      vendorName: 'Coastal Scooters',
-      amount: 76.47,
-      bookingId: 'B-3006',
-      status: 'completed',
-      date: '2025-04-22',
-      paymentMethod: 'Direct deposit',
-      commission: 9.18
-    },
-    {
-      id: 'TRX-2025-004',
-      vendorId: 'V-1001',
-      vendorName: 'Beach Paradise Villa',
-      amount: 850.00,
-      bookingId: 'B-3002',
-      status: 'completed',
-      date: '2025-04-25',
-      paymentMethod: 'Direct deposit',
-      commission: 85.00
-    },
-    {
-      id: 'TRX-2025-005',
-      vendorId: 'V-1004',
-      vendorName: 'Wellness Retreat',
-      amount: 305.99,
-      bookingId: 'B-3007',
-      status: 'failed',
-      date: '2025-04-27',
-      paymentMethod: 'Bank transfer',
-      commission: 45.90
-    },
-    {
-      id: 'TRX-2025-006',
-      vendorId: 'V-1005',
-      vendorName: 'Seafood Delight',
-      amount: 210.50,
-      bookingId: 'B-3008',
-      status: 'pending',
-      date: '2025-04-30',
-      paymentMethod: 'Direct deposit',
-      commission: 31.58
-    }
-  ];
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Filter transactions based on search and filters
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = 
-      transaction.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.bookingId.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || 
-      transaction.status === statusFilter;
-    
-    // In a real implementation, we would add date range filtering
-    
-    return matchesSearch && matchesStatus;
+  // Fetch bookings as transaction data
+  const { data: bookings, isLoading: bookingsLoading, refetch: refetchBookings } = useQuery({
+    queryKey: ['/api/bookings'],
+    queryFn: async () => {
+      const response = await fetch('/api/bookings');
+      if (!response.ok) throw new Error('Failed to fetch bookings');
+      return response.json();
+    }
   });
 
-  // Handle CSV export (reusing the report download logic from AdminDashboard)
-  const handleExportCSV = async () => {
-    try {
-      toast({
-        title: "Preparing export",
-        description: "Your transaction data is being prepared for download"
+  // Fetch vendors for transaction mapping
+  const { data: vendors, isLoading: vendorsLoading } = useQuery({
+    queryKey: ['/api/vendors'],
+    queryFn: async () => {
+      const response = await fetch('/api/vendors');
+      if (!response.ok) throw new Error('Failed to fetch vendors');
+      return response.json();
+    }
+  });
+
+  // Fetch revenue analytics for additional transaction data
+  const { data: revenueData, isLoading: revenueLoading } = useQuery({
+    queryKey: ['/api/revenue/analytics'],
+    queryFn: async () => {
+      const response = await fetch('/api/revenue/analytics');
+      if (!response.ok) throw new Error('Failed to fetch revenue analytics');
+      return response.json();
+    }
+  });
+
+  // Process payout mutation
+  const processPayoutMutation = useMutation({
+    mutationFn: async (transactionId: number) => {
+      return apiRequest('/api/revenue/process-payouts', {
+        method: 'POST',
+        body: { vendorIds: [transactionId] }
       });
-      
-      // Here we could call a real API endpoint that generates the CSV based on filters
-      // For demo, we'll use our existing report endpoint
-      const response = await fetch('/api/reports/generate');
-      
-      // Create a blob from the response
-      const blob = await response.blob();
-      
-      // Create a download link and trigger it
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'islandloaf_transactions.csv';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
-      // Clean up the URL object
-      URL.revokeObjectURL(url);
-      
+    },
+    onSuccess: () => {
       toast({
-        title: "Export complete",
-        description: "Transaction data has been downloaded successfully",
+        title: "Payout processed",
+        description: "The payout has been processed successfully"
       });
-    } catch (error) {
-      console.error("Error exporting data:", error);
+      refetchBookings();
+      queryClient.invalidateQueries({ queryKey: ['/api/revenue/analytics'] });
+    },
+    onError: (error) => {
       toast({
-        title: "Export failed",
-        description: "There was a problem exporting your transaction data. Please try again.",
+        title: "Error",
+        description: "Failed to process payout",
         variant: "destructive"
       });
     }
+  });
+
+  // Transform bookings into transaction format
+  const transformedTransactions: Transaction[] = React.useMemo(() => {
+    if (!bookings || !vendors) return [];
+    
+    return bookings.map((booking: any) => {
+      const vendor = vendors.find((v: any) => v.id === booking.userId);
+      return {
+        id: booking.id,
+        bookingId: booking.id,
+        vendorId: booking.userId,
+        vendorName: vendor?.businessName || vendor?.fullName || 'Unknown Vendor',
+        amount: booking.totalPrice,
+        commission: booking.commission || (booking.totalPrice * 0.1),
+        status: booking.status === 'completed' ? 'completed' : 
+                booking.status === 'cancelled' ? 'failed' : 'pending',
+        paymentMethod: 'Direct Deposit',
+        date: booking.createdAt,
+        createdAt: booking.createdAt,
+        updatedAt: booking.updatedAt || booking.createdAt,
+        booking: {
+          id: booking.id,
+          customerName: booking.customerName,
+          customerEmail: booking.customerEmail,
+          serviceType: booking.serviceType || 'Service',
+          totalPrice: booking.totalPrice
+        }
+      };
+    });
+  }, [bookings, vendors]);
+
+  // Filter transactions
+  const filteredTransactions = React.useMemo(() => {
+    if (!transformedTransactions) return [];
+    
+    return transformedTransactions.filter(transaction => {
+      const matchesSearch = 
+        transaction.id.toString().includes(searchQuery) ||
+        transaction.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transaction.booking?.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transaction.booking?.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
+      
+      // Basic date filtering
+      const matchesDate = dateRangeFilter === 'all' || (() => {
+        const transactionDate = new Date(transaction.date);
+        const today = new Date();
+        
+        switch (dateRangeFilter) {
+          case 'today':
+            return transactionDate.toDateString() === today.toDateString();
+          case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(today.getDate() - 7);
+            return transactionDate >= weekAgo;
+          case 'month':
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(today.getMonth() - 1);
+            return transactionDate >= monthAgo;
+          case 'quarter':
+            const quarterAgo = new Date(today);
+            quarterAgo.setMonth(today.getMonth() - 3);
+            return transactionDate >= quarterAgo;
+          default:
+            return true;
+        }
+      })();
+      
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [transformedTransactions, searchQuery, statusFilter, dateRangeFilter]);
+
+  // Calculate transaction statistics
+  const transactionStats: TransactionStats = React.useMemo(() => {
+    if (!filteredTransactions) return {
+      totalTransactions: 0,
+      totalAmount: 0,
+      totalCommission: 0,
+      pendingAmount: 0,
+      completedAmount: 0,
+      failedAmount: 0,
+      refundedAmount: 0
+    };
+
+    return filteredTransactions.reduce((stats, transaction) => {
+      stats.totalTransactions++;
+      stats.totalAmount += transaction.amount;
+      stats.totalCommission += transaction.commission;
+      
+      switch (transaction.status) {
+        case 'pending':
+          stats.pendingAmount += transaction.amount;
+          break;
+        case 'completed':
+          stats.completedAmount += transaction.amount;
+          break;
+        case 'failed':
+          stats.failedAmount += transaction.amount;
+          break;
+        case 'refunded':
+          stats.refundedAmount += transaction.amount;
+          break;
+      }
+      
+      return stats;
+    }, {
+      totalTransactions: 0,
+      totalAmount: 0,
+      totalCommission: 0,
+      pendingAmount: 0,
+      completedAmount: 0,
+      failedAmount: 0,
+      refundedAmount: 0
+    });
+  }, [filteredTransactions]);
+
+  // Handle refresh
+  const handleRefresh = () => {
+    refetchBookings();
+    queryClient.invalidateQueries({ queryKey: ['/api/vendors'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/revenue/analytics'] });
   };
+
+  // Export transactions to CSV
+  const handleExportCSV = () => {
+    const csvData = [
+      ['Transaction ID', 'Vendor', 'Customer', 'Amount', 'Commission', 'Status', 'Date', 'Payment Method'],
+      ...filteredTransactions.map(transaction => [
+        transaction.id,
+        transaction.vendorName,
+        transaction.booking?.customerName || 'N/A',
+        transaction.amount,
+        transaction.commission,
+        transaction.status,
+        new Date(transaction.date).toLocaleDateString(),
+        transaction.paymentMethod
+      ])
+    ];
+
+    const csv = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export complete",
+      description: "Transaction data has been exported successfully"
+    });
+  };
+
+  const handleViewDetails = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsDialogOpen(true);
+  };
+
+  const handleProcessPayout = (transactionId: number) => {
+    processPayoutMutation.mutate(transactionId);
+  };
+
+  const isLoading = bookingsLoading || vendorsLoading || revenueLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading transaction data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Transaction History</h1>
-        <Button onClick={handleExportCSV}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" x2="12" y1="15" y2="3"></line>
-          </svg>
-          Export CSV
-        </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Transaction History</h1>
+          <p className="text-muted-foreground">
+            Manage all platform transactions and payouts
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
+      {/* Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Transactions</p>
+                <p className="text-2xl font-bold">{transactionStats.totalTransactions}</p>
+              </div>
+              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <Clock className="h-4 w-4 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
+                <p className="text-2xl font-bold">${transactionStats.totalAmount.toFixed(2)}</p>
+              </div>
+              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Commission</p>
+                <p className="text-2xl font-bold">${transactionStats.totalCommission.toFixed(2)}</p>
+              </div>
+              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <Download className="h-4 w-4 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Pending Payments</p>
+                <p className="text-2xl font-bold">${transactionStats.pendingAmount.toFixed(2)}</p>
+              </div>
+              <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Clock className="h-4 w-4 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Transactions Table */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Payouts & Transactions</CardTitle>
+        <CardHeader>
+          <CardTitle>Transactions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row flex-wrap items-center justify-between gap-4 mb-6">
-            <div className="w-full md:w-auto">
+          {/* Filters */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex items-center space-x-2 flex-1">
+              <Search className="h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by ID, vendor or booking..."
+                placeholder="Search by transaction ID, vendor, or customer..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full md:w-[300px]"
+                className="max-w-sm"
               />
             </div>
-            <div className="flex flex-wrap w-full md:w-auto gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[150px]">
-                  <SelectValue placeholder="Status" />
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
                 </SelectContent>
               </Select>
-              
               <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Date Range" />
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Time</SelectItem>
@@ -201,56 +431,65 @@ const TransactionHistory = () => {
             </div>
           </div>
 
+          {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full table-auto">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-100">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Transaction ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Vendor</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Amount</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Commission</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Booking ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Date</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Actions</th>
+                <tr className="border-b">
+                  <th className="text-left p-3">Transaction ID</th>
+                  <th className="text-left p-3">Vendor</th>
+                  <th className="text-left p-3">Customer</th>
+                  <th className="text-right p-3">Amount</th>
+                  <th className="text-right p-3">Commission</th>
+                  <th className="text-center p-3">Status</th>
+                  <th className="text-left p-3">Date</th>
+                  <th className="text-center p-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
-                {filteredTransactions.map(transaction => (
-                  <tr key={transaction.id}>
-                    <td className="px-4 py-3 text-sm">{transaction.id}</td>
-                    <td className="px-4 py-3 text-sm">{transaction.vendorName}</td>
-                    <td className="px-4 py-3 text-sm">${transaction.amount.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm">${transaction.commission.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm">{transaction.bookingId}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <Badge className={`${
-                        transaction.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        transaction.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                        transaction.status === 'failed' ? 'bg-red-100 text-red-800' :
-                        ''
-                      }`}>
+              <tbody>
+                {filteredTransactions.map((transaction) => (
+                  <tr key={transaction.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3 font-medium">TRX-{transaction.id}</td>
+                    <td className="p-3">{transaction.vendorName}</td>
+                    <td className="p-3">{transaction.booking?.customerName || 'N/A'}</td>
+                    <td className="p-3 text-right font-semibold">
+                      ${transaction.amount.toFixed(2)}
+                    </td>
+                    <td className="p-3 text-right">
+                      ${transaction.commission.toFixed(2)}
+                    </td>
+                    <td className="p-3 text-center">
+                      <Badge 
+                        variant={
+                          transaction.status === 'completed' ? 'default' :
+                          transaction.status === 'pending' ? 'secondary' :
+                          transaction.status === 'failed' ? 'destructive' :
+                          'outline'
+                        }
+                      >
                         {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="p-3">
                       {new Date(transaction.date).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <span className="sr-only">View details</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                          </svg>
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(transaction)}
+                        >
+                          <Eye className="h-4 w-4" />
                         </Button>
                         {transaction.status === 'pending' && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <span className="sr-only">Process</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M5 13l4 4L19 7"></path>
-                            </svg>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleProcessPayout(transaction.vendorId)}
+                            disabled={processPayoutMutation.isPending}
+                          >
+                            <CheckCircle className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
@@ -262,61 +501,120 @@ const TransactionHistory = () => {
           </div>
 
           {filteredTransactions.length === 0 && (
-            <div className="py-12 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-                  <line x1="3" x2="21" y1="9" y2="9"></line>
-                  <path d="m9 16 3-3 3 3"></path>
-                </svg>
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <XCircle className="h-8 w-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium mb-1">No transactions found</h3>
-              <p className="text-slate-500 max-w-sm mx-auto">
-                Try adjusting your search or filter to find what you're looking for.
+              <h3 className="text-lg font-medium mb-2">No transactions found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search criteria or filters
               </p>
             </div>
           )}
         </CardContent>
       </Card>
-      
-      {/* Transaction Summary Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Transaction Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-gray-500 mb-1">Total Transactions</div>
-              <div className="text-2xl font-bold">{transactions.length}</div>
-            </div>
-            
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-gray-500 mb-1">Total Amount</div>
-              <div className="text-2xl font-bold">
-                ${transactions.reduce((sum, tr) => sum + tr.amount, 0).toFixed(2)}
-              </div>
-            </div>
-            
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-gray-500 mb-1">Total Commission</div>
-              <div className="text-2xl font-bold">
-                ${transactions.reduce((sum, tr) => sum + tr.commission, 0).toFixed(2)}
-              </div>
-            </div>
-            
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-gray-500 mb-1">Pending Payments</div>
-              <div className="text-2xl font-bold">
-                ${transactions
-                  .filter(tr => tr.status === 'pending')
-                  .reduce((sum, tr) => sum + tr.amount, 0)
-                  .toFixed(2)}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
+      {/* Transaction Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Transaction Details</DialogTitle>
+          </DialogHeader>
+          {selectedTransaction && (
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="booking">Booking Info</TabsTrigger>
+                <TabsTrigger value="payment">Payment</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-4">
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Transaction ID</label>
+                      <p className="text-sm text-muted-foreground">TRX-{selectedTransaction.id}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Status</label>
+                      <div className="mt-1">
+                        <Badge 
+                          variant={
+                            selectedTransaction.status === 'completed' ? 'default' :
+                            selectedTransaction.status === 'pending' ? 'secondary' :
+                            selectedTransaction.status === 'failed' ? 'destructive' :
+                            'outline'
+                          }
+                        >
+                          {selectedTransaction.status.charAt(0).toUpperCase() + selectedTransaction.status.slice(1)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Amount</label>
+                      <p className="text-lg font-semibold">${selectedTransaction.amount.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Commission</label>
+                      <p className="text-lg font-semibold">${selectedTransaction.commission.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Vendor</label>
+                    <p className="text-sm text-muted-foreground">{selectedTransaction.vendorName}</p>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="booking" className="space-y-4">
+                {selectedTransaction.booking && (
+                  <div className="grid gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Customer Name</label>
+                      <p className="text-sm text-muted-foreground">{selectedTransaction.booking.customerName}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Customer Email</label>
+                      <p className="text-sm text-muted-foreground">{selectedTransaction.booking.customerEmail}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Service Type</label>
+                      <p className="text-sm text-muted-foreground">{selectedTransaction.booking.serviceType}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Booking Total</label>
+                      <p className="text-lg font-semibold">${selectedTransaction.booking.totalPrice.toFixed(2)}</p>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="payment" className="space-y-4">
+                <div className="grid gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Payment Method</label>
+                    <p className="text-sm text-muted-foreground">{selectedTransaction.paymentMethod}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Transaction Date</label>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedTransaction.date).toLocaleDateString()} at {new Date(selectedTransaction.date).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Last Updated</label>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedTransaction.updatedAt).toLocaleDateString()} at {new Date(selectedTransaction.updatedAt).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
