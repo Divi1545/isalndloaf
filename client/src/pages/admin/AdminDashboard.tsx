@@ -80,16 +80,33 @@ const AdminDashboard = () => {
   const { toast } = useToast();
 
   // Fetch dashboard statistics
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['/api/dashboard/stats'],
     refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    retry: false,
   });
 
   // Fetch booking analytics
-  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery({
     queryKey: ['/api/dashboard/booking-analytics'],
     refetchInterval: 30000,
+    retry: false,
   });
+
+  // Handle authentication errors
+  useEffect(() => {
+    if (statsError || analyticsError) {
+      const error = statsError || analyticsError;
+      if (error?.message?.includes('401')) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to access the dashboard",
+          variant: "destructive"
+        });
+        navigate('/admin/login');
+      }
+    }
+  }, [statsError, analyticsError, navigate, toast]);
 
   // Handle additional admin actions when needed
   useEffect(() => {
@@ -137,11 +154,64 @@ const AdminDashboard = () => {
     }
   };
 
+  // Handle login
+  const handleLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: 'admin@islandloaf.com', 
+          password: 'admin123' 
+        }),
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        window.location.reload(); // Refresh to load dashboard with auth
+      } else {
+        toast({
+          title: "Login failed",
+          description: "Please check your credentials",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Login error",
+        description: "Unable to connect to server",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Show login prompt if not authenticated
+  if (statsError?.message?.includes('401') || analyticsError?.message?.includes('401')) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center space-y-4">
+              <h2 className="text-xl font-semibold">Authentication Required</h2>
+              <p className="text-muted-foreground">Please log in to access the admin dashboard</p>
+              <Button onClick={handleLogin} className="bg-blue-600 hover:bg-blue-700">
+                Login as Admin
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (statsLoading || analyticsLoading) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
