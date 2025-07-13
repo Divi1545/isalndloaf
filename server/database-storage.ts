@@ -10,6 +10,7 @@ import {
   Booking, InsertBooking,
   Notification, InsertNotification,
   MarketingContent, InsertMarketingContent,
+  SupportTicket, InsertSupportTicket,
   bookings
 } from '@shared/schema';
 
@@ -425,6 +426,60 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error(`Failed to delete marketing content ${id}:`, error);
+      return false;
+    }
+  }
+  
+  // Support ticket operations
+  async getSupportTickets(): Promise<SupportTicket[]> {
+    return await prisma.supportTicket.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+  
+  async getSupportTicket(id: number): Promise<SupportTicket | undefined> {
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id }
+    });
+    return ticket || undefined;
+  }
+  
+  async getSupportTicketsByUser(userId: number): Promise<SupportTicket[]> {
+    return await prisma.supportTicket.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+  
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    return await prisma.supportTicket.create({
+      data: ticket
+    });
+  }
+  
+  async updateSupportTicket(id: number, ticketUpdate: Partial<InsertSupportTicket>): Promise<SupportTicket | undefined> {
+    try {
+      return await prisma.supportTicket.update({
+        where: { id },
+        data: {
+          ...ticketUpdate,
+          updatedAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error(`Failed to update support ticket ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async deleteSupportTicket(id: number): Promise<boolean> {
+    try {
+      await prisma.supportTicket.delete({
+        where: { id }
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete support ticket ${id}:`, error);
       return false;
     }
   }

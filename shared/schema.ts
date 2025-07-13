@@ -113,6 +113,22 @@ export const marketingContents = pgTable("marketing_contents", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Support tickets
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  vendorName: text("vendor_name").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("open"), // open, in_progress, resolved, closed
+  priority: text("priority").notNull().default("medium"), // low, medium, high
+  category: text("category").notNull(), // technical, billing, content, marketing
+  assignedTo: text("assigned_to"),
+  internalNotes: text("internal_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true });
@@ -121,6 +137,7 @@ export const insertCalendarSourceSchema = createInsertSchema(calendarSources).om
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertMarketingContentSchema = createInsertSchema(marketingContents).omit({ id: true, createdAt: true });
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Auth schema
 export const loginSchema = z.object({
@@ -149,6 +166,9 @@ export type Notification = typeof notifications.$inferSelect;
 
 export type InsertMarketingContent = z.infer<typeof insertMarketingContentSchema>;
 export type MarketingContent = typeof marketingContents.$inferSelect;
+
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+export type SupportTicket = typeof supportTickets.$inferSelect;
 
 export type BusinessType = typeof businessTypes[number];
 export type BookingStatus = typeof bookingStatuses[number];

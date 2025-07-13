@@ -5,7 +5,8 @@ import {
   calendarSources, type CalendarSource, type InsertCalendarSource,
   bookings, type Booking, type InsertBooking,
   notifications, type Notification, type InsertNotification,
-  marketingContents, type MarketingContent, type InsertMarketingContent
+  marketingContents, type MarketingContent, type InsertMarketingContent,
+  supportTickets, type SupportTicket, type InsertSupportTicket
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -60,6 +61,14 @@ export interface IStorage {
   createMarketingContent(content: InsertMarketingContent): Promise<MarketingContent>;
   updateMarketingContent(id: number, content: Partial<InsertMarketingContent>): Promise<MarketingContent | undefined>;
   deleteMarketingContent(id: number): Promise<boolean>;
+  
+  // Support ticket operations
+  getSupportTickets(): Promise<SupportTicket[]>;
+  getSupportTicket(id: number): Promise<SupportTicket | undefined>;
+  getSupportTicketsByUser(userId: number): Promise<SupportTicket[]>;
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  updateSupportTicket(id: number, ticket: Partial<InsertSupportTicket>): Promise<SupportTicket | undefined>;
+  deleteSupportTicket(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -279,6 +288,41 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMarketingContent(id: number): Promise<boolean> {
     const result = await db.delete(marketingContents).where(eq(marketingContents.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getSupportTickets(): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets);
+  }
+
+  async getSupportTicket(id: number): Promise<SupportTicket | undefined> {
+    const [ticket] = await db.select().from(supportTickets).where(eq(supportTickets.id, id));
+    return ticket || undefined;
+  }
+
+  async getSupportTicketsByUser(userId: number): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets).where(eq(supportTickets.userId, userId));
+  }
+
+  async createSupportTicket(insertTicket: InsertSupportTicket): Promise<SupportTicket> {
+    const [ticket] = await db
+      .insert(supportTickets)
+      .values(insertTicket)
+      .returning();
+    return ticket;
+  }
+
+  async updateSupportTicket(id: number, updateTicket: Partial<InsertSupportTicket>): Promise<SupportTicket | undefined> {
+    const [ticket] = await db
+      .update(supportTickets)
+      .set(updateTicket)
+      .where(eq(supportTickets.id, id))
+      .returning();
+    return ticket || undefined;
+  }
+
+  async deleteSupportTicket(id: number): Promise<boolean> {
+    const result = await db.delete(supportTickets).where(eq(supportTickets.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 }

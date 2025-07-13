@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,8 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogTrigger,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { 
   Select, 
@@ -22,114 +23,130 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { SupportTicket } from "@shared/schema";
+import { MessageSquare, Clock, CheckCircle, AlertCircle } from "lucide-react";
 
-// Support dashboard page according to the checklist
 const SupportDashboard = () => {
-  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [supportStatus, setSupportStatus] = useState('all');
   const { toast } = useToast();
-  
-  // Sample support tickets data for demonstration
-  const supportTickets = [
-    {
-      id: 'TKT-1001',
-      vendorId: 'V-1001',
-      vendorName: 'Beach Paradise Villa',
-      subject: 'Calendar sync not working',
-      message: 'I tried to sync my Google Calendar but it\'s not pulling in my existing bookings. Can you help me fix this issue?',
-      status: 'open',
-      priority: 'high',
-      category: 'technical',
-      createdAt: '2025-04-15T10:30:00Z',
-      updatedAt: '2025-04-15T10:30:00Z',
-      assignedTo: null,
-      internalNotes: ''
-    },
-    {
-      id: 'TKT-1002',
-      vendorId: 'V-1002',
-      vendorName: 'Island Adventures',
-      subject: 'Need to update payment details',
-      message: 'I need to update my bank account information for payouts. How can I do this securely?',
-      status: 'in_progress',
-      priority: 'medium',
-      category: 'billing',
-      createdAt: '2025-04-16T08:15:00Z',
-      updatedAt: '2025-04-16T14:20:00Z',
-      assignedTo: 'Admin',
-      internalNotes: 'Sent secure payment update form via email.'
-    },
-    {
-      id: 'TKT-1003',
-      vendorId: 'V-1003',
-      vendorName: 'Coastal Scooters',
-      subject: 'Customer reported wrong information',
-      message: 'A customer reported that our listing shows scooters with GPS but we don\'t offer that feature. How can we update our listing?',
-      status: 'resolved',
-      priority: 'medium',
-      category: 'content',
-      createdAt: '2025-04-17T11:45:00Z',
-      updatedAt: '2025-04-18T09:30:00Z',
-      assignedTo: 'Admin',
-      internalNotes: 'Listing updated to remove GPS feature mention. Notified vendor of the change.'
-    },
-    {
-      id: 'TKT-1004',
-      vendorId: 'V-1004',
-      vendorName: 'Wellness Retreat',
-      subject: 'Commission rate dispute',
-      message: 'Our commission rate seems higher than what we agreed to. Could you please review our account?',
-      status: 'open',
-      priority: 'high',
-      category: 'billing',
-      createdAt: '2025-04-19T13:20:00Z',
-      updatedAt: '2025-04-19T13:20:00Z',
-      assignedTo: null,
-      internalNotes: ''
-    },
-    {
-      id: 'TKT-1005',
-      vendorId: 'V-1005',
-      vendorName: 'Seafood Delight',
-      subject: 'Need help with marketing content',
-      message: 'The AI marketing tool isn\'t generating good descriptions for our seafood restaurant. Can someone help us create better content?',
-      status: 'in_progress',
-      priority: 'low',
-      category: 'marketing',
-      createdAt: '2025-04-20T15:10:00Z',
-      updatedAt: '2025-04-21T10:05:00Z',
-      assignedTo: 'Admin',
-      internalNotes: 'Working with vendor to get better inputs for the AI system. Scheduled a call for tomorrow.'
-    }
-  ];
+  const queryClient = useQueryClient();
 
-  // Filter tickets based on search and filters
-  const filteredTickets = supportTickets.filter(ticket => {
-    const matchesSearch = 
-      ticket.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || 
-      ticket.status === statusFilter;
-    
-    const matchesSupportStatus = supportStatus === 'all' || 
-      ticket.status.toLowerCase() === supportStatus.toLowerCase();
-    
-    return matchesSearch && matchesStatus && matchesSupportStatus;
+  // Fetch support tickets
+  const { data: tickets = [], isLoading, refetch } = useQuery({
+    queryKey: ['/api/support/tickets'],
+    queryFn: async () => {
+      const response = await fetch('/api/support/tickets', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch support tickets');
+      }
+      return response.json();
+    }
   });
 
+  // Create support ticket mutation
+  const createTicketMutation = useMutation({
+    mutationFn: async (ticketData: any) => {
+      const response = await fetch('/api/support/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(ticketData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create support ticket');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Support ticket created successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/support/tickets'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update support ticket mutation
+  const updateTicketMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
+      const response = await fetch(`/api/support/tickets/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update support ticket');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: "Support ticket updated successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/support/tickets'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Filter tickets based on search and status
+  const filteredTickets = tickets.filter((ticket: SupportTicket) => {
+    const matchesSearch = 
+      ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.message.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  // Get ticket statistics
+  const ticketStats = {
+    total: tickets.length,
+    open: tickets.filter((t: SupportTicket) => t.status === 'open').length,
+    inProgress: tickets.filter((t: SupportTicket) => t.status === 'in_progress').length,
+    resolved: tickets.filter((t: SupportTicket) => t.status === 'resolved').length,
+    highPriority: tickets.filter((t: SupportTicket) => t.priority === 'high').length,
+  };
+
   // Reply Dialog Component
-  const ReplyDialog = ({ ticket }: { ticket: typeof supportTickets[0] }) => {
+  const ReplyDialog = ({ ticket }: { ticket: SupportTicket }) => {
     const [replyMessage, setReplyMessage] = useState('');
-    const [internalNotes, setInternalNotes] = useState(ticket.internalNotes);
+    const [internalNotes, setInternalNotes] = useState(ticket.internalNotes || '');
     const [ticketStatus, setTicketStatus] = useState(ticket.status);
-    const { toast } = useToast();
+    const [ticketPriority, setTicketPriority] = useState(ticket.priority);
 
     const handleSendReply = () => {
-      if (!replyMessage) {
+      if (!replyMessage.trim()) {
         toast({
           title: "Missing information",
           description: "Please enter a reply message",
@@ -138,9 +155,14 @@ const SupportDashboard = () => {
         return;
       }
 
-      toast({
-        title: "Reply sent",
-        description: `Reply to ticket ${ticket.id} has been sent to ${ticket.vendorName}`
+      updateTicketMutation.mutate({
+        id: ticket.id,
+        updates: {
+          status: ticketStatus,
+          priority: ticketPriority,
+          internalNotes: internalNotes,
+          assignedTo: 'Admin'
+        }
       });
 
       // Reset form
@@ -150,11 +172,17 @@ const SupportDashboard = () => {
     return (
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">Reply</Button>
+          <Button variant="outline" size="sm">
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Reply
+          </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Reply to Support Ticket #{ticket.id}</DialogTitle>
+            <DialogDescription>
+              Respond to the support ticket and update its status
+            </DialogDescription>
           </DialogHeader>
           
           <div className="mt-4 space-y-4">
@@ -179,6 +207,37 @@ const SupportDashboard = () => {
               />
             </div>
             
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Status</label>
+                <Select value={ticketStatus} onValueChange={setTicketStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Priority</label>
+                <Select value={ticketPriority} onValueChange={setTicketPriority}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
             <div>
               <label className="text-sm font-medium mb-1 block">Internal Notes (not visible to vendor)</label>
               <Textarea 
@@ -188,73 +247,163 @@ const SupportDashboard = () => {
                 onChange={(e) => setInternalNotes(e.target.value)}
               />
             </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-1 block">Ticket Status</label>
-              <Select value={ticketStatus} onValueChange={setTicketStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
           
           <DialogFooter className="mt-6">
-            <Button variant="outline" className="mr-2">Cancel</Button>
-            <Button onClick={handleSendReply}>Send Reply</Button>
+            <Button 
+              onClick={handleSendReply}
+              disabled={updateTicketMutation.isPending}
+            >
+              {updateTicketMutation.isPending ? 'Updating...' : 'Send Reply & Update'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   };
 
-  // Mark as resolved function
-  const handleMarkResolved = (ticketId: string) => {
-    // In a real app, this would call an API to update the ticket status
-    const updatedTickets = supportTickets.map(ticket => {
-      if (ticket.id === ticketId) {
-        return { ...ticket, status: 'resolved' };
+  // Create Ticket Dialog
+  const CreateTicketDialog = () => {
+    const [subject, setSubject] = useState('');
+    const [message, setMessage] = useState('');
+    const [priority, setPriority] = useState('medium');
+    const [category, setCategory] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleCreateTicket = () => {
+      if (!subject.trim() || !message.trim() || !category) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all required fields",
+          variant: "destructive"
+        });
+        return;
       }
-      return ticket;
-    });
-    
-    // Instead we're just showing a toast notification for the demo
-    toast({
-      title: "Ticket resolved",
-      description: `Ticket ${ticketId} has been marked as resolved`
-    });
-    
-    // Force a refresh of the filtered tickets
-    setSupportStatus(supportStatus);
+
+      createTicketMutation.mutate({
+        subject: subject.trim(),
+        message: message.trim(),
+        priority,
+        category
+      });
+
+      // Reset form on success
+      setSubject('');
+      setMessage('');
+      setPriority('medium');
+      setCategory('');
+      setIsOpen(false);
+    };
+
+    return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button>
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Create Support Ticket
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Create New Support Ticket</DialogTitle>
+            <DialogDescription>
+              Create a new support ticket for vendor assistance
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Subject *</label>
+              <Input
+                placeholder="Brief description of the issue"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Message *</label>
+              <Textarea 
+                placeholder="Detailed description of the issue..."
+                rows={5}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Category *</label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="technical">Technical</SelectItem>
+                    <SelectItem value="billing">Billing</SelectItem>
+                    <SelectItem value="content">Content</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Priority</label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="mt-6">
+            <Button 
+              onClick={handleCreateTicket}
+              disabled={createTicketMutation.isPending}
+            >
+              {createTicketMutation.isPending ? 'Creating...' : 'Create Ticket'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight">Support Dashboard</h1>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-sm text-gray-600">Loading support tickets...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Support Dashboard</h1>
-        <Button onClick={() => setLocation('/admin/support/create')}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Create Support Ticket
-        </Button>
+        <CreateTicketDialog />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-4">
+      {/* Statistics Cards */}
+      <div className="grid gap-6 md:grid-cols-5">
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-4xl font-bold text-purple-600 mb-1">
-                {supportTickets.filter(t => t.status === 'open').length}
+              <div className="text-3xl font-bold text-blue-600 mb-1">
+                {ticketStats.total}
               </div>
-              <div className="text-sm text-slate-500">Open Tickets</div>
+              <div className="text-sm text-slate-500">Total Tickets</div>
             </div>
           </CardContent>
         </Card>
@@ -262,8 +411,19 @@ const SupportDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-1">
-                {supportTickets.filter(t => t.status === 'in_progress').length}
+              <div className="text-3xl font-bold text-purple-600 mb-1">
+                {ticketStats.open}
+              </div>
+              <div className="text-sm text-slate-500">Open</div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-amber-600 mb-1">
+                {ticketStats.inProgress}
               </div>
               <div className="text-sm text-slate-500">In Progress</div>
             </div>
@@ -273,10 +433,10 @@ const SupportDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-4xl font-bold text-green-600 mb-1">
-                {supportTickets.filter(t => t.status === 'resolved').length}
+              <div className="text-3xl font-bold text-green-600 mb-1">
+                {ticketStats.resolved}
               </div>
-              <div className="text-sm text-slate-500">Resolved Today</div>
+              <div className="text-sm text-slate-500">Resolved</div>
             </div>
           </CardContent>
         </Card>
@@ -284,8 +444,8 @@ const SupportDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-4xl font-bold text-amber-600 mb-1">
-                {supportTickets.filter(t => t.priority === 'high').length}
+              <div className="text-3xl font-bold text-red-600 mb-1">
+                {ticketStats.highPriority}
               </div>
               <div className="text-sm text-slate-500">High Priority</div>
             </div>
@@ -293,10 +453,11 @@ const SupportDashboard = () => {
         </Card>
       </div>
 
+      {/* Tickets Table */}
       <Tabs 
         defaultValue="all" 
-        value={supportStatus}
-        onValueChange={setSupportStatus}
+        value={statusFilter}
+        onValueChange={setStatusFilter}
       >
         <TabsList>
           <TabsTrigger value="all">All Tickets</TabsTrigger>
@@ -309,7 +470,7 @@ const SupportDashboard = () => {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <CardTitle>Vendor Support Tickets</CardTitle>
+                <CardTitle>Support Tickets</CardTitle>
                 <Input
                   placeholder="Search tickets..."
                   value={searchQuery}
@@ -326,6 +487,7 @@ const SupportDashboard = () => {
                       <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">ID</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Vendor</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Subject</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Category</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Status</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Priority</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Date</th>
@@ -333,15 +495,20 @@ const SupportDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {filteredTickets.map(ticket => (
+                    {filteredTickets.map((ticket: SupportTicket) => (
                       <tr key={ticket.id}>
-                        <td className="px-4 py-3 text-sm">{ticket.id}</td>
+                        <td className="px-4 py-3 text-sm font-mono">#{ticket.id}</td>
                         <td className="px-4 py-3 text-sm">{ticket.vendorName}</td>
                         <td className="px-4 py-3 text-sm">
                           <div className="font-medium">{ticket.subject}</div>
                           <div className="text-xs text-slate-500 truncate max-w-[250px]">
                             {ticket.message}
                           </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <Badge variant="secondary">
+                            {ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1)}
+                          </Badge>
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <Badge className={`${
@@ -374,8 +541,13 @@ const SupportDashboard = () => {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => handleMarkResolved(ticket.id)}
+                                onClick={() => updateTicketMutation.mutate({
+                                  id: ticket.id,
+                                  updates: { status: 'resolved' }
+                                })}
+                                disabled={updateTicketMutation.isPending}
                               >
+                                <CheckCircle className="w-4 h-4 mr-1" />
                                 Resolve
                               </Button>
                             )}
@@ -390,15 +562,13 @@ const SupportDashboard = () => {
               {filteredTickets.length === 0 && (
                 <div className="py-12 text-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
-                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-                      <line x1="3" x2="21" y1="9" y2="9"></line>
-                      <path d="m9 16 3-3 3 3"></path>
-                    </svg>
+                    <MessageSquare className="w-8 h-8 text-slate-400" />
                   </div>
-                  <h3 className="text-lg font-medium mb-1">No tickets found</h3>
-                  <p className="text-slate-500 max-w-sm mx-auto">
-                    Try adjusting your search or filter to find what you're looking for.
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">
+                    No support tickets found
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    {searchQuery ? 'No tickets match your search criteria.' : 'No support tickets have been created yet.'}
                   </p>
                 </div>
               )}

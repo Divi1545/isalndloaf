@@ -3130,6 +3130,136 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
     res.json(vehicleTypes);
   });
 
+  // Support Ticket API endpoints
+  app.get("/api/support/tickets", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const tickets = await storage.getSupportTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Failed to fetch support tickets:", error);
+      res.status(500).json({ error: "Failed to fetch support tickets" });
+    }
+  });
+
+  app.get("/api/support/tickets/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const ticket = await storage.getSupportTicket(ticketId);
+      
+      if (!ticket) {
+        return res.status(404).json({ error: "Support ticket not found" });
+      }
+      
+      // Only allow admin or ticket owner to view ticket details
+      if (req.session.user!.role !== 'admin' && ticket.userId !== req.session.user!.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      res.json(ticket);
+    } catch (error) {
+      console.error("Failed to fetch support ticket:", error);
+      res.status(500).json({ error: "Failed to fetch support ticket" });
+    }
+  });
+
+  app.post("/api/support/tickets", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { subject, message, priority = 'medium', category } = req.body;
+      const userId = req.session.user!.id;
+      
+      if (!subject || !message || !category) {
+        return res.status(400).json({ error: "Subject, message, and category are required" });
+      }
+      
+      // Get vendor name from user
+      const user = await storage.getUser(userId);
+      const vendorName = user?.businessName || user?.fullName || 'Unknown Vendor';
+      
+      const ticketData = {
+        userId,
+        vendorName,
+        subject,
+        message,
+        priority,
+        category,
+        status: 'open',
+        assignedTo: null,
+        internalNotes: null
+      };
+      
+      const ticket = await storage.createSupportTicket(ticketData);
+      
+      // Create notification for admin
+      await storage.createNotification({
+        userId: 1, // Admin user ID
+        title: "New Support Ticket",
+        message: `New support ticket from ${vendorName}: ${subject}`,
+        type: "info"
+      });
+      
+      res.json(ticket);
+    } catch (error) {
+      console.error("Failed to create support ticket:", error);
+      res.status(500).json({ error: "Failed to create support ticket" });
+    }
+  });
+
+  app.put("/api/support/tickets/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const { status, assignedTo, internalNotes, priority } = req.body;
+      
+      const ticket = await storage.getSupportTicket(ticketId);
+      if (!ticket) {
+        return res.status(404).json({ error: "Support ticket not found" });
+      }
+      
+      // Only admin can update ticket status and assignments
+      if (req.session.user!.role !== 'admin') {
+        return res.status(403).json({ error: "Only admins can update support tickets" });
+      }
+      
+      const updateData: any = {};
+      if (status) updateData.status = status;
+      if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
+      if (internalNotes !== undefined) updateData.internalNotes = internalNotes;
+      if (priority) updateData.priority = priority;
+      
+      const updatedTicket = await storage.updateSupportTicket(ticketId, updateData);
+      
+      // Create notification for vendor if status changed
+      if (status && status !== ticket.status) {
+        await storage.createNotification({
+          userId: ticket.userId,
+          title: "Support Ticket Update",
+          message: `Your support ticket "${ticket.subject}" has been updated to ${status}`,
+          type: "info"
+        });
+      }
+      
+      res.json(updatedTicket);
+    } catch (error) {
+      console.error("Failed to update support ticket:", error);
+      res.status(500).json({ error: "Failed to update support ticket" });
+    }
+  });
+
+  app.delete("/api/support/tickets/:id", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const success = await storage.deleteSupportTicket(ticketId);
+      
+      if (success) {
+        res.json({ message: "Support ticket deleted successfully" });
+      } else {
+        res.status(404).json({ error: "Support ticket not found" });
+      }
+    } catch (error) {
+      console.error("Failed to delete support ticket:", error);
+      res.status(500).json({ error: "Failed to delete support ticket" });
+    }
+  });
+
   // For handling errors
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack);
