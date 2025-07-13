@@ -339,26 +339,29 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Revenue analytics endpoint
   app.get("/api/revenue/analytics", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
     try {
-      const userId = req.session.user?.userId;
-      if (!userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      // Get all bookings for revenue calculations
-      const allBookings = await storage.getBookings(userId);
+      const user = req.session.user;
+      
+      // Get all bookings for revenue calculations (admin can see all bookings)
+      const users = await storage.getUsers();
+      const allBookings = await Promise.all(
+        users.map(async (u) => {
+          const userBookings = await storage.getBookings(u.id);
+          return userBookings;
+        })
+      );
+      const bookings = allBookings.flat();
       
       // Calculate total revenue
-      const totalRevenue = allBookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
-      const totalCommission = allBookings.reduce((sum, booking) => sum + booking.commission, 0);
+      const totalRevenue = bookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
+      const totalCommission = bookings.reduce((sum, booking) => sum + booking.commission, 0);
       
       // Calculate revenue by category
-      const allUsers = await storage.getUsers();
-      const userBusinessTypes = allUsers.reduce((acc, user) => {
+      const userBusinessTypes = users.reduce((acc, user) => {
         acc[user.id] = user.businessType || 'other';
         return acc;
       }, {} as Record<number, string>);
       
-      const revenueByCategory = allBookings.reduce((acc, booking) => {
+      const revenueByCategory = bookings.reduce((acc, booking) => {
         const businessType = userBusinessTypes[booking.userId] || 'other';
         if (!acc[businessType]) {
           acc[businessType] = { revenue: 0, count: 0 };
@@ -369,8 +372,8 @@ export async function registerRoutes(app: Express): Promise<void> {
       }, {} as Record<string, { revenue: number; count: number }>);
 
       // Get top earning vendors
-      const vendorRevenue = allBookings.reduce((acc, booking) => {
-        const vendor = allUsers.find(u => u.id === booking.userId);
+      const vendorRevenue = bookings.reduce((acc, booking) => {
+        const vendor = users.find(u => u.id === booking.userId);
         if (vendor) {
           if (!acc[vendor.id]) {
             acc[vendor.id] = {
@@ -392,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         .slice(0, 10);
 
       // Calculate monthly revenue trends
-      const monthlyRevenue = allBookings.reduce((acc, booking) => {
+      const monthlyRevenue = bookings.reduce((acc, booking) => {
         const month = new Date(booking.createdAt).toLocaleString('default', { month: 'short' });
         if (!acc[month]) {
           acc[month] = 0;
@@ -407,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }));
 
       // Calculate status-based metrics
-      const statusMetrics = allBookings.reduce((acc, booking) => {
+      const statusMetrics = bookings.reduce((acc, booking) => {
         if (!acc[booking.status]) {
           acc[booking.status] = { count: 0, revenue: 0 };
         }
@@ -417,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }, {} as Record<string, { count: number; revenue: number }>);
 
       // Calculate pending payouts (completed bookings)
-      const pendingPayouts = allBookings
+      const pendingPayouts = bookings
         .filter(booking => booking.status === 'completed')
         .reduce((sum, booking) => sum + (booking.totalPrice - booking.commission), 0);
 
@@ -429,7 +432,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         topVendors,
         monthlyTrends,
         statusMetrics,
-        totalBookings: allBookings.length
+        totalBookings: bookings.length
       });
     } catch (error) {
       console.error("Failed to fetch revenue analytics:", error);
