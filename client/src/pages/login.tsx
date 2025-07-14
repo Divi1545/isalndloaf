@@ -5,41 +5,50 @@ import { Link } from "wouter";
 
 export default function Login() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary-600">
-      <Card className="max-w-md w-full mx-4 shadow-lg">
-        <CardContent className="p-8">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <i className="ri-island-line text-5xl text-primary"></i>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-100">
+      <div className="max-w-md w-full mx-4 space-y-6">
+        <Card className="shadow-xl">
+          <CardContent className="p-8">
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center mb-4">
+                <i className="ri-island-line text-5xl text-primary"></i>
+              </div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">IslandLoaf</h1>
+              <p className="text-gray-600">Tourism Management Platform</p>
             </div>
-            <h1 className="text-3xl font-bold text-primary-600 mb-2">IslandLoaf</h1>
-            <p className="text-neutral-600">Tourism Management Platform</p>
-          </div>
-          
-          <LoginForm />
-          
-          {/* Vendor Sign Up Link - Simple approach */}
-          <div className="mt-6 text-center">
-            <span className="text-sm">Don't have an account? </span>
+            
+            <LoginForm />
+            
+            {/* Vendor Sign Up Link */}
+            <div className="mt-6 text-center">
+              <span className="text-sm text-gray-600">Don't have an account? </span>
+              <Link href="/vendor-signup">
+                <span className="text-blue-600 font-medium hover:underline cursor-pointer">
+                  Sign up as Vendor
+                </span>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Vendor Signup Call-to-Action */}
+        <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-xl">
+          <CardContent className="p-6 text-center">
+            <h3 className="text-lg font-semibold mb-2">Join IslandLoaf as a Vendor</h3>
+            <p className="text-green-100 mb-4 text-sm">
+              List your business and connect with travelers across Sri Lanka
+            </p>
             <Link href="/vendor-signup">
-              <span className="text-blue-600 font-medium hover:underline cursor-pointer">
-                Sign up as Vendor
-              </span>
+              <Button className="w-full bg-white text-green-600 hover:bg-gray-50 font-medium">
+                <i className="ri-store-line mr-2"></i>
+                Become a Vendor
+              </Button>
             </Link>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Vendor Signup - Outside Card */}
-      <div className="mt-4 w-full max-w-md mx-4">
-        <div className="bg-white p-4 rounded-lg shadow-md text-center">
-          <p className="text-sm text-gray-700 mb-3">Want to join IslandLoaf as a vendor?</p>
-          <Link href="/vendor-signup">
-            <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-              Become a Vendor
-            </Button>
-          </Link>
-        </div>
+            <p className="text-xs text-green-100 mt-2">
+              Join 1,000+ tourism businesses • No setup fees
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

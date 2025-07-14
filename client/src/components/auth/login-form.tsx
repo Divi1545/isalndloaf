@@ -133,36 +133,6 @@ export default function LoginForm() {
         >
           {isLoading ? "Signing in..." : "Sign in"}
         </Button>
-        
-        {/* DEBUG: Force Visible Vendor Link */}
-        <div style={{ backgroundColor: 'red', color: 'white', padding: '10px', margin: '10px 0', textAlign: 'center' }}>
-          🚨 VENDOR SIGNUP TEST 🚨 
-          <Link href="/vendor-signup">
-            <span style={{ color: 'yellow', textDecoration: 'underline', cursor: 'pointer' }}>
-              CLICK HERE TO JOIN AS VENDOR
-            </span>
-          </Link>
-        </div>
-        
-        {/* Vendor Signup Call-to-Action */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="text-center text-sm text-gray-600 mb-4">
-            <p>Want to list your business on IslandLoaf?</p>
-          </div>
-          <Link href="/vendor-signup">
-            <Button variant="outline" className="w-full">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="m22 2-5 10-5-5 10-5z"/>
-              </svg>
-              Become a Vendor
-            </Button>
-          </Link>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Join 1,000+ tourism businesses • No setup fees
-          </p>
-        </div>
       </form>
     </Form>
   );
