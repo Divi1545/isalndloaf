@@ -63,21 +63,66 @@ function Router() {
       <Route path="/vendor-signup" component={VendorSignup} />
       
       {/* Admin Dashboard routes */}
-      <Route path="/admin*">
+      <Route path="/admin">
         {() => (
           <DashboardLayout>
-            <Switch>
-              <Route path="/admin" component={AdminDashboard} />
-              <Route path="/admin/vendors" component={VendorManagement} />
-              <Route path="/admin/bookings" component={BookingManagement} />
-              <Route path="/admin/revenue" component={RevenueManagement} />
-              <Route path="/admin/marketing" component={MarketingCampaigns} />
-              <Route path="/admin/transactions" component={TransactionHistory} />
-              <Route path="/admin/analytics" component={AnalyticsDashboard} />
-              <Route path="/admin/support" component={SupportDashboard} />
-              <Route path="/admin/settings" component={Settings} />
-              <Route component={NotFound} />
-            </Switch>
+            <AdminDashboard />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/vendors">
+        {() => (
+          <DashboardLayout>
+            <VendorManagement />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/bookings">
+        {() => (
+          <DashboardLayout>
+            <BookingManagement />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/revenue">
+        {() => (
+          <DashboardLayout>
+            <RevenueManagement />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/marketing">
+        {() => (
+          <DashboardLayout>
+            <MarketingCampaigns />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/transactions">
+        {() => (
+          <DashboardLayout>
+            <TransactionHistory />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/analytics">
+        {() => (
+          <DashboardLayout>
+            <AnalyticsDashboard />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/support">
+        {() => (
+          <DashboardLayout>
+            <SupportDashboard />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/settings">
+        {() => (
+          <DashboardLayout>
+            <Settings />
           </DashboardLayout>
         )}
       </Route>
