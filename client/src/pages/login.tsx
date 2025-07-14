@@ -5,8 +5,8 @@ import { Link } from "wouter";
 
 export default function Login() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-100">
-      <div className="max-w-md w-full mx-4 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 py-8 overflow-y-auto">
+      <div className="max-w-md w-full mx-auto px-4 space-y-6">
         <Card className="shadow-xl">
           <CardContent className="p-8">
             <div className="text-center mb-8">
