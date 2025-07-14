@@ -1,7 +1,7 @@
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { User } from "@shared/schema";
-import { useAuth } from "@/lib/auth-mock";
+import { useAuth } from "@/lib/auth";
 
 interface SidebarProps {
   isOpen: boolean;

@@ -58,8 +58,23 @@ export async function registerRoutes(app: Express): Promise<void> {
         });
       }
       
-      // For vendor login - check database
-      const user = await storage.getUserByEmail(email);
+      // For vendor login - check database or create demo vendor
+      let user = await storage.getUserByEmail(email);
+      
+      // Create demo vendor if it doesn't exist
+      if (!user && email === 'vendor@islandloaf.com' && password === 'password123') {
+        user = await storage.createUser({
+          username: "vendor",
+          email: "vendor@islandloaf.com",
+          password: "password123",
+          fullName: "Demo Vendor",
+          businessName: "Beach Paradise Villa",
+          businessType: "accommodation",
+          role: "vendor",
+          categoriesAllowed: ["stays", "tours"]
+        });
+      }
+      
       if (!user || user.password !== password) {
         return res.status(401).json({ error: "Invalid email or password" });
       }

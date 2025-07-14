@@ -133,6 +133,19 @@ export default function LoginForm() {
         >
           {isLoading ? "Signing in..." : "Sign in"}
         </Button>
+        
+        {/* Demo Credentials */}
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+          <p className="font-medium text-gray-700 mb-2">Demo Accounts:</p>
+          <div className="space-y-1">
+            <p className="text-gray-600">
+              <span className="font-medium">Admin:</span> admin@islandloaf.com / admin123
+            </p>
+            <p className="text-gray-600">
+              <span className="font-medium">Vendor:</span> vendor@islandloaf.com / password123
+            </p>
+          </div>
+        </div>
       </form>
     </Form>
   );

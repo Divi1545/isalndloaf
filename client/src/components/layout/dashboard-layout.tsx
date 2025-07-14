@@ -2,7 +2,7 @@ import React from "react";
 import Sidebar from "./sidebar";
 import Header from "./header";
 import AiAssistant from "@/components/dashboard/ai-assistant";
-import { useAuth } from "@/lib/auth-mock";
+import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 
 interface DashboardLayoutProps {
