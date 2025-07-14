@@ -63,7 +63,7 @@ function Router() {
       <Route path="/vendor-signup" component={VendorSignup} />
       
       {/* Admin Dashboard routes */}
-      <Route path="/admin">
+      <Route path="/admin*">
         {() => (
           <DashboardLayout>
             <Switch>
