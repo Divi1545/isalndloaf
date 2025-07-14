@@ -118,83 +118,89 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Load user from localStorage on mount
+  // Load user from session on mount
   useEffect(() => {
-    const loadUser = () => {
-      const authToken = getToken();
-      if (!authToken || authToken.expiresAt <= Date.now()) {
+    const loadUser = async () => {
+      try {
+        // Check if user is authenticated with backend
+        const response = await fetch('/api/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          // Check localStorage for remembered session
+          const authToken = getToken();
+          if (authToken && authToken.expiresAt > Date.now()) {
+            setUser(authToken.user);
+          } else {
+            setUser(null);
+            removeToken();
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load user session:', error);
         setUser(null);
         removeToken();
-      } else {
-        setUser(authToken.user);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     
     loadUser();
     
     // Set up periodic session check
-    const intervalId = setInterval(() => {
-      if (!checkSession()) {
-        // Session expired, log out the user
-        setUser(null);
-        removeToken();
-        toast({
-          title: "Session expired",
-          description: "Your session has expired. Please log in again.",
-          variant: "destructive",
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await fetch('/api/me', {
+          credentials: 'include'
         });
+        
+        if (!response.ok) {
+          setUser(null);
+          removeToken();
+          toast({
+            title: "Session expired",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
       }
     }, SESSION_CHECK_INTERVAL);
     
     return () => clearInterval(intervalId);
   }, [toast]);
 
-  // Login function
+  // Login function - makes API call to authenticate with backend
   const login = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
       setIsLoading(true);
       
-      // In a real implementation, this would call the backend API
-      // For development/demo, we'll use mock data with the correct email/password combination
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include session cookies
+        body: JSON.stringify({ email, password }),
+      });
       
-      let mockUser: User;
-      
-      // Admin login
-      if (email === 'admin@islandloaf.com' && password === 'admin123') {
-        mockUser = {
-          id: 2,
-          username: "admin",
-          email: "admin@islandloaf.com",
-          fullName: "Admin User",
-          businessName: "IslandLoaf Admin",
-          businessType: "administration",
-          role: "admin",
-        };
-      } 
-      // Vendor login
-      else if (email === 'vendor@islandloaf.com' && password === 'password123') {
-        mockUser = {
-          id: 1,
-          username: "vendor",
-          email: "vendor@islandloaf.com",
-          fullName: "Island Vendor",
-          businessName: "Beach Paradise Villa",
-          businessType: "accommodation",
-          role: "vendor",
-        };
-      } else {
-        throw new Error('Invalid credentials');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
       }
       
-      // Generate a mock JWT token (in real implementation, this would come from the backend)
-      const mockToken = `mock_jwt_token_${Date.now()}`;
+      const userData = await response.json();
+      setUser(userData.user);
       
-      // Save token and user to localStorage
-      saveToken(mockToken, mockUser, rememberMe);
-      
-      // Update state
-      setUser(mockUser);
+      // Save token to localStorage if remember me is checked
+      if (rememberMe && userData.token) {
+        saveToken(userData.token, userData.user, rememberMe);
+      }
       
       toast({
         title: "Logged in",
@@ -203,10 +209,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       toast({
         title: "Login failed",
-        description: "Invalid email or password",
+        description: error instanceof Error ? error.message : "Invalid email or password",
         variant: "destructive",
       });
-      throw new Error("Invalid email or password");
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -216,6 +222,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       setIsLoading(true);
+      
+      // Call backend logout endpoint
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
       
       // Remove token from localStorage
       removeToken();

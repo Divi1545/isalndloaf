@@ -23,7 +23,16 @@ import SystemLogs from "@/pages/dashboard/SystemLogs";
 import Analytics from "@/pages/dashboard/analytics";
 import ProfileSettings from "@/pages/dashboard/profile-settings";
 import Notifications from "@/pages/dashboard/notifications";
-import { useAuth } from "@/lib/auth-mock";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import VendorManagement from "@/pages/admin/VendorManagement";
+import BookingManagement from "@/pages/admin/BookingManagement";
+import RevenueManagement from "@/pages/admin/RevenueManagement";
+import MarketingCampaigns from "@/pages/admin/MarketingCampaigns";
+import TransactionHistory from "@/pages/admin/TransactionHistory";
+import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
+import SupportDashboard from "@/pages/admin/SupportDashboard";
+import Settings from "@/pages/admin/Settings";
+import { useAuth } from "@/lib/auth";
 import { useEffect } from "react";
 
 function Router() {
@@ -38,7 +47,7 @@ function Router() {
     
     // Redirect to dashboard if authenticated and on login page
     if (!isLoading && user && location === "/login") {
-      setLocation("/dashboard");
+      setLocation(user.role === 'admin' ? "/admin" : "/dashboard");
     }
   }, [user, isLoading, location, setLocation]);
 
@@ -52,8 +61,26 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/vendor-signup" component={VendorSignup} />
-      <Route path="/vendor/register" component={VendorRegistration} />
-      <Route path="/vendor/login" component={VendorLogin} />
+      
+      {/* Admin Dashboard routes */}
+      <Route path="/admin">
+        {() => (
+          <DashboardLayout>
+            <Switch>
+              <Route path="/admin" component={AdminDashboard} />
+              <Route path="/admin/vendors" component={VendorManagement} />
+              <Route path="/admin/bookings" component={BookingManagement} />
+              <Route path="/admin/revenue" component={RevenueManagement} />
+              <Route path="/admin/marketing" component={MarketingCampaigns} />
+              <Route path="/admin/transactions" component={TransactionHistory} />
+              <Route path="/admin/analytics" component={AnalyticsDashboard} />
+              <Route path="/admin/support" component={SupportDashboard} />
+              <Route path="/admin/settings" component={Settings} />
+              <Route component={NotFound} />
+            </Switch>
+          </DashboardLayout>
+        )}
+      </Route>
       
       {/* Dashboard routes */}
       <Route path="/dashboard">
@@ -85,7 +112,11 @@ function Router() {
       {/* Redirect root to dashboard or login */}
       <Route path="/">
         {() => {
-          setLocation(user ? "/dashboard" : "/login");
+          if (user) {
+            setLocation(user.role === 'admin' ? "/admin" : "/dashboard");
+          } else {
+            setLocation("/login");
+          }
           return null;
         }}
       </Route>

@@ -25,6 +25,105 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Enhanced vendor authentication routes
   app.use("/api/vendor", vendorAuthRouter);
 
+  // Session-based authentication endpoints
+  app.post("/api/login", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      // For admin login
+      if (email === 'admin@islandloaf.com' && password === 'admin123') {
+        const adminUser = {
+          id: 1,
+          username: "admin",
+          email: "admin@islandloaf.com",
+          fullName: "Admin User",
+          businessName: "IslandLoaf Admin",
+          businessType: "administration",
+          role: "admin"
+        };
+        
+        req.session.user = {
+          userId: adminUser.id,
+          userRole: adminUser.role
+        };
+        
+        return res.json({ 
+          success: true, 
+          user: adminUser,
+          message: "Admin login successful" 
+        });
+      }
+      
+      // For vendor login - check database
+      const user = await storage.getUserByEmail(email);
+      if (!user || user.password !== password) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      
+      req.session.user = {
+        userId: user.id,
+        userRole: user.role
+      };
+      
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.json({ 
+        success: true, 
+        user: userWithoutPassword,
+        message: "Login successful" 
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/me", (req: Request, res: Response) => {
+    if (!req.session.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    // Return user data based on session
+    if (req.session.user.userRole === 'admin') {
+      return res.json({
+        id: 1,
+        username: "admin",
+        email: "admin@islandloaf.com",
+        fullName: "Admin User",
+        businessName: "IslandLoaf Admin",
+        businessType: "administration",
+        role: "admin"
+      });
+    }
+    
+    // For vendor users, fetch from database
+    storage.getUser(req.session.user.userId).then(user => {
+      if (user) {
+        const { password: _, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
+      } else {
+        res.status(401).json({ error: "User not found" });
+      }
+    }).catch(error => {
+      console.error("Failed to fetch user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    });
+  });
+
+  app.post("/api/logout", (req: Request, res: Response) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ error: "Failed to logout" });
+      }
+      res.json({ success: true, message: "Logged out successfully" });
+    });
+  });
+
   // API Reports endpoint for generating CSV reports
   app.get("/api/reports/generate", (req: Request, res: Response) => {
     // Generate report data - in a real app, this would fetch from database
@@ -41,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       console.log(`🔒 Unauthorized access attempt to ${req.path} from IP: ${req.ip}`);
       return res.status(401).json({ error: "Not authenticated" });
     }
-    console.log(`✅ Authenticated request to ${req.path} by user ${req.session.user.id} (${req.session.user.role})`);
+    console.log(`✅ Authenticated request to ${req.path} by user ${req.session.user.userId} (${req.session.user.userRole})`);
     next();
   };
 
@@ -53,12 +152,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      if (!allowedRoles.includes(req.session.user.role)) {
-        console.log(`🚫 Role violation: ${req.session.user.role} tried to access ${req.path} (requires: ${allowedRoles.join('|')})`);
+      if (!allowedRoles.includes(req.session.user.userRole)) {
+        console.log(`🚫 Role violation: ${req.session.user.userRole} tried to access ${req.path} (requires: ${allowedRoles.join('|')})`);
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
-      console.log(`✅ Role authorized: ${req.session.user.role} accessing ${req.path}`);
+      console.log(`✅ Role authorized: ${req.session.user.userRole} accessing ${req.path}`);
       next();
     };
   };
