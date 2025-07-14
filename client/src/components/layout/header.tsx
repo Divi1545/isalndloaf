@@ -22,6 +22,26 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
   
   const getPageTitle = () => {
     switch (location) {
+      // Admin routes
+      case "/admin":
+        return "Admin Dashboard";
+      case "/admin/vendors":
+        return "Vendor Management";
+      case "/admin/bookings":
+        return "Booking Management";
+      case "/admin/revenue":
+        return "Revenue Management";
+      case "/admin/marketing":
+        return "Marketing Campaigns";
+      case "/admin/transactions":
+        return "Transaction History";
+      case "/admin/analytics":
+        return "Analytics Dashboard";
+      case "/admin/support":
+        return "Support Dashboard";
+      case "/admin/settings":
+        return "Settings";
+      // Vendor routes
       case "/dashboard":
         return "Dashboard Overview";
       case "/dashboard/bookings":
@@ -39,7 +59,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
       case "/dashboard/notifications":
         return "Notifications & Logs";
       default:
-        return "Dashboard";
+        return user?.role === 'admin' ? "Admin Dashboard" : "Dashboard";
     }
   };
   

@@ -22,7 +22,18 @@ export default function Sidebar({ isOpen, onOpenChange, user }: SidebarProps) {
       .slice(0, 2);
   };
   
-  const links = [
+  // Different links for admin vs vendor
+  const links = user.role === 'admin' ? [
+    { href: "/admin", label: "Admin Dashboard", icon: "ri-dashboard-line" },
+    { href: "/admin/vendors", label: "Vendor Management", icon: "ri-store-line" },
+    { href: "/admin/bookings", label: "Booking Management", icon: "ri-calendar-check-line" },
+    { href: "/admin/revenue", label: "Revenue Management", icon: "ri-money-dollar-circle-line" },
+    { href: "/admin/marketing", label: "Marketing Campaigns", icon: "ri-megaphone-line" },
+    { href: "/admin/transactions", label: "Transaction History", icon: "ri-exchange-line" },
+    { href: "/admin/analytics", label: "Analytics Dashboard", icon: "ri-line-chart-line" },
+    { href: "/admin/support", label: "Support Dashboard", icon: "ri-customer-service-line" },
+    { href: "/admin/settings", label: "Settings", icon: "ri-settings-line" },
+  ] : [
     { href: "/dashboard", label: "Overview", icon: "ri-dashboard-line" },
     { href: "/dashboard/bookings", label: "Booking Manager", icon: "ri-calendar-check-line" },
     { href: "/dashboard/calendar", label: "Calendar Sync", icon: "ri-calendar-line" },
