@@ -929,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   app.get("/api/auth/me", requireAuth, async (req: Request, res: Response) => {
     try {
-      const user = await storage.getUser(req.session.user.id);
+      const user = await storage.getUser(req.session.user.userId);
       if (!user) {
         req.session.destroy(() => {});
         return res.status(401).json({ error: "User not found" });
@@ -938,6 +938,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const { password, ...userData } = user;
       res.status(200).json(userData);
     } catch (error) {
+      console.error("Error in /api/auth/me:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -945,7 +946,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Service Routes
   app.get("/api/services", requireAuth, async (req: Request, res: Response) => {
     try {
-      const services = await storage.getServices(req.session.user.id);
+      const services = await storage.getServices(req.session.user.userId);
       res.status(200).json(services);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch services" });
@@ -1012,7 +1013,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get("/api/bookings/recent", requireAuth, async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
-      const bookings = await storage.getRecentBookings(req.session.user.id, limit);
+      const bookings = await storage.getRecentBookings(req.session.user.userId, limit);
       res.status(200).json(bookings);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch recent bookings" });
@@ -1330,7 +1331,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const startDate = req.query.start ? new Date(req.query.start as string) : undefined;
       const endDate = req.query.end ? new Date(req.query.end as string) : undefined;
       
-      const events = await storage.getCalendarEvents(req.session.user.id, startDate, endDate);
+      const events = await storage.getCalendarEvents(req.session.user.userId, startDate, endDate);
       res.status(200).json(events);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch calendar events" });
@@ -1339,7 +1340,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   app.get("/api/calendar-sources", requireAuth, async (req: Request, res: Response) => {
     try {
-      const sources = await storage.getCalendarSources(req.session.user.id);
+      const sources = await storage.getCalendarSources(req.session.user.userId);
       res.status(200).json(sources);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch calendar sources" });
@@ -1416,7 +1417,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Notification Routes
   app.get("/api/notifications", requireAuth, async (req: Request, res: Response) => {
     try {
-      const notifications = await storage.getNotifications(req.session.user.id);
+      const notifications = await storage.getNotifications(req.session.user.userId);
       res.status(200).json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch notifications" });
@@ -1425,7 +1426,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   app.get("/api/notifications/unread", requireAuth, async (req: Request, res: Response) => {
     try {
-      const notifications = await storage.getUnreadNotifications(req.session.user.id);
+      const notifications = await storage.getUnreadNotifications(req.session.user.userId);
       res.status(200).json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch unread notifications" });
@@ -1434,7 +1435,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   app.post("/api/notifications/mark-all-read", requireAuth, async (req: Request, res: Response) => {
     try {
-      const notifications = await storage.getUnreadNotifications(req.session.user.id);
+      const notifications = await storage.getUnreadNotifications(req.session.user.userId);
       
       // Mark each notification as read
       for (const notification of notifications) {
@@ -3842,6 +3843,105 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
     } catch (error) {
       console.error("Error exporting revenue data:", error);
       res.status(500).json({ error: "Failed to export revenue data" });
+    }
+  });
+
+  // Profile API endpoints
+  app.put("/api/users/profile", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      const { fullName, businessName, businessType, email } = req.body;
+      
+      // Validate input
+      if (!fullName || fullName.trim().length < 2) {
+        return res.status(400).json({ error: "Full name must be at least 2 characters" });
+      }
+      
+      if (!businessName || businessName.trim().length < 2) {
+        return res.status(400).json({ error: "Business name must be at least 2 characters" });
+      }
+      
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ error: "Please provide a valid email address" });
+      }
+      
+      // Check if email is already used by another user
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser && existingUser.id !== user.userId) {
+        return res.status(400).json({ error: "Email address is already in use" });
+      }
+      
+      // Update user profile
+      const updatedUser = await storage.updateUser(user.userId, {
+        fullName: fullName.trim(),
+        businessName: businessName.trim(),
+        businessType: businessType,
+        email: email.trim()
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update session
+      req.session.user = {
+        userId: updatedUser.id,
+        userRole: updatedUser.role
+      };
+      
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json({ success: true, user: userWithoutPassword });
+      
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  app.put("/api/users/password", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      const { currentPassword, newPassword } = req.body;
+      
+      // Validate input
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current password and new password are required" });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "New password must be at least 6 characters" });
+      }
+      
+      // Get current user
+      const currentUser = await storage.getUser(user.userId);
+      if (!currentUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Verify current password
+      const bcrypt = require('bcryptjs');
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentUser.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+      
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update password
+      const updatedUser = await storage.updateUser(user.userId, {
+        password: hashedNewPassword
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ success: true, message: "Password updated successfully" });
+      
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "Failed to change password" });
     }
   });
 

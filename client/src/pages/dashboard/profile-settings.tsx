@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,6 +63,12 @@ export default function ProfileSettings() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
+  // Fetch current user data
+  const { data: currentUser, isLoading: userLoading } = useQuery({
+    queryKey: ['/api/auth/me'],
+    refetchInterval: 30000
+  });
+  
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: Partial<ProfileFormValues>) => {
@@ -73,6 +79,8 @@ export default function ProfileSettings() {
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
+      // Refetch user data to update the form
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
     },
     onError: (error) => {
       toast({
@@ -112,13 +120,26 @@ export default function ProfileSettings() {
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      fullName: user?.fullName || "",
-      email: user?.email || "",
-      businessName: user?.businessName || "",
-      businessType: user?.businessType || "",
+      fullName: currentUser?.fullName || user?.fullName || "",
+      email: currentUser?.email || user?.email || "",
+      businessName: currentUser?.businessName || user?.businessName || "",
+      businessType: currentUser?.businessType || user?.businessType || "",
       description: "",
     },
   });
+  
+  // Update form when user data changes
+  useEffect(() => {
+    if (currentUser) {
+      profileForm.reset({
+        fullName: currentUser.fullName || "",
+        email: currentUser.email || "",
+        businessName: currentUser.businessName || "",
+        businessType: currentUser.businessType || "",
+        description: "",
+      });
+    }
+  }, [currentUser, profileForm]);
   
   // Password form setup
   const passwordForm = useForm<PasswordFormValues>({
