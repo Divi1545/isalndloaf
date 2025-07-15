@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { markAllNotificationsAsRead } from "@/lib/api";
+import { markAllNotificationsAsRead, markNotificationAsRead } from "@/lib/api";
 import { format } from "date-fns";
 import { 
   Bell, 
@@ -32,7 +32,6 @@ export default function Notifications() {
   // Get system logs
   const { data: systemLogs, isLoading: isLogsLoading } = useQuery({
     queryKey: ['/api/system-logs'],
-    enabled: false, // Disabled because the endpoint doesn't exist in our implementation
   });
   
   // Mark all notifications as read mutation
@@ -54,89 +53,28 @@ export default function Notifications() {
       });
     },
   });
+
+  // Mark single notification as read mutation
+  const markSingleReadMutation = useMutation({
+    mutationFn: async (notificationId: number) => {
+      return markNotificationAsRead(notificationId, queryClient);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Notification marked as read",
+        description: "The notification has been marked as read.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to mark notification as read",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
   
-  // Demo notifications for UI
-  const demoNotifications = [
-    {
-      id: 1,
-      title: "New Booking",
-      message: "You have a new booking for Ocean View Villa on January 12-16, 2023",
-      type: "success",
-      read: false,
-      createdAt: new Date("2023-01-05T10:30:00Z")
-    },
-    {
-      id: 2,
-      title: "Calendar Sync Completed",
-      message: "Your Google Calendar has been successfully synced.",
-      type: "info",
-      read: true,
-      createdAt: new Date("2023-01-04T15:15:00Z")
-    },
-    {
-      id: 3,
-      title: "Payment Received",
-      message: "You received a payment of $350 for Island Tour Package.",
-      type: "success",
-      read: false,
-      createdAt: new Date("2023-01-03T18:45:00Z")
-    },
-    {
-      id: 4,
-      title: "Booking Cancelled",
-      message: "A booking for Spa Treatment on January 5, 2023 has been cancelled.",
-      type: "warning",
-      read: true,
-      createdAt: new Date("2023-01-02T09:20:00Z")
-    },
-    {
-      id: 5,
-      title: "Calendar Sync Failed",
-      message: "Failed to sync with Airbnb Calendar. Please check the URL and try again.",
-      type: "error",
-      read: false,
-      createdAt: new Date("2023-01-01T14:10:00Z")
-    }
-  ];
-  
-  // Demo system logs for UI
-  const demoSystemLogs = [
-    {
-      id: 1,
-      action: "Profile Updated",
-      details: "User profile information updated",
-      user: "John Smith",
-      timestamp: new Date("2023-01-05T11:30:00Z")
-    },
-    {
-      id: 2,
-      action: "Service Price Changed",
-      details: "Base price for 'Ocean View Villa' changed from $200 to $250",
-      user: "John Smith",
-      timestamp: new Date("2023-01-04T16:45:00Z")
-    },
-    {
-      id: 3,
-      action: "Calendar Source Added",
-      details: "Added new calendar source: 'Booking.com Calendar'",
-      user: "John Smith",
-      timestamp: new Date("2023-01-03T14:20:00Z")
-    },
-    {
-      id: 4,
-      action: "Booking Status Changed",
-      details: "Booking #3 status changed from 'pending' to 'confirmed'",
-      user: "John Smith",
-      timestamp: new Date("2023-01-02T10:15:00Z")
-    },
-    {
-      id: 5,
-      action: "Login Successful",
-      details: "User logged in from new device",
-      user: "John Smith",
-      timestamp: new Date("2023-01-01T09:05:00Z")
-    }
-  ];
+
   
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -197,7 +135,12 @@ export default function Notifications() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {demoNotifications.length === 0 ? (
+                {isLoading ? (
+                  <div className="text-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-neutral-500">Loading notifications...</p>
+                  </div>
+                ) : !notifications || notifications.length === 0 ? (
                   <div className="text-center p-8 border rounded-md bg-neutral-50">
                     <Bell className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
                     <h3 className="text-lg font-medium mb-1">No notifications</h3>
@@ -206,13 +149,13 @@ export default function Notifications() {
                     </p>
                   </div>
                 ) : (
-                  demoNotifications.map((notification) => (
+                  notifications.map((notification) => (
                     <div 
                       key={notification.id} 
                       className={`flex p-4 border rounded-md ${notification.read ? "" : "bg-blue-50 border-blue-100"}`}
                     >
                       <div className="mr-4 mt-1">
-                        {getNotificationIcon(notification.type)}
+                        {getNotificationIcon(notification.type || 'info')}
                       </div>
                       <div className="flex-1">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
@@ -225,7 +168,12 @@ export default function Notifications() {
                         
                         <div className="flex justify-end mt-2">
                           {!notification.read && (
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => markSingleReadMutation.mutate(notification.id)}
+                              disabled={markSingleReadMutation.isPending}
+                            >
                               Mark as Read
                             </Button>
                           )}
@@ -247,7 +195,12 @@ export default function Notifications() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {demoSystemLogs.length === 0 ? (
+                {isLogsLoading ? (
+                  <div className="text-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-neutral-500">Loading system logs...</p>
+                  </div>
+                ) : !systemLogs || systemLogs.length === 0 ? (
                   <div className="text-center p-8 border rounded-md bg-neutral-50">
                     <Clock className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
                     <h3 className="text-lg font-medium mb-1">No activity logs</h3>
@@ -256,7 +209,7 @@ export default function Notifications() {
                     </p>
                   </div>
                 ) : (
-                  demoSystemLogs.map((log) => (
+                  systemLogs.map((log) => (
                     <div key={log.id} className="flex p-4 border rounded-md">
                       <div className="mr-4 mt-1">
                         {getSystemLogIcon(log.action)}

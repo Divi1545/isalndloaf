@@ -98,6 +98,17 @@ export async function markAllNotificationsAsRead(queryClient: QueryClient): Prom
   }
 }
 
+export async function markNotificationAsRead(notificationId: number, queryClient: QueryClient): Promise<void> {
+  try {
+    await apiRequest("POST", `/api/notifications/${notificationId}/mark-read`);
+    // Invalidate relevant queries
+    queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread'] });
+  } catch (error) {
+    throw new Error("Failed to mark notification as read");
+  }
+}
+
 // User API functions
 export async function updateUserProfile(
   data: {

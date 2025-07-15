@@ -1448,6 +1448,98 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  app.post("/api/notifications/:id/mark-read", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      const success = await storage.markNotificationRead(notificationId);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      
+      res.status(200).json({ success: true, message: "Notification marked as read" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  // System logs endpoint
+  app.get("/api/system-logs", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      // Get recent user activity logs based on notifications
+      const notifications = await storage.getNotifications(req.session.user.userId);
+      const user = await storage.getUser(req.session.user.userId);
+      
+      // Create system activity logs based on user actions
+      const systemLogs = notifications.slice(offset, offset + limit).map((notification, index) => ({
+        id: notification.id,
+        action: notification.title,
+        details: notification.message,
+        user: user?.full_name || user?.username || "Unknown",
+        timestamp: notification.createdAt
+      }));
+      
+      res.status(200).json(systemLogs);
+    } catch (error) {
+      console.error("Error fetching system logs:", error);
+      res.status(500).json({ error: "Failed to fetch system logs" });
+    }
+  });
+
+  // Create sample notifications for testing
+  app.post("/api/notifications/create-samples", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.user.userId;
+      const sampleNotifications = [
+        {
+          userId,
+          title: "Welcome to IslandLoaf",
+          message: "Your account has been successfully created. Start exploring our platform features.",
+          type: "info",
+          read: false,
+          createdAt: new Date()
+        },
+        {
+          userId,
+          title: "Profile Setup Complete",
+          message: "Your vendor profile has been set up and is ready to receive bookings.",
+          type: "success",
+          read: false,
+          createdAt: new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
+        },
+        {
+          userId,
+          title: "Database Migration Complete",
+          message: "Your data has been successfully migrated to PostgreSQL database.",
+          type: "success",
+          read: true,
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
+        },
+        {
+          userId,
+          title: "System Update",
+          message: "IslandLoaf platform has been updated with new features and improvements.",
+          type: "info",
+          read: false,
+          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
+        }
+      ];
+
+      // Create notifications in database
+      for (const notification of sampleNotifications) {
+        await storage.createNotification(notification);
+      }
+
+      res.status(200).json({ success: true, message: "Sample notifications created successfully" });
+    } catch (error) {
+      console.error("Error creating sample notifications:", error);
+      res.status(500).json({ error: "Failed to create sample notifications" });
+    }
+  });
+
   // AI Marketing Routes
   app.post("/api/ai/generate-marketing", requireAuth, async (req: Request, res: Response) => {
     try {
