@@ -52,85 +52,46 @@ export default function BookingManager() {
     }).format(amount);
   };
   
-  // Sample bookings data for demonstration
-  const sampleBookings = [
-    {
-      id: 1,
-      serviceId: 1,
-      serviceName: "Ocean View Villa",
-      customerName: "John Doe",
-      customerEmail: "john@example.com",
-      startDate: "2023-01-12T00:00:00.000Z",
-      endDate: "2023-01-16T00:00:00.000Z",
-      status: "confirmed",
-      totalPrice: 1200,
-      type: "stays"
-    },
-    {
-      id: 2,
-      serviceId: 2,
-      serviceName: "Jeep Rental",
-      customerName: "Jane Smith",
-      customerEmail: "jane@example.com",
-      startDate: "2023-01-10T00:00:00.000Z",
-      endDate: "2023-01-13T00:00:00.000Z",
-      status: "pending",
-      totalPrice: 280,
-      type: "vehicles"
-    },
-    {
-      id: 3,
-      serviceId: 3,
-      serviceName: "Island Tour Package",
-      customerName: "Bob Johnson",
-      customerEmail: "bob@example.com",
-      startDate: "2023-01-14T00:00:00.000Z",
-      endDate: "2023-01-14T00:00:00.000Z",
-      status: "confirmed",
-      totalPrice: 350,
-      type: "tours"
-    },
-    {
-      id: 4,
-      serviceId: 1,
-      serviceName: "Ocean View Villa",
-      customerName: "Alice Williams",
-      customerEmail: "alice@example.com",
-      startDate: "2022-12-20T00:00:00.000Z",
-      endDate: "2022-12-27T00:00:00.000Z",
-      status: "completed",
-      totalPrice: 1750,
-      type: "stays"
-    },
-    {
-      id: 5,
-      serviceId: 4,
-      serviceName: "Spa Treatment",
-      customerName: "Mike Brown",
-      customerEmail: "mike@example.com",
-      startDate: "2023-01-05T00:00:00.000Z",
-      endDate: "2023-01-05T00:00:00.000Z",
-      status: "cancelled",
-      totalPrice: 120,
-      type: "wellness"
-    }
-  ];
+  // Use real bookings data from API
+  const realBookings = bookings || [];
+  
+  // Debug logs to track the issue
+  console.log('=== BOOKING MANAGER DEBUG ===');
+  console.log('Total bookings from API:', realBookings.length);
+  console.log('Loading state:', isLoading);
+  console.log('Bookings data:', realBookings);
+  console.log('Search query:', searchQuery);
+  console.log('Current tab:', bookingTab);
   
   // Filter bookings based on tab and search query
-  const filteredBookings = sampleBookings.filter(booking => {
-    const matchesSearch = 
-      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredBookings = realBookings.filter(booking => {
+    const matchesSearch = !searchQuery || 
+      booking.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.customerEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.id.toString().includes(searchQuery);
     
     if (bookingTab === "upcoming") {
       return booking.status !== "completed" && booking.status !== "cancelled" && matchesSearch;
     } else if (bookingTab === "past") {
       return (booking.status === "completed" || booking.status === "cancelled") && matchesSearch;
+    } else if (bookingTab === "all") {
+      return matchesSearch;
     } else {
       return matchesSearch;
     }
   });
+  
+  // Additional debug logs
+  console.log('Filtered bookings:', filteredBookings.length);
+  console.log('Filtered bookings data:', filteredBookings);
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -150,11 +111,27 @@ export default function BookingManager() {
               />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('Date range filter clicked');
+                  alert('Date range filter coming soon!');
+                }}
+              >
                 <Calendar className="mr-2 h-4 w-4" />
                 Date Range
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('Filter clicked');
+                  alert('Advanced filter options coming soon!');
+                }}
+              >
                 <Filter className="mr-2 h-4 w-4" />
                 Filter
               </Button>
@@ -249,7 +226,7 @@ function BookingTable({ bookings }: BookingTableProps) {
             bookings.map((booking) => (
               <TableRow key={booking.id}>
                 <TableCell className="font-medium">#{booking.id}</TableCell>
-                <TableCell>{booking.serviceName}</TableCell>
+                <TableCell>{booking.serviceName || `Service #${booking.serviceId}`}</TableCell>
                 <TableCell>
                   <div>{booking.customerName}</div>
                   <div className="text-sm text-gray-500">{booking.customerEmail}</div>
@@ -266,10 +243,28 @@ function BookingTable({ bookings }: BookingTableProps) {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('View booking clicked:', booking.id);
+                        alert(`View booking #${booking.id} - ${booking.customerName}\nStatus: ${booking.status}\nAmount: ${formatCurrency(booking.totalPrice)}`);
+                      }}
+                    >
                       View
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Edit booking clicked:', booking.id);
+                        alert(`Edit booking #${booking.id} functionality coming soon!`);
+                      }}
+                    >
                       Edit
                     </Button>
                   </div>
