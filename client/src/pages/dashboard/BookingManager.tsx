@@ -22,6 +22,8 @@ const BookingManager = () => {
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   // Fetch real bookings data
   const { data: bookings = [], isLoading, refetch } = useQuery({
@@ -122,9 +124,19 @@ const BookingManager = () => {
               </TableCell>
               <TableCell className="font-medium">${booking.totalPrice}</TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="sm" onClick={() => alert(`View booking #${booking.id}`)}>
-                  View
-                </Button>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    setSelectedBooking(booking);
+                    setIsViewDialogOpen(true);
+                  }}>
+                    View
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    alert(`Edit booking #${booking.id} functionality coming soon!`);
+                  }}>
+                    Edit
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -212,17 +224,25 @@ const BookingManager = () => {
         </div>
       </div>
       
-      <Tabs defaultValue="upcoming" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="all">All Bookings</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="past">Past</TabsTrigger>
           <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
         </TabsList>
+        <TabsContent value="all" className="mt-4">
+          <Card>
+            <CardContent className="pt-6">
+              <BookingTable bookings={filteredBookings} />
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="upcoming" className="mt-4">
           <Card>
             <CardContent className="pt-6">
-              <UpcomingBookings limit={10} />
+              <BookingTable bookings={getBookingsByStatus('upcoming')} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -248,6 +268,78 @@ const BookingManager = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* View Booking Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Booking ID</p>
+                  <p className="font-medium">#{selectedBooking.id}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge className={getStatusBadge(selectedBooking.status)}>
+                    {selectedBooking.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Customer Name</p>
+                  <p className="font-medium">{selectedBooking.customerName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Customer Email</p>
+                  <p className="font-medium">{selectedBooking.customerEmail}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Start Date</p>
+                  <p className="font-medium">{new Date(selectedBooking.startDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">End Date</p>
+                  <p className="font-medium">{new Date(selectedBooking.endDate).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Price</p>
+                  <p className="font-medium">${selectedBooking.totalPrice}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Commission</p>
+                  <p className="font-medium">${selectedBooking.commission}</p>
+                </div>
+              </div>
+              {selectedBooking.notes && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Notes</p>
+                  <p className="font-medium">{selectedBooking.notes}</p>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setIsViewDialogOpen(false);
+                  alert(`Edit booking #${selectedBooking.id} functionality coming soon!`);
+                }}>
+                  Edit Booking
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
