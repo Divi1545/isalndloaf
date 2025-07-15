@@ -1186,6 +1186,46 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  // Update booking (general PATCH endpoint)
+  app.patch("/api/bookings/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const user = req.session.user;
+      const updateData = req.body;
+      
+      // Check if booking exists
+      const existingBooking = await storage.getBooking(bookingId);
+      if (!existingBooking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Check permissions
+      if (user.role !== 'admin' && existingBooking.userId !== user.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Validate status if provided
+      if (updateData.status) {
+        const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'refunded'];
+        if (!validStatuses.includes(updateData.status)) {
+          return res.status(400).json({ error: "Invalid status" });
+        }
+      }
+      
+      // Update booking
+      const updatedBooking = await storage.updateBooking(bookingId, updateData);
+      
+      if (!updatedBooking) {
+        return res.status(500).json({ error: "Failed to update booking" });
+      }
+      
+      res.json(updatedBooking);
+    } catch (error) {
+      console.error("Error updating booking:", error);
+      res.status(500).json({ error: "Failed to update booking" });
+    }
+  });
+
   // Update booking status
   app.patch("/api/bookings/:id/status", requireAuth, async (req: Request, res: Response) => {
     try {
@@ -1206,7 +1246,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       // Check permissions
-      if (user.role !== 'admin' && existingBooking.userId !== user.id) {
+      if (user.role !== 'admin' && existingBooking.userId !== user.userId) {
         return res.status(403).json({ error: "Access denied" });
       }
       

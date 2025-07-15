@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -13,17 +13,89 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { Search, Calendar, Filter } from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { format, addDays } from "date-fns";
+import { Search, Calendar, Filter, Edit, Eye, CalendarIcon } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function BookingManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [bookingTab, setBookingTab] = useState("upcoming");
   const [_, setLocation] = useLocation();
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
+  
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [priceRangeMin, setPriceRangeMin] = useState("");
+  const [priceRangeMax, setPriceRangeMax] = useState("");
+  
+  // Edit form states
+  const [editStatus, setEditStatus] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['/api/bookings'],
+  });
+  
+  // Mutation for updating bookings
+  const updateBookingMutation = useMutation({
+    mutationFn: async (data: { id: number; status?: string; notes?: string }) => {
+      return apiRequest(`/api/bookings/${data.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: data.status,
+          notes: data.notes,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+      toast({
+        title: "Success",
+        description: "Booking updated successfully",
+      });
+      setIsEditDialogOpen(false);
+      setSelectedBooking(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update booking",
+        variant: "destructive",
+      });
+    },
   });
   
   const getStatusColor = (status: string) => {
@@ -63,22 +135,35 @@ export default function BookingManager() {
   console.log('Search query:', searchQuery);
   console.log('Current tab:', bookingTab);
   
-  // Filter bookings based on tab and search query
+  // Enhanced filtering logic
   const filteredBookings = realBookings.filter(booking => {
+    // Search filter
     const matchesSearch = !searchQuery || 
       booking.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.customerEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.id.toString().includes(searchQuery);
     
+    // Status filter
+    const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
+    
+    // Date range filter
+    const bookingDate = new Date(booking.startDate);
+    const matchesDateRange = (!dateFrom || bookingDate >= dateFrom) && 
+                            (!dateTo || bookingDate <= dateTo);
+    
+    // Price range filter
+    const matchesPriceRange = (!priceRangeMin || booking.totalPrice >= parseInt(priceRangeMin)) &&
+                             (!priceRangeMax || booking.totalPrice <= parseInt(priceRangeMax));
+    
+    // Tab-based filtering
+    let matchesTab = true;
     if (bookingTab === "upcoming") {
-      return booking.status !== "completed" && booking.status !== "cancelled" && matchesSearch;
+      matchesTab = booking.status !== "completed" && booking.status !== "cancelled";
     } else if (bookingTab === "past") {
-      return (booking.status === "completed" || booking.status === "cancelled") && matchesSearch;
-    } else if (bookingTab === "all") {
-      return matchesSearch;
-    } else {
-      return matchesSearch;
+      matchesTab = booking.status === "completed" || booking.status === "cancelled";
     }
+    
+    return matchesSearch && matchesStatus && matchesDateRange && matchesPriceRange && matchesTab;
   });
   
   // Additional debug logs
@@ -111,29 +196,76 @@ export default function BookingManager() {
               />
             </div>
             <div className="flex gap-2">
+              <Popover open={isDateRangeOpen} onOpenChange={setIsDateRangeOpen}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsDateRangeOpen(true)}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Date Range
+                    {(dateFrom || dateTo) && (
+                      <Badge variant="secondary" className="ml-2">
+                        {dateFrom && dateTo ? '2' : '1'}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label>From Date</Label>
+                      <CalendarComponent
+                        mode="single"
+                        selected={dateFrom}
+                        onSelect={setDateFrom}
+                        className="rounded-md border"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>To Date</Label>
+                      <CalendarComponent
+                        mode="single"
+                        selected={dateTo}
+                        onSelect={setDateTo}
+                        className="rounded-md border"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setDateFrom(undefined);
+                          setDateTo(undefined);
+                        }}
+                      >
+                        Clear
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => setIsDateRangeOpen(false)}
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log('Date range filter clicked');
-                  alert('Date range filter coming soon!');
-                }}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                Date Range
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log('Filter clicked');
-                  alert('Advanced filter options coming soon!');
-                }}
+                onClick={() => setIsFilterDialogOpen(true)}
               >
                 <Filter className="mr-2 h-4 w-4" />
                 Filter
+                {(statusFilter !== "all" || priceRangeMin || priceRangeMax) && (
+                  <Badge variant="secondary" className="ml-2">
+                    Active
+                  </Badge>
+                )}
               </Button>
               <Button 
                 variant="default" 
@@ -153,28 +285,283 @@ export default function BookingManager() {
             </TabsList>
             
             <TabsContent value="upcoming" className="m-0">
-              <BookingTable bookings={filteredBookings} />
+              <BookingTable 
+                bookings={filteredBookings} 
+                onViewBooking={(booking) => {
+                  setSelectedBooking(booking);
+                  setIsViewDialogOpen(true);
+                }}
+                onEditBooking={(booking) => {
+                  setSelectedBooking(booking);
+                  setEditStatus(booking.status);
+                  setEditNotes(booking.notes || "");
+                  setIsEditDialogOpen(true);
+                }}
+              />
             </TabsContent>
             
             <TabsContent value="past" className="m-0">
-              <BookingTable bookings={filteredBookings} />
+              <BookingTable 
+                bookings={filteredBookings} 
+                onViewBooking={(booking) => {
+                  setSelectedBooking(booking);
+                  setIsViewDialogOpen(true);
+                }}
+                onEditBooking={(booking) => {
+                  setSelectedBooking(booking);
+                  setEditStatus(booking.status);
+                  setEditNotes(booking.notes || "");
+                  setIsEditDialogOpen(true);
+                }}
+              />
             </TabsContent>
             
             <TabsContent value="all" className="m-0">
-              <BookingTable bookings={filteredBookings} />
+              <BookingTable 
+                bookings={filteredBookings} 
+                onViewBooking={(booking) => {
+                  setSelectedBooking(booking);
+                  setIsViewDialogOpen(true);
+                }}
+                onEditBooking={(booking) => {
+                  setSelectedBooking(booking);
+                  setEditStatus(booking.status);
+                  setEditNotes(booking.notes || "");
+                  setIsEditDialogOpen(true);
+                }}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+      
+      {/* View Booking Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+            <DialogDescription>
+              View complete booking information
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Booking ID</Label>
+                  <p className="text-lg font-semibold">#{selectedBooking.id}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <Badge variant="outline" className={getStatusColor(selectedBooking.status)}>
+                    {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Customer Name</Label>
+                  <p className="text-lg">{selectedBooking.customerName}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Email</Label>
+                  <p className="text-lg">{selectedBooking.customerEmail}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Start Date</Label>
+                  <p className="text-lg">{formatDate(selectedBooking.startDate)}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">End Date</Label>
+                  <p className="text-lg">{formatDate(selectedBooking.endDate)}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Total Price</Label>
+                  <p className="text-lg font-semibold text-green-600">{formatCurrency(selectedBooking.totalPrice)}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Commission</Label>
+                  <p className="text-lg">{formatCurrency(selectedBooking.commission)}</p>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Service</Label>
+                <p className="text-lg">{selectedBooking.serviceName || `Service #${selectedBooking.serviceId}`}</p>
+              </div>
+              
+              {selectedBooking.notes && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Notes</Label>
+                  <p className="text-lg">{selectedBooking.notes}</p>
+                </div>
+              )}
+              
+              <div className="text-xs text-gray-500">
+                <p>Created: {format(new Date(selectedBooking.createdAt), "MMM d, yyyy 'at' h:mm a")}</p>
+                <p>Updated: {format(new Date(selectedBooking.updatedAt), "MMM d, yyyy 'at' h:mm a")}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Booking Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Booking</DialogTitle>
+            <DialogDescription>
+              Update booking status and notes
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Booking ID</Label>
+                  <p className="text-lg font-semibold">#{selectedBooking.id}</p>
+                </div>
+                <div>
+                  <Label>Customer</Label>
+                  <p className="text-lg">{selectedBooking.customerName}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={editStatus} onValueChange={setEditStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Input
+                  id="notes"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Add notes about this booking..."
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedBooking) {
+                  updateBookingMutation.mutate({
+                    id: selectedBooking.id,
+                    status: editStatus,
+                    notes: editNotes,
+                  });
+                }
+              }}
+              disabled={updateBookingMutation.isPending}
+            >
+              {updateBookingMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Filter Dialog */}
+      <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Advanced Filters</DialogTitle>
+            <DialogDescription>
+              Filter bookings by status, price range, and more
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Price Range</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Min price"
+                  value={priceRangeMin}
+                  onChange={(e) => setPriceRangeMin(e.target.value)}
+                />
+                <Input
+                  type="number"
+                  placeholder="Max price"
+                  value={priceRangeMax}
+                  onChange={(e) => setPriceRangeMax(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStatusFilter("all");
+                setPriceRangeMin("");
+                setPriceRangeMax("");
+              }}
+            >
+              Clear All
+            </Button>
+            <Button
+              onClick={() => setIsFilterDialogOpen(false)}
+            >
+              Apply Filters
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 interface BookingTableProps {
   bookings: any[];
+  onViewBooking: (booking: any) => void;
+  onEditBooking: (booking: any) => void;
 }
 
-function BookingTable({ bookings }: BookingTableProps) {
+function BookingTable({ bookings, onViewBooking, onEditBooking }: BookingTableProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
@@ -250,9 +637,10 @@ function BookingTable({ bookings }: BookingTableProps) {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('View booking clicked:', booking.id);
-                        alert(`View booking #${booking.id} - ${booking.customerName}\nStatus: ${booking.status}\nAmount: ${formatCurrency(booking.totalPrice)}`);
+                        onViewBooking(booking);
                       }}
                     >
+                      <Eye className="h-4 w-4 mr-1" />
                       View
                     </Button>
                     <Button 
@@ -262,9 +650,10 @@ function BookingTable({ bookings }: BookingTableProps) {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Edit booking clicked:', booking.id);
-                        alert(`Edit booking #${booking.id} functionality coming soon!`);
+                        onEditBooking(booking);
                       }}
                     >
+                      <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
                   </div>
