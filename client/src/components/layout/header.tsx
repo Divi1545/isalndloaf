@@ -1,6 +1,6 @@
 import { User } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
@@ -90,12 +90,12 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
         <div className="flex items-center space-x-4">
           <div className="relative">
             <Link href="/dashboard/notifications">
-              <a className="p-2 rounded-full text-neutral-500 hover:bg-neutral-100 relative">
+              <button className="p-2 rounded-full text-neutral-500 hover:bg-neutral-100 relative">
                 <Bell className="h-5 w-5" />
                 {hasUnreadNotifications && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 )}
-              </a>
+              </button>
             </Link>
           </div>
           
@@ -123,17 +123,4 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
   );
 }
 
-function Link({ href, children }: { href: string, children: React.ReactNode }) {
-  const [, navigate] = useLocation();
-  
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate(href);
-  };
-  
-  return (
-    <a href={href} onClick={handleClick}>
-      {children}
-    </a>
-  );
-}
+
