@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
+import { UpcomingBookings } from "@/components/dashboard/upcoming-bookings";
 
 const BookingManager = () => {
   const [_, setLocation] = useLocation();
@@ -63,6 +64,73 @@ const BookingManager = () => {
       cancelled: 'bg-red-100 text-red-800'
     };
     return variants[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  // BookingTable component for displaying bookings in a table format
+  const BookingTable = ({ bookings }: { bookings: any[] }) => {
+    if (bookings.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="rounded-full bg-gray-100 p-3 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+              <path d="M8 2v4"></path>
+              <path d="M16 2v4"></path>
+              <path d="M21 12H3"></path>
+              <path d="M21 6H3"></path>
+              <path d="M21 18H3"></path>
+              <path d="M3 2v20"></path>
+              <path d="M21 2v20"></path>
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium mb-1">No bookings found</h3>
+          <p className="text-muted-foreground">There are no bookings in this category yet.</p>
+        </div>
+      );
+    }
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Booking ID</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {bookings.map((booking) => (
+            <TableRow key={booking.id}>
+              <TableCell className="font-medium">#{booking.id}</TableCell>
+              <TableCell>
+                <div>
+                  <div className="font-medium">{booking.customerName}</div>
+                  <div className="text-sm text-muted-foreground">{booking.customerEmail}</div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm">
+                  {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={getStatusBadge(booking.status)}>
+                  {booking.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="font-medium">${booking.totalPrice}</TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="sm" onClick={() => alert(`View booking #${booking.id}`)}>
+                  View
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
   };
 
   return (
@@ -160,90 +228,22 @@ const BookingManager = () => {
         </TabsContent>
         <TabsContent value="pending" className="mt-4">
           <Card>
-            <CardContent className="pt-6 pb-2">
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="rounded-full bg-amber-100 p-3 mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600">
-                    <path d="M4.18 4.18A2 2 0 0 0 4 5v14a2 2 0 0 0 2 2h12a2 2 0 0 0 .82-.18"></path>
-                    <path d="M9 14v-4"></path>
-                    <path d="M9 18v.01"></path>
-                    <path d="M15 14v-4"></path>
-                    <path d="M15 18v.01"></path>
-                    <path d="M5 8h14"></path>
-                    <path d="M19.5 4.18v-.34A1.84 1.84 0 0 0 17.66 2h-.35"></path>
-                    <path d="M19.82 8A2 2 0 0 0 22 6V5a2 2 0 0 0-2-2h-.5"></path>
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium mb-1">No pending bookings</h3>
-                <p className="text-muted-foreground max-w-sm">
-                  Any bookings awaiting confirmation will appear here. You'll be notified when a new booking request comes in.
-                </p>
-              </div>
+            <CardContent className="pt-6">
+              <BookingTable bookings={getBookingsByStatus('pending')} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="past" className="mt-4">
           <Card>
             <CardContent className="pt-6">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-sm">Booking ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Guest</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Amount</th>
-                    <th className="text-right py-3 px-4 font-medium text-sm">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({length: 5}).map((_, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="py-4 px-4 text-sm">BK-{2023 + index}</td>
-                      <td className="py-4 px-4 text-sm">Past Guest {index + 1}</td>
-                      <td className="py-4 px-4 text-sm">{new Date(2023, 9 - index, 15 - index).toLocaleDateString()}</td>
-                      <td className="py-4 px-4 text-sm">
-                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800">
-                          Completed
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-sm">${(250 + index * 25).toFixed(2)}</td>
-                      <td className="py-4 px-4 text-right">
-                        <Button variant="ghost" size="sm">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                          </svg>
-                          View
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <BookingTable bookings={getBookingsByStatus('completed')} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="cancelled" className="mt-4">
           <Card>
-            <CardContent className="pt-6 pb-2">
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="rounded-full bg-red-100 p-3 mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
-                    <path d="M4.18 4.18A2 2 0 0 0 4 5v14a2 2 0 0 0 2 2h12a2 2 0 0 0 .82-.18"></path>
-                    <path d="M20 16c0-2.5-2-4.5-4.5-4.5S11 13.5 11 16c0 2.5 2 4.5 4.5 4.5S20 18.5 20 16z"></path>
-                    <path d="m17 14.5-2.9 2.9"></path>
-                    <path d="m14.1 14.5 2.9 2.9"></path>
-                    <path d="M5 8h14"></path>
-                    <path d="M6 2v4"></path>
-                    <path d="M18 2v4"></path>
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium mb-1">No cancelled bookings</h3>
-                <p className="text-muted-foreground max-w-sm">
-                  Any bookings that were cancelled will appear here. Your cancellation rate is currently at 0%.
-                </p>
-              </div>
+            <CardContent className="pt-6">
+              <BookingTable bookings={getBookingsByStatus('cancelled')} />
             </CardContent>
           </Card>
         </TabsContent>
