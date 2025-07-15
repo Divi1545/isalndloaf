@@ -1028,13 +1028,8 @@ export async function registerRoutes(app: Express): Promise<void> {
       const bookingData = req.body;
       
       // Debug logging
-      console.log("=== BOOKING CREATION DEBUG ===");
-      console.log("Request body:", JSON.stringify(bookingData, null, 2));
-      console.log("User from session:", user);
-      console.log("Has details?", !!bookingData.details);
-      if (bookingData.details) {
-        console.log("Details object:", JSON.stringify(bookingData.details, null, 2));
-      }
+      console.log("=== BOOKING CREATION ===");
+      console.log("User:", user.userId, "creating booking");
       
       // Handle both direct format and nested details format
       let processedData;

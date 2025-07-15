@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface StayBookingFormProps {
   onSuccess: () => void;
@@ -23,6 +24,7 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     // Booking details
     stayType: '',
@@ -203,6 +205,10 @@ const StayBookingForm = ({ onSuccess }: StayBookingFormProps) => {
       if (!response.ok) {
         throw new Error('Failed to create booking');
       }
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       
       toast({
         title: "Success!",

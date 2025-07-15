@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface VehicleBookingFormProps {
   onSuccess: () => void;
@@ -17,6 +18,7 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     vehicleType: '',
     transmission: 'Automatic',
@@ -158,6 +160,10 @@ const VehicleBookingForm = ({ onSuccess }: VehicleBookingFormProps) => {
       if (!response.ok) {
         throw new Error('Failed to create booking');
       }
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       
       toast({
         title: "Success!",
