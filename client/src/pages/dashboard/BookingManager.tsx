@@ -38,7 +38,7 @@ const BookingManager = () => {
 
   // Filter bookings based on search and status
   const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = 
+    const matchesSearch = !searchQuery || 
       booking.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.customerEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.id.toString().includes(searchQuery);
@@ -53,6 +53,7 @@ const BookingManager = () => {
   console.log('Filtered bookings:', filteredBookings.length);
   console.log('Search query:', searchQuery);
   console.log('Status filter:', statusFilter);
+  console.log('Bookings data:', bookings);
 
   // Get bookings by status
   const getBookingsByStatus = (status: string) => {
@@ -132,15 +133,29 @@ const BookingManager = () => {
               <TableCell className="font-medium">${booking.totalPrice}</TableCell>
               <TableCell className="text-right">
                 <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    setSelectedBooking(booking);
-                    setIsViewDialogOpen(true);
-                  }}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('View button clicked for booking:', booking.id);
+                      setSelectedBooking(booking);
+                      setIsViewDialogOpen(true);
+                    }}
+                  >
                     View
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    alert(`Edit booking #${booking.id} functionality coming soon!`);
-                  }}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Edit button clicked for booking:', booking.id);
+                      alert(`Edit booking #${booking.id} functionality coming soon!`);
+                    }}
+                  >
                     Edit
                   </Button>
                 </div>
