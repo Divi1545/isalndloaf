@@ -1048,10 +1048,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       let serviceId = bookingData.serviceId;
       if (!serviceId) {
         // Create a default service if none exists
-        const userServices = await storage.getServices(user.id);
+        const userServices = await storage.getServices(user.userId);
         if (userServices.length === 0) {
           const defaultService = await storage.createService({
-            userId: user.id,
+            userId: user.userId,
             name: "Default Service",
             description: "Default service for bookings",
             type: "stays",
@@ -1066,7 +1066,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Create booking
       const newBooking = await storage.createBooking({
-        userId: user.id,
+        userId: user.userId, // Use userId from session
         serviceId: serviceId,
         customerName: bookingData.customerName,
         customerEmail: bookingData.customerEmail,
@@ -1078,14 +1078,19 @@ export async function registerRoutes(app: Express): Promise<void> {
         notes: bookingData.notes || null
       });
       
-      // Create notification
-      await storage.createNotification({
-        userId: user.id,
-        title: "New booking created",
-        message: `A new booking for ${bookingData.customerName} has been created`,
-        type: "info",
-        read: false
-      });
+      // Create notification - with error handling
+      try {
+        await storage.createNotification({
+          userId: user.userId,
+          title: "New booking created",
+          message: `A new booking for ${bookingData.customerName} has been created`,
+          type: "info",
+          read: false
+        });
+      } catch (notificationError) {
+        console.error("Failed to create notification:", notificationError);
+        // Continue without failing the entire booking creation
+      }
       
       res.status(201).json(newBooking);
     } catch (error) {
