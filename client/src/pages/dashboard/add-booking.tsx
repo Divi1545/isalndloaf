@@ -54,7 +54,7 @@ const AddBooking = () => {
     if (category) {
       setCategory("");
     } else {
-      setLocation("/dashboard/booking-manager");
+      setLocation("/dashboard/bookings");
     }
   };
 
@@ -64,9 +64,9 @@ const AddBooking = () => {
       description: "The booking has been added to your system",
     });
     
-    // Redirect to booking manager after successful creation
+    // Redirect to bookings page after successful creation
     setTimeout(() => {
-      setLocation("/dashboard/booking-manager");
+      setLocation("/dashboard/bookings");
     }, 1500);
   };
 

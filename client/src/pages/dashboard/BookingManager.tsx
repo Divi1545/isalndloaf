@@ -39,13 +39,20 @@ const BookingManager = () => {
   // Filter bookings based on search and status
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
-      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.customerEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.id.toString().includes(searchQuery);
     
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
+
+  // Debug: Log bookings data 
+  console.log('Total bookings:', bookings.length);
+  console.log('Filtered bookings:', filteredBookings.length);
+  console.log('Search query:', searchQuery);
+  console.log('Status filter:', statusFilter);
 
   // Get bookings by status
   const getBookingsByStatus = (status: string) => {
