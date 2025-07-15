@@ -31,6 +31,14 @@ export async function addCalendarSource(data: {
   }
 }
 
+export async function deleteCalendarSource(sourceId: number): Promise<void> {
+  try {
+    await apiRequest("DELETE", `/api/calendar-sources/${sourceId}`);
+  } catch (error) {
+    throw new Error("Failed to delete calendar source");
+  }
+}
+
 // Booking API functions
 export async function updateBookingStatus(
   bookingId: number, 

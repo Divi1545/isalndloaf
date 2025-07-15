@@ -1324,6 +1324,45 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  app.post("/api/calendar-sources", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { name, url, type, serviceId } = req.body;
+      
+      if (!name || !url || !type) {
+        return res.status(400).json({ error: "Name, URL, and type are required" });
+      }
+      
+      const source = await storage.createCalendarSource({
+        userId: req.session.user.id,
+        name,
+        url,
+        type,
+        serviceId: serviceId || null
+      });
+      
+      res.status(201).json(source);
+    } catch (error) {
+      console.error("Error creating calendar source:", error);
+      res.status(500).json({ error: "Failed to create calendar source" });
+    }
+  });
+  
+  app.delete("/api/calendar-sources/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCalendarSource(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Calendar source not found" });
+      }
+      
+      res.status(200).json({ message: "Calendar source deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting calendar source:", error);
+      res.status(500).json({ error: "Failed to delete calendar source" });
+    }
+  });
+  
   app.post("/api/calendar-sources/:id/sync", requireAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);

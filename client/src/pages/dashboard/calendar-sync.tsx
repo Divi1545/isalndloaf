@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { addCalendarSource, syncCalendar } from "@/lib/api";
+import { addCalendarSource, syncCalendar, deleteCalendarSource } from "@/lib/api";
 import { CalendarSource } from "@shared/schema";
 import { format } from "date-fns";
 import { Loader2, RefreshCw, Trash2, PlusCircle, Calendar } from "lucide-react";
@@ -101,6 +101,25 @@ export default function CalendarSync() {
       });
     },
   });
+
+  // Delete calendar source mutation
+  const deleteSourceMutation = useMutation({
+    mutationFn: deleteCalendarSource,
+    onSuccess: () => {
+      toast({
+        title: "Calendar source deleted",
+        description: "The calendar source has been removed successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/calendar-sources'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete calendar source",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
   
   // Form setup
   const form = useForm<FormValues>({
@@ -125,47 +144,14 @@ export default function CalendarSync() {
   function handleSyncCalendar(sourceId: number) {
     syncCalendarMutation.mutate(sourceId);
   }
+
+  function handleDeleteCalendarSource(sourceId: number) {
+    deleteSourceMutation.mutate(sourceId);
+  }
   
-  // Mock calendar sources for UI demonstration
-  const mockCalendarSources: CalendarSource[] = [
-    {
-      id: 1,
-      userId: 1,
-      name: "Google Calendar",
-      url: "https://calendar.google.com/calendar/ical/example%40gmail.com/private-abc123def456/basic.ics",
-      type: "google",
-      lastSynced: new Date("2023-01-01T14:30:00"),
-      serviceId: 1,
-      createdAt: new Date("2022-12-01T10:00:00"),
-    },
-    {
-      id: 2,
-      userId: 1,
-      name: "Airbnb Calendar",
-      url: "https://www.airbnb.com/calendar/ical/123456.ics?s=abc123def456",
-      type: "airbnb",
-      lastSynced: new Date("2023-01-01T12:15:00"),
-      serviceId: 1,
-      createdAt: new Date("2022-12-05T11:00:00"),
-    },
-    {
-      id: 3,
-      userId: 1,
-      name: "Booking.com Calendar",
-      url: "https://admin.booking.com/hotel/ical/123456.ics",
-      type: "booking.com",
-      lastSynced: new Date("2023-01-01T15:45:00"),
-      serviceId: 2,
-      createdAt: new Date("2022-12-10T09:30:00"),
-    },
-  ];
-  
-  // Mock services for UI demonstration
-  const mockServices = [
-    { id: 1, name: "Ocean View Villa", type: "stays" },
-    { id: 2, name: "Jeep Rental", type: "vehicles" },
-    { id: 3, name: "Island Tour Package", type: "tours" },
-  ];
+  // Use real data from the database
+  const displaySources = calendarSources || [];
+  const displayServices = services || [];
 
   return (
     <div>
@@ -266,9 +252,9 @@ export default function CalendarSync() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="">No specific service</SelectItem>
-                          {mockServices.map(service => (
+                          {displayServices.map(service => (
                             <SelectItem key={service.id} value={service.id.toString()}>
-                              {service.name}
+                              {service.title}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -335,7 +321,7 @@ export default function CalendarSync() {
               </div>
               
               <div className="space-y-4">
-                {mockCalendarSources.map((source) => (
+                {displaySources.map((source) => (
                   <Card key={source.id} className="overflow-hidden">
                     <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
                       <div className="flex items-center">
@@ -363,7 +349,13 @@ export default function CalendarSync() {
                           )}
                           Sync Now
                         </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteCalendarSource(source.id)}
+                          disabled={deleteSourceMutation.isPending}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -379,14 +371,14 @@ export default function CalendarSync() {
                         </div>
                         <div className="text-neutral-500">
                           <span className="font-medium">Service:</span>{" "}
-                          {mockServices.find(s => s.id === source.serviceId)?.name || "All Services"}
+                          {displayServices.find(s => s.id === source.serviceId)?.title || "All Services"}
                         </div>
                       </div>
                     </div>
                   </Card>
                 ))}
                 
-                {mockCalendarSources.length === 0 && (
+                {displaySources.length === 0 && (
                   <div className="text-center p-8 border rounded-md bg-neutral-50">
                     <Calendar className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
                     <h3 className="text-lg font-medium mb-1">No calendars connected</h3>
