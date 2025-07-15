@@ -137,7 +137,7 @@ export default function CalendarSync() {
       name: data.name,
       url: data.url,
       type: data.type,
-      serviceId: data.serviceId ? parseInt(data.serviceId) : undefined,
+      serviceId: data.serviceId && data.serviceId !== "none" ? parseInt(data.serviceId) : undefined,
     });
   }
   
@@ -251,7 +251,7 @@ export default function CalendarSync() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No specific service</SelectItem>
+                          <SelectItem value="none">No specific service</SelectItem>
                           {displayServices.map(service => (
                             <SelectItem key={service.id} value={service.id.toString()}>
                               {service.title}
