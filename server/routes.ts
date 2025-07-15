@@ -1027,14 +1027,57 @@ export async function registerRoutes(app: Express): Promise<void> {
       const user = req.session.user;
       const bookingData = req.body;
       
+      // Debug logging
+      console.log("=== BOOKING CREATION DEBUG ===");
+      console.log("Request body:", JSON.stringify(bookingData, null, 2));
+      console.log("User from session:", user);
+      console.log("Has details?", !!bookingData.details);
+      if (bookingData.details) {
+        console.log("Details object:", JSON.stringify(bookingData.details, null, 2));
+      }
+      
+      // Handle both direct format and nested details format
+      let processedData;
+      if (bookingData.details) {
+        // Form data comes with details nested structure
+        processedData = {
+          customerName: bookingData.details.customerName,
+          customerEmail: bookingData.details.customerEmail,
+          startDate: bookingData.details.checkInDate,
+          endDate: bookingData.details.checkOutDate,
+          totalPrice: bookingData.details.totalPrice,
+          notes: bookingData.details.notes,
+          status: bookingData.status || 'pending'
+        };
+      } else {
+        // Direct format (from API or admin)
+        processedData = {
+          customerName: bookingData.customerName,
+          customerEmail: bookingData.customerEmail,
+          startDate: bookingData.startDate,
+          endDate: bookingData.endDate,
+          totalPrice: bookingData.totalPrice,
+          notes: bookingData.notes,
+          status: bookingData.status || 'pending'
+        };
+      }
+      
+      console.log("Processed data:", JSON.stringify(processedData, null, 2));
+      
       // Validate required fields
-      if (!bookingData.customerName || !bookingData.customerEmail || !bookingData.startDate || !bookingData.endDate || !bookingData.totalPrice) {
+      if (!processedData.customerName || !processedData.customerEmail || !processedData.startDate || !processedData.endDate || !processedData.totalPrice) {
+        console.log("Missing required fields validation failed:");
+        console.log("customerName:", processedData.customerName);
+        console.log("customerEmail:", processedData.customerEmail);
+        console.log("startDate:", processedData.startDate);
+        console.log("endDate:", processedData.endDate);
+        console.log("totalPrice:", processedData.totalPrice);
         return res.status(400).json({ error: "Missing required fields" });
       }
       
       // Validate dates
-      const startDate = new Date(bookingData.startDate);
-      const endDate = new Date(bookingData.endDate);
+      const startDate = new Date(processedData.startDate);
+      const endDate = new Date(processedData.endDate);
       
       if (startDate >= endDate) {
         return res.status(400).json({ error: "End date must be after start date" });
@@ -1068,14 +1111,14 @@ export async function registerRoutes(app: Express): Promise<void> {
       const newBooking = await storage.createBooking({
         userId: user.userId, // Use userId from session
         serviceId: serviceId,
-        customerName: bookingData.customerName,
-        customerEmail: bookingData.customerEmail,
+        customerName: processedData.customerName,
+        customerEmail: processedData.customerEmail,
         startDate: startDate,
         endDate: endDate,
-        status: bookingData.status || "pending",
-        totalPrice: parseFloat(bookingData.totalPrice),
-        commission: parseFloat(bookingData.commission) || parseFloat(bookingData.totalPrice) * 0.1, // 10% default commission
-        notes: bookingData.notes || null
+        status: processedData.status || "pending",
+        totalPrice: parseFloat(processedData.totalPrice),
+        commission: parseFloat(processedData.commission) || parseFloat(processedData.totalPrice) * 0.1, // 10% default commission
+        notes: processedData.notes || null
       });
       
       // Create notification - with error handling
@@ -1083,7 +1126,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         await storage.createNotification({
           userId: user.userId,
           title: "New booking created",
-          message: `A new booking for ${bookingData.customerName} has been created`,
+          message: `A new booking for ${processedData.customerName} has been created`,
           type: "info",
           read: false
         });
