@@ -3682,6 +3682,169 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
     }
   });
 
+  // Analytics API endpoints
+  app.get("/api/dashboard/stats", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      let stats;
+      
+      if (user.userRole === 'admin') {
+        const users = await storage.getUsers();
+        const allBookings = await Promise.all(
+          users.map(async (u) => {
+            const userBookings = await storage.getBookings(u.id);
+            return userBookings;
+          })
+        );
+        const bookings = allBookings.flat();
+        const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+        
+        stats = {
+          totalRevenue,
+          totalBookings: bookings.length,
+          totalVendors: users.filter(u => u.role === 'vendor').length,
+          avgBookingValue: bookings.length > 0 ? totalRevenue / bookings.length : 0
+        };
+      } else {
+        const userBookings = await storage.getBookings(user.userId);
+        const totalRevenue = userBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+        
+        stats = {
+          totalRevenue,
+          totalBookings: userBookings.length,
+          totalVendors: 1,
+          avgBookingValue: userBookings.length > 0 ? totalRevenue / userBookings.length : 0
+        };
+      }
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  app.get("/api/dashboard/booking-analytics", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      let bookings;
+      
+      if (user.userRole === 'admin') {
+        const users = await storage.getUsers();
+        const allBookings = await Promise.all(
+          users.map(async (u) => {
+            const userBookings = await storage.getBookings(u.id);
+            return userBookings;
+          })
+        );
+        bookings = allBookings.flat();
+      } else {
+        bookings = await storage.getBookings(user.userId);
+      }
+      
+      // Group bookings by month
+      const monthlyData = bookings.reduce((acc, booking) => {
+        const date = new Date(booking.startDate);
+        const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!acc[monthYear]) {
+          acc[monthYear] = { bookings: 0, revenue: 0 };
+        }
+        
+        acc[monthYear].bookings += 1;
+        acc[monthYear].revenue += booking.totalPrice || 0;
+        
+        return acc;
+      }, {});
+      
+      res.json({ monthlyData, totalBookings: bookings.length });
+    } catch (error) {
+      console.error("Error fetching booking analytics:", error);
+      res.status(500).json({ error: "Failed to fetch booking analytics" });
+    }
+  });
+
+  app.get("/api/revenue/analytics", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      let bookings;
+      
+      if (user.userRole === 'admin') {
+        const users = await storage.getUsers();
+        const allBookings = await Promise.all(
+          users.map(async (u) => {
+            const userBookings = await storage.getBookings(u.id);
+            return userBookings;
+          })
+        );
+        bookings = allBookings.flat();
+      } else {
+        bookings = await storage.getBookings(user.userId);
+      }
+      
+      const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+      const avgBookingValue = bookings.length > 0 ? totalRevenue / bookings.length : 0;
+      const completedBookings = bookings.filter(b => b.status === 'completed').length;
+      
+      res.json({
+        totalRevenue,
+        avgBookingValue,
+        completedBookings,
+        totalBookings: bookings.length,
+        conversionRate: bookings.length > 0 ? (completedBookings / bookings.length) * 100 : 0
+      });
+    } catch (error) {
+      console.error("Error fetching revenue analytics:", error);
+      res.status(500).json({ error: "Failed to fetch revenue analytics" });
+    }
+  });
+
+  app.get("/api/revenue/export", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      let bookings;
+      
+      if (user.userRole === 'admin') {
+        const users = await storage.getUsers();
+        const allBookings = await Promise.all(
+          users.map(async (u) => {
+            const userBookings = await storage.getBookings(u.id);
+            return userBookings.map(booking => ({
+              ...booking,
+              vendorName: u.businessName || u.fullName
+            }));
+          })
+        );
+        bookings = allBookings.flat();
+      } else {
+        bookings = await storage.getBookings(user.userId);
+      }
+      
+      // Generate CSV content
+      const csvHeaders = ['Date', 'Customer Name', 'Customer Email', 'Total Price', 'Status', 'Vendor Name'];
+      const csvRows = bookings.map(booking => [
+        new Date(booking.startDate).toLocaleDateString(),
+        booking.customerName || '',
+        booking.customerEmail || '',
+        booking.totalPrice || 0,
+        booking.status || '',
+        booking.vendorName || ''
+      ]);
+      
+      const csvContent = [csvHeaders, ...csvRows]
+        .map(row => row.map(field => `"${field}"`).join(','))
+        .join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="analytics-export.csv"');
+      res.send(csvContent);
+      
+    } catch (error) {
+      console.error("Error exporting revenue data:", error);
+      res.status(500).json({ error: "Failed to export revenue data" });
+    }
+  });
+
   // For handling errors
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack);

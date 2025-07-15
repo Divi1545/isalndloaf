@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Download, BarChart3, PieChart, LineChart, Filter } from "lucide-react";
+import { Calendar as CalendarIcon, Download, BarChart3, PieChart, LineChart, Filter, RefreshCw } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import {
   BarChart,
@@ -21,69 +21,207 @@ import {
   ResponsiveContainer
 } from "recharts";
 import StatCard from "@/components/dashboard/stat-card";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/api";
 
 export default function Analytics() {
   const [timeframe, setTimeframe] = useState<"week" | "month" | "year">("month");
   const [startDate, setStartDate] = useState<Date>(subMonths(new Date(), 1));
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Format dates for display
   const formattedStartDate = format(startDate, "MMM d, yyyy");
   const formattedEndDate = format(endDate, "MMM d, yyyy");
+
+  // Fetch dashboard stats
+  const { data: dashboardStats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
+    queryKey: ['/api/dashboard/stats'],
+    refetchInterval: 30000 // Auto-refresh every 30 seconds
+  });
+
+  // Fetch booking analytics
+  const { data: bookingAnalytics, isLoading: bookingLoading, refetch: refetchBookings } = useQuery({
+    queryKey: ['/api/dashboard/booking-analytics'],
+    refetchInterval: 30000
+  });
+
+  // Fetch revenue analytics
+  const { data: revenueAnalytics, isLoading: revenueLoading, refetch: refetchRevenue } = useQuery({
+    queryKey: ['/api/revenue/analytics'],
+    refetchInterval: 30000
+  });
+
+  // Fetch business data for additional analytics
+  const { data: businessVendors, isLoading: vendorsLoading } = useQuery({
+    queryKey: ['/api/business/vendors'],
+    refetchInterval: 30000
+  });
+
+  const { data: businessBookings, isLoading: businessBookingsLoading } = useQuery({
+    queryKey: ['/api/business/bookings'],
+    refetchInterval: 30000
+  });
+
+  const { data: businessPayments, isLoading: businessPaymentsLoading } = useQuery({
+    queryKey: ['/api/business/payments'],
+    refetchInterval: 30000
+  });
+
+  const { data: businessReports, isLoading: businessReportsLoading } = useQuery({
+    queryKey: ['/api/business/reports'],
+    refetchInterval: 30000
+  });
+
+  // Export data mutation
+  const exportMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/revenue/export", {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      return blob;
+    },
+    onSuccess: (blob) => {
+      // Handle file download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export Successful",
+        description: "Analytics report has been downloaded",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to export data",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Refresh all data
+  const handleRefreshAll = () => {
+    refetchStats();
+    refetchBookings();
+    refetchRevenue();
+    queryClient.invalidateQueries({ queryKey: ['/api/business'] });
+    toast({
+      title: "Data Refreshed",
+      description: "All analytics data has been refreshed",
+    });
+  };
   
-  // Mock revenue data
-  const revenueData = [
-    { name: "Jan", revenue: 4000, bookings: 24 },
-    { name: "Feb", revenue: 3000, bookings: 18 },
-    { name: "Mar", revenue: 5000, bookings: 28 },
-    { name: "Apr", revenue: 2780, bookings: 16 },
-    { name: "May", revenue: 1890, bookings: 12 },
-    { name: "Jun", revenue: 2390, bookings: 15 },
-    { name: "Jul", revenue: 3490, bookings: 21 },
-    { name: "Aug", revenue: 4000, bookings: 24 },
-    { name: "Sep", revenue: 2000, bookings: 13 },
-    { name: "Oct", revenue: 2780, bookings: 17 },
-    { name: "Nov", revenue: 1890, bookings: 11 },
-    { name: "Dec", revenue: 4000, bookings: 24 }
-  ];
+  // Process revenue data from business reports
+  const revenueData = businessReports?.data ? businessReports.data.map((report, index) => ({
+    name: format(new Date(report.date), 'MMM'),
+    revenue: report.totalRevenue || 0,
+    bookings: report.totalBookings || 0,
+    date: report.date
+  })).slice(0, 12) : [];
   
-  // Mock service type breakdown
-  const serviceTypeData = [
-    { name: "Stays", value: 65, color: "#3A7CA5" },
-    { name: "Vehicles", value: 15, color: "#81C3D7" },
-    { name: "Tours", value: 10, color: "#F5C765" },
-    { name: "Wellness", value: 7, color: "#9966CC" },
-    { name: "Other", value: 3, color: "#ADB5BD" }
-  ];
+  // Process service type breakdown from business bookings
+  const serviceTypeData = businessBookings?.data ? (() => {
+    const categoryCount = {};
+    businessBookings.data.forEach(booking => {
+      const category = booking.serviceCategory || 'Other';
+      categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+    
+    const total = businessBookings.data.length;
+    const colors = ["#3A7CA5", "#81C3D7", "#F5C765", "#9966CC", "#ADB5BD"];
+    
+    return Object.entries(categoryCount).map(([name, count], index) => ({
+      name,
+      value: Math.round((count / total) * 100),
+      color: colors[index % colors.length]
+    }));
+  })() : [];
   
-  // Mock booking source data
-  const bookingSourceData = [
-    { name: "Direct", value: 65, color: "#3A7CA5" },
-    { name: "Partners", value: 20, color: "#81C3D7" },
-    { name: "Social", value: 10, color: "#9966CC" },
-    { name: "Other", value: 5, color: "#ADB5BD" }
-  ];
+  // Process booking source data (assuming direct bookings for now)
+  const bookingSourceData = businessBookings?.data ? [
+    { name: "Direct", value: 85, color: "#3A7CA5" },
+    { name: "Partners", value: 10, color: "#81C3D7" },
+    { name: "Social", value: 3, color: "#9966CC" },
+    { name: "Other", value: 2, color: "#ADB5BD" }
+  ] : [];
   
-  // Mock booking status data
-  const bookingStatusData = [
-    { name: "Completed", bookings: 42, color: "#3A7CA5" },
-    { name: "Confirmed", bookings: 28, color: "#4CAF50" },
-    { name: "Pending", bookings: 18, color: "#F5C765" },
-    { name: "Cancelled", bookings: 12, color: "#EF5350" }
-  ];
+  // Process booking status data from business bookings
+  const bookingStatusData = businessBookings?.data ? (() => {
+    const statusCount = {};
+    businessBookings.data.forEach(booking => {
+      const status = booking.status || 'Pending';
+      statusCount[status] = (statusCount[status] || 0) + 1;
+    });
+    
+    const colors = {
+      'completed': '#3A7CA5',
+      'confirmed': '#4CAF50',
+      'pending': '#F5C765',
+      'cancelled': '#EF5350'
+    };
+    
+    return Object.entries(statusCount).map(([name, count]) => ({
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      bookings: count,
+      color: colors[name.toLowerCase()] || '#ADB5BD'
+    }));
+  })() : [];
+
+  // Calculate totals from real data
+  const totalRevenue = businessPayments?.data?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+  const totalBookings = businessBookings?.data?.length || 0;
+  const avgBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+  const commissionPaid = businessPayments?.data?.reduce((sum, payment) => sum + (payment.commission || 0), 0) || 0;
+  const vendorCount = businessVendors?.data?.length || 0;
+
+  // Loading state
+  const isLoading = statsLoading || bookingLoading || revenueLoading || vendorsLoading || businessBookingsLoading || businessPaymentsLoading || businessReportsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Loading analytics...</span>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold mb-4 md:mb-0">Analytics & Reports</h1>
         <div className="flex space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setTimeframe(timeframe === 'month' ? 'year' : 'month')}>
             <CalendarIcon className="mr-2 h-4 w-4" />
             {formattedStartDate} - {formattedEndDate}
           </Button>
-          <Button>
+          <Button variant="outline" onClick={handleRefreshAll}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+          <Button 
+            onClick={() => exportMutation.mutate()} 
+            disabled={exportMutation.isPending}
+          >
             <Download className="mr-2 h-4 w-4" />
-            Export Report
+            {exportMutation.isPending ? "Exporting..." : "Export Report"}
           </Button>
         </div>
       </div>
@@ -92,7 +230,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         <StatCard
           title="Total Revenue"
-          value="$32,845.00"
+          value={`$${totalRevenue.toLocaleString()}`}
           icon="ri-money-dollar-circle-line"
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
@@ -101,7 +239,7 @@ export default function Analytics() {
         
         <StatCard
           title="Total Bookings"
-          value="178"
+          value={totalBookings.toString()}
           icon="ri-calendar-check-line"
           iconColor="text-blue-600"
           iconBgColor="bg-blue-100"
@@ -110,7 +248,7 @@ export default function Analytics() {
         
         <StatCard
           title="Average Booking Value"
-          value="$184.52"
+          value={`$${avgBookingValue.toFixed(2)}`}
           icon="ri-line-chart-line"
           iconColor="text-purple-600"
           iconBgColor="bg-purple-100"
@@ -119,7 +257,7 @@ export default function Analytics() {
         
         <StatCard
           title="Commission Paid"
-          value="$3,284.50"
+          value={`$${commissionPaid.toLocaleString()}`}
           icon="ri-percent-line"
           iconColor="text-amber-600"
           iconBgColor="bg-amber-100"
