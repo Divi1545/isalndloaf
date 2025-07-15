@@ -1355,7 +1355,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       const source = await storage.createCalendarSource({
-        userId: req.session.user.id,
+        userId: req.session.user.userId,
         name,
         url,
         type,
@@ -1514,7 +1514,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       // Store the generated content
       const marketingContent = await storage.createMarketingContent({
-        userId: req.session.user.id,
+        userId: req.session.user.userId,
         title: `${contentTypeTitle} - ${new Date().toLocaleDateString()}`,
         contentType,
         content: generatedContent,
@@ -1536,7 +1536,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   app.get("/api/ai/marketing-contents", requireAuth, async (req: Request, res: Response) => {
     try {
-      const contents = await storage.getMarketingContents(req.session.user.id);
+      const contents = await storage.getMarketingContents(req.session.user.userId);
       res.status(200).json(contents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch marketing contents" });
@@ -1682,7 +1682,7 @@ Respond in JSON format:
   // AI Vendor Performance Analytics
   app.post("/api/ai/vendor-analytics", requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = req.session.user!.id;
+      const userId = req.session.user!.userId;
       const { analysisType = 'comprehensive', period = 'monthly' } = req.body;
       
       if (!process.env.OPENAI_API_KEY) {
@@ -2094,7 +2094,7 @@ Format as comprehensive JSON:
   app.post("/api/ai/agent-executor", requireAuth, async (req: Request, res: Response) => {
     try {
       const { agent, action, data } = req.body;
-      const userId = req.session.user!.id;
+      const userId = req.session.user!.userId;
       
       if (!agent || !action || !data) {
         return res.status(400).json({ error: "Missing required fields: agent, action, data" });
@@ -3240,7 +3240,7 @@ Format as comprehensive JSON:
   app.post("/api/ai/agent-trainer", requireAuth, async (req: Request, res: Response) => {
     try {
       const { agent, trainingData } = req.body;
-      const userId = req.session.user!.id;
+      const userId = req.session.user!.userId;
       
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ error: "AI training service not available" });
@@ -3318,7 +3318,7 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
   app.get("/api/ai/agent-trainer/history", requireAuth, async (req: Request, res: Response) => {
     try {
       const { agent } = req.query;
-      const userId = req.session.user!.id;
+      const userId = req.session.user!.userId;
 
       // Get training history from notifications
       const notifications = await storage.getNotifications(userId);
@@ -3427,7 +3427,7 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
       }
       
       // Only allow admin or ticket owner to view ticket details
-      if (req.session.user!.role !== 'admin' && ticket.userId !== req.session.user!.id) {
+      if (req.session.user!.userRole !== 'admin' && ticket.userId !== req.session.user!.userId) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -3441,7 +3441,7 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
   app.post("/api/support/tickets", requireAuth, async (req: Request, res: Response) => {
     try {
       const { subject, message, priority = 'medium', category } = req.body;
-      const userId = req.session.user!.id;
+      const userId = req.session.user!.userId;
       
       if (!subject || !message || !category) {
         return res.status(400).json({ error: "Subject, message, and category are required" });
