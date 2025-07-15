@@ -75,6 +75,42 @@ export default function PricingEngine() {
   const getCurrentPrice = (service: any) => {
     return servicePrices[service.id] !== undefined ? servicePrices[service.id] : service.basePrice;
   };
+
+  // Handle saving pricing rules
+  const handleSavePricingRules = () => {
+    // For now, just show a toast notification
+    toast({
+      title: "Pricing rules saved",
+      description: "Your pricing rules have been saved successfully.",
+    });
+  };
+
+  // Handle creating promo codes
+  const handleCreatePromoCode = () => {
+    // For now, just show a toast notification
+    toast({
+      title: "Feature coming soon",
+      description: "Promotional codes will be available in a future update.",
+    });
+  };
+
+  // Handle adding blackout dates
+  const handleAddBlackoutDate = () => {
+    // For now, just show a toast notification
+    toast({
+      title: "Feature coming soon",
+      description: "Blackout dates will be available in a future update.",
+    });
+  };
+
+  // Handle removing blackout dates
+  const handleRemoveBlackoutDate = () => {
+    // For now, just show a toast notification
+    toast({
+      title: "Feature coming soon",
+      description: "Blackout dates will be available in a future update.",
+    });
+  };
   
   // Mock pricing rules
   const [weekendSurcharge, setWeekendSurcharge] = useState(25);
@@ -259,7 +295,7 @@ export default function PricingEngine() {
                 </div>
                 
                 <div className="flex justify-end">
-                  <Button className="w-full md:w-auto">
+                  <Button className="w-full md:w-auto" onClick={handleSavePricingRules}>
                     <Save className="h-4 w-4 mr-2" />
                     Save Pricing Rules
                   </Button>
@@ -320,8 +356,12 @@ export default function PricingEngine() {
                   </div>
                   
                   <DialogFooter>
-                    <Button variant="outline">Cancel</Button>
-                    <Button>Create Promo Code</Button>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogTrigger>
+                    <DialogTrigger asChild>
+                      <Button onClick={handleCreatePromoCode}>Create Promo Code</Button>
+                    </DialogTrigger>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -398,7 +438,7 @@ export default function PricingEngine() {
                         <div className="p-2 space-y-2">
                           <p className="text-sm text-neutral-500">Dec 23, 2023 - Jan 2, 2024</p>
                           <div className="flex justify-end">
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleRemoveBlackoutDate}>
                               <Trash2 className="h-4 w-4 mr-2" />
                               Remove
                             </Button>
@@ -418,7 +458,7 @@ export default function PricingEngine() {
                         <div className="p-2 space-y-2">
                           <p className="text-sm text-neutral-500">Feb 15, 2023 - Feb 20, 2023</p>
                           <div className="flex justify-end">
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleRemoveBlackoutDate}>
                               <Trash2 className="h-4 w-4 mr-2" />
                               Remove
                             </Button>
@@ -429,7 +469,7 @@ export default function PricingEngine() {
                   </Accordion>
                   
                   <div className="mt-4">
-                    <Button className="w-full">
+                    <Button className="w-full" onClick={handleAddBlackoutDate}>
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Add Blocked Date Range
                     </Button>
