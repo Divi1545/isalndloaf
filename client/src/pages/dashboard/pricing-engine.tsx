@@ -46,6 +46,7 @@ export default function PricingEngine() {
         title: "Price updated",
         description: "Your service price has been updated successfully.",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
     },
     onError: (error) => {
       toast({
@@ -55,31 +56,25 @@ export default function PricingEngine() {
       });
     },
   });
+
+  // Use real services from the database
+  const displayServices = services || [];
   
-  // Mock services data for UI demonstration
-  const mockServices = [
-    {
-      id: 1,
-      name: "Ocean View Villa",
-      type: "stays",
-      basePrice: 250,
-      description: "Beautiful villa with ocean views"
-    },
-    {
-      id: 2,
-      name: "Jeep Rental",
-      type: "vehicles",
-      basePrice: 75,
-      description: "4x4 Jeep for island exploration"
-    },
-    {
-      id: 3,
-      name: "Island Tour Package",
-      type: "tours",
-      basePrice: 120,
-      description: "Full-day guided island tour"
-    }
-  ];
+  // Service price state management
+  const [servicePrices, setServicePrices] = useState<Record<number, number>>({});
+
+  // Handle input changes for service prices
+  const handlePriceChange = (serviceId: number, price: number) => {
+    setServicePrices(prev => ({
+      ...prev,
+      [serviceId]: price
+    }));
+  };
+
+  // Get current price for a service (from state or original value)
+  const getCurrentPrice = (service: any) => {
+    return servicePrices[service.id] !== undefined ? servicePrices[service.id] : service.basePrice;
+  };
   
   // Mock pricing rules
   const [weekendSurcharge, setWeekendSurcharge] = useState(25);
@@ -87,11 +82,8 @@ export default function PricingEngine() {
   const [extraGuestFee, setExtraGuestFee] = useState(15);
   const [minStay, setMinStay] = useState(2);
   
-  // Mock promotional codes
-  const mockPromoCodes = [
-    { id: 1, code: "SUMMER20", discount: 20, type: "percentage", validUntil: "2023-08-31" },
-    { id: 2, code: "WELCOME50", discount: 50, type: "fixed", validUntil: "2023-12-31" }
-  ];
+  // Promotional codes placeholder for future implementation
+  const promoCodes: any[] = [];
 
   return (
     <div>
@@ -112,49 +104,68 @@ export default function PricingEngine() {
               <CardTitle>Service Base Pricing</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {mockServices.map((service) => (
-                  <div key={service.id} className="border rounded-md p-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{service.name}</h3>
-                        <p className="text-neutral-500 text-sm">{service.type} • {service.description}</p>
-                      </div>
-                      
-                      <div className="flex gap-4 items-center">
-                        <div className="w-full md:w-48">
-                          <Label htmlFor={`price-${service.id}`}>Base Price ($)</Label>
-                          <div className="flex">
-                            <div className="flex items-center bg-neutral-100 px-3 rounded-l-md border border-r-0 border-input">
-                              <DollarSign className="h-4 w-4 text-neutral-500" />
-                            </div>
-                            <Input
-                              id={`price-${service.id}`}
-                              type="number"
-                              className="rounded-l-none"
-                              defaultValue={service.basePrice}
-                              onChange={(e) => {
-                                // Update state locally for demonstration
-                              }}
-                            />
-                          </div>
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {displayServices.map((service) => (
+                    <div key={service.id} className="border rounded-md p-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                          <h3 className="font-semibold text-lg">{service.name}</h3>
+                          <p className="text-neutral-500 text-sm">{service.type} • {service.description}</p>
                         </div>
                         
-                        <Button
-                          variant="outline"
-                          onClick={() => updateServicePriceMutation.mutate({
-                            serviceId: service.id,
-                            basePrice: service.basePrice
-                          })}
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          Save
-                        </Button>
+                        <div className="flex gap-4 items-center">
+                          <div className="w-full md:w-48">
+                            <Label htmlFor={`price-${service.id}`}>Base Price ($)</Label>
+                            <div className="flex">
+                              <div className="flex items-center bg-neutral-100 px-3 rounded-l-md border border-r-0 border-input">
+                                <DollarSign className="h-4 w-4 text-neutral-500" />
+                              </div>
+                              <Input
+                                id={`price-${service.id}`}
+                                type="number"
+                                className="rounded-l-none"
+                                value={getCurrentPrice(service)}
+                                onChange={(e) => handlePriceChange(service.id, parseFloat(e.target.value) || 0)}
+                              />
+                            </div>
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            onClick={() => updateServicePriceMutation.mutate({
+                              serviceId: service.id,
+                              basePrice: getCurrentPrice(service)
+                            })}
+                            disabled={updateServicePriceMutation.isPending}
+                          >
+                            {updateServicePriceMutation.isPending ? (
+                              <div className="animate-spin h-4 w-4 mr-2 border-2 border-current border-t-transparent rounded-full"></div>
+                            ) : (
+                              <Save className="h-4 w-4 mr-2" />
+                            )}
+                            Save
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                  
+                  {displayServices.length === 0 && (
+                    <div className="text-center p-8 border rounded-md bg-neutral-50">
+                      <DollarSign className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
+                      <h3 className="text-lg font-medium mb-1">No services found</h3>
+                      <p className="text-neutral-500 mb-4">
+                        Add services to your account to set up pricing
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -317,7 +328,7 @@ export default function PricingEngine() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockPromoCodes.map((promo) => (
+                {promoCodes.map((promo) => (
                   <div key={promo.id} className="flex items-center justify-between p-4 border rounded-md">
                     <div className="flex items-center">
                       <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary">
@@ -340,19 +351,13 @@ export default function PricingEngine() {
                   </div>
                 ))}
                 
-                {mockPromoCodes.length === 0 && (
-                  <div className="text-center p-8 border rounded-md bg-neutral-50">
-                    <Tag className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
-                    <h3 className="text-lg font-medium mb-1">No promotional codes</h3>
-                    <p className="text-neutral-500 mb-4">
-                      Create promotional codes to offer discounts to your customers
-                    </p>
-                    <Button>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Promo Code
-                    </Button>
-                  </div>
-                )}
+                <div className="text-center p-8 border rounded-md bg-neutral-50">
+                  <Tag className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
+                  <h3 className="text-lg font-medium mb-1">Promotional codes coming soon</h3>
+                  <p className="text-neutral-500 mb-4">
+                    This feature will be available in a future update
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

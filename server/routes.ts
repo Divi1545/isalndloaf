@@ -952,6 +952,28 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  app.put("/api/services/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const { basePrice } = req.body;
+      
+      if (!basePrice || isNaN(basePrice) || basePrice < 0) {
+        return res.status(400).json({ error: "Valid base price is required" });
+      }
+      
+      const updatedService = await storage.updateService(serviceId, { basePrice });
+      
+      if (!updatedService) {
+        return res.status(404).json({ error: "Service not found" });
+      }
+      
+      res.json(updatedService);
+    } catch (error) {
+      console.error("Error updating service:", error);
+      res.status(500).json({ error: "Failed to update service" });
+    }
+  });
+
   // Comprehensive Booking Management Routes
   
   // Get all bookings (admin) or user's bookings (vendor)
