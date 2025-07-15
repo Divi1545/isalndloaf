@@ -47,7 +47,7 @@ export default function AiMarketing() {
   
   // Get previous marketing content
   const { data: marketingContents, isLoading } = useQuery({
-    queryKey: ['/api/marketing'],
+    queryKey: ['/api/ai/marketing-contents'],
   });
   
   // Generate marketing content mutation
@@ -55,13 +55,15 @@ export default function AiMarketing() {
     mutationFn: generateMarketingContent,
     onSuccess: (data) => {
       setGeneratedContent(data.content);
+      setIsGenerating(false);
       toast({
         title: "Content generated",
         description: "Your marketing content has been generated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/marketing'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/ai/marketing-contents'] });
     },
     onError: (error) => {
+      setIsGenerating(false);
       toast({
         title: "Failed to generate content",
         description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -83,28 +85,15 @@ export default function AiMarketing() {
   function onSubmit(data: FormValues) {
     setGeneratedContent(null);
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-      // Sample AI-generated content based on prompt type
-      let content = "";
-      
-      if (data.type === "instagram") {
-        content = `✨ Paradise awaits at our beautiful beachfront villa! 🌊 Enjoy stunning ocean views, private access to crystal clear waters, and the most mesmerizing sunsets you've ever seen. Book your dream vacation today! #IslandLife #TropicalParadise #LuxuryStay`;
-      } else if (data.type === "facebook") {
-        content = `Looking for the perfect getaway? Our villa offers everything you need for an unforgettable vacation. Spacious rooms, private pool, and just steps from the beach. Limited availability for the summer season - book now to secure your dates!`;
-      } else if (data.type === "seo") {
-        content = `Experience luxury beachfront accommodations in Sri Lanka with our exclusive villa rentals. Perfect for families and couples seeking privacy, stunning ocean views, and world-class amenities. Our properties feature private pools, air conditioning, and personalized concierge service to ensure your tropical getaway exceeds all expectations.`;
-      }
-      
-      setGeneratedContent(content);
-    }, 2000);
     
-    // In a real implementation, this would call the generateMarketingContent function
-    // generateContentMutation.mutate({
-    //   type: data.type,
-    //   serviceId: data.serviceId ? parseInt(data.serviceId) : undefined,
-    //   prompt: data.prompt
-    // });
+    // Use the actual API to generate marketing content
+    generateContentMutation.mutate({
+      contentType: data.type,
+      serviceId: data.serviceId && data.serviceId !== "none" ? parseInt(data.serviceId) : undefined,
+      serviceDescription: data.prompt,
+      targetAudience: "tourists",
+      tone: "persuasive"
+    });
   }
   
   function copyToClipboard() {
@@ -117,30 +106,26 @@ export default function AiMarketing() {
     }
   }
   
-  // Mock services for UI demonstration
-  const mockServices = [
-    { id: 1, name: "Ocean View Villa", type: "stays" },
-    { id: 2, name: "Jeep Rental", type: "vehicles" },
-    { id: 3, name: "Island Tour Package", type: "tours" },
-  ];
-  
-  // Mock previously generated content
-  const mockPreviousContent = [
-    {
-      id: 1,
-      title: "Instagram Post - Beach Villa",
-      type: "instagram",
-      content: "🌴 Wake up to paradise! Our beachfront villa is the perfect escape from everyday life. Book now for special summer rates! #IslandEscape #BeachVilla",
-      createdAt: "2023-01-02T12:30:00Z"
+  // Delete marketing content mutation
+  const deleteContentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/ai/marketing-contents/${id}`);
     },
-    {
-      id: 2,
-      title: "SEO Description - Tour Package",
-      type: "seo",
-      content: "Discover the hidden gems of our tropical island with our all-inclusive tour packages. Expert local guides, authentic experiences, and breathtaking views guaranteed on every excursion.",
-      createdAt: "2023-01-05T14:45:00Z"
-    }
-  ];
+    onSuccess: () => {
+      toast({
+        title: "Content deleted",
+        description: "Marketing content has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/ai/marketing-contents'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete content",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <div>
@@ -220,12 +205,12 @@ export default function AiMarketing() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">No specific service</SelectItem>
-                                {mockServices.map(service => (
+                                <SelectItem value="none">No specific service</SelectItem>
+                                {services?.map(service => (
                                   <SelectItem key={service.id} value={service.id.toString()}>
                                     {service.name}
                                   </SelectItem>
-                                ))}
+                                )) || []}
                               </SelectContent>
                             </Select>
                             <FormDescription>
@@ -337,59 +322,75 @@ export default function AiMarketing() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockPreviousContent.map((content) => (
-                  <div key={content.id} className="border rounded-md p-4 space-y-2">
-                    <div className="flex justify-between">
-                      <div>
-                        <h3 className="font-medium">{content.title}</h3>
-                        <p className="text-sm text-neutral-500">
-                          {new Date(content.createdAt).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'short', 
-                            day: 'numeric' 
-                          })}
-                        </p>
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="border rounded-md p-4 space-y-2">
+                        <div className="animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2 mt-2"></div>
+                        </div>
+                        <div className="p-3 bg-neutral-50 rounded-md">
+                          <div className="animate-pulse">
+                            <div className="h-3 bg-gray-200 rounded w-full"></div>
+                            <div className="h-3 bg-gray-200 rounded w-5/6 mt-2"></div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(content.content);
-                            toast({
-                              title: "Copied to clipboard",
-                              description: "The content has been copied to your clipboard.",
-                            });
-                          }}
-                        >
-                          <Clipboard className="h-4 w-4 mr-2" />
-                          Copy
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 bg-neutral-50 rounded-md">
-                      <p className="text-sm">{content.content}</p>
-                    </div>
-                    
-                    <div className="flex justify-end">
-                      <Button variant="ghost" size="sm">
-                        Edit & Regenerate
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-                
-                {mockPreviousContent.length === 0 && (
+                ) : marketingContents && marketingContents.length > 0 ? (
+                  marketingContents.map((content: any) => (
+                    <div key={content.id} className="border rounded-md p-4 space-y-2">
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-medium">{content.title}</h3>
+                          <p className="text-sm text-neutral-500">
+                            {new Date(content.createdAt).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(content.content);
+                              toast({
+                                title: "Copied to clipboard",
+                                description: "The content has been copied to your clipboard.",
+                              });
+                            }}
+                          >
+                            <Clipboard className="h-4 w-4 mr-2" />
+                            Copy
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => deleteContentMutation.mutate(content.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="p-3 bg-neutral-50 rounded-md">
+                        <p className="text-sm">{content.content}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
                   <div className="text-center p-8 border rounded-md bg-neutral-50">
                     <SpeechIcon className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
                     <h3 className="text-lg font-medium mb-1">No generated content yet</h3>
                     <p className="text-neutral-500 mb-4">
                       Generate your first AI marketing content by using the generator
                     </p>
-                    <Button>
-                      Generate Your First Content
-                    </Button>
                   </div>
                 )}
               </div>

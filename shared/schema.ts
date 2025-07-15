@@ -109,7 +109,10 @@ export const marketingContents = pgTable("marketing_contents", {
   serviceId: integer("service_id").references(() => services.id),
   title: text("title").notNull(),
   content: text("content").notNull(),
-  type: text("type").notNull(), // instagram, facebook, seo
+  contentType: text("content_type").notNull(), // instagram, facebook, seo
+  serviceDescription: text("service_description"),
+  targetAudience: text("target_audience"),
+  tone: text("tone"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

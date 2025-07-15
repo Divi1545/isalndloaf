@@ -11,7 +11,7 @@ import {
   Notification, InsertNotification,
   MarketingContent, InsertMarketingContent,
   SupportTicket, InsertSupportTicket,
-  bookings, notifications
+  bookings, notifications, marketingContents
 } from '@shared/schema';
 
 /**
@@ -381,24 +381,18 @@ export class DatabaseStorage implements IStorage {
   
   // Marketing content operations
   async getMarketingContents(userId: number): Promise<MarketingContent[]> {
-    return await prisma.marketingContent.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
-    });
+    return await db.select().from(marketingContents).where(eq(marketingContents.userId, userId)).orderBy(desc(marketingContents.createdAt));
   }
   
   async createMarketingContent(content: InsertMarketingContent): Promise<MarketingContent> {
-    return await prisma.marketingContent.create({
-      data: content
-    });
+    const [result] = await db.insert(marketingContents).values(content).returning();
+    return result;
   }
   
   async updateMarketingContent(id: number, contentUpdate: Partial<InsertMarketingContent>): Promise<MarketingContent | undefined> {
     try {
-      return await prisma.marketingContent.update({
-        where: { id },
-        data: contentUpdate
-      });
+      const [result] = await db.update(marketingContents).set(contentUpdate).where(eq(marketingContents.id, id)).returning();
+      return result;
     } catch (error) {
       console.error(`Failed to update marketing content ${id}:`, error);
       return undefined;
@@ -407,9 +401,7 @@ export class DatabaseStorage implements IStorage {
   
   async deleteMarketingContent(id: number): Promise<boolean> {
     try {
-      await prisma.marketingContent.delete({
-        where: { id }
-      });
+      await db.delete(marketingContents).where(eq(marketingContents.id, id));
       return true;
     } catch (error) {
       console.error(`Failed to delete marketing content ${id}:`, error);

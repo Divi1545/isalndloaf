@@ -1543,6 +1543,24 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  app.delete("/api/ai/marketing-contents/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid content ID" });
+      }
+      
+      const success = await storage.deleteMarketingContent(id);
+      if (success) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(404).json({ error: "Content not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete marketing content" });
+    }
+  });
+
   // AI-Enhanced Booking Optimization
   app.post("/api/ai/optimize-booking", requireAuth, async (req: Request, res: Response) => {
     try {

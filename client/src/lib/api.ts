@@ -71,17 +71,15 @@ export async function updateServicePrice(
 }
 
 // Marketing API functions
-export async function generateMarketingContent(
-  type: string, 
-  serviceId: number | undefined, 
-  prompt: string
-): Promise<MarketingContent> {
+export async function generateMarketingContent(data: {
+  contentType: string;
+  serviceId?: number;
+  serviceDescription: string;
+  targetAudience: string;
+  tone: string;
+}): Promise<{ success: boolean; content: string; marketingContent: MarketingContent }> {
   try {
-    const response = await apiRequest("POST", "/api/marketing/generate", {
-      type,
-      serviceId,
-      prompt
-    });
+    const response = await apiRequest("POST", "/api/ai/generate-marketing", data);
     return await response.json();
   } catch (error) {
     throw new Error("Failed to generate marketing content");
