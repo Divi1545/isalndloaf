@@ -127,29 +127,116 @@ function Router() {
         )}
       </Route>
       
-      {/* Dashboard routes */}
+      {/* Vendor Dashboard routes */}
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>
-            <Switch>
-              <Route path="/dashboard" component={Dashboard} />
-              <Route path="/dashboard/bookings" component={BookingManager} />
-              <Route path="/dashboard/add-booking" component={AddBooking} />
-              <Route path="/dashboard/calendar" component={CalendarSync} />
-              <Route path="/dashboard/pricing" component={PricingEngine} />
-              <Route path="/dashboard/ai-marketing" component={AiMarketing} />
-              <Route path="/dashboard/ai-features" component={AIFeatures} />
-              <Route path="/dashboard/ai-trainer" component={AIAgentTrainer} />
-              <Route path="/dashboard/airtable" component={AirtableManager} />
-              <Route path="/dashboard/services" component={ServicesManager} />
-              <Route path="/dashboard/feedback" component={FeedbackManager} />
-              <Route path="/dashboard/campaigns" component={CampaignsManager} />
-              <Route path="/dashboard/system-logs" component={SystemLogs} />
-              <Route path="/dashboard/analytics" component={Analytics} />
-              <Route path="/dashboard/profile" component={ProfileSettings} />
-              <Route path="/dashboard/notifications" component={Notifications} />
-              <Route component={NotFound} />
-            </Switch>
+            <Dashboard />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/bookings">
+        {() => (
+          <DashboardLayout>
+            <BookingManager />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/add-booking">
+        {() => (
+          <DashboardLayout>
+            <AddBooking />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/calendar">
+        {() => (
+          <DashboardLayout>
+            <CalendarSync />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/pricing">
+        {() => (
+          <DashboardLayout>
+            <PricingEngine />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/ai-marketing">
+        {() => (
+          <DashboardLayout>
+            <AiMarketing />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/ai-features">
+        {() => (
+          <DashboardLayout>
+            <AIFeatures />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/ai-trainer">
+        {() => (
+          <DashboardLayout>
+            <AIAgentTrainer />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/airtable">
+        {() => (
+          <DashboardLayout>
+            <AirtableManager />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/services">
+        {() => (
+          <DashboardLayout>
+            <ServicesManager />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/feedback">
+        {() => (
+          <DashboardLayout>
+            <FeedbackManager />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/campaigns">
+        {() => (
+          <DashboardLayout>
+            <CampaignsManager />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/system-logs">
+        {() => (
+          <DashboardLayout>
+            <SystemLogs />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/analytics">
+        {() => (
+          <DashboardLayout>
+            <Analytics />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/profile">
+        {() => (
+          <DashboardLayout>
+            <ProfileSettings />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/notifications">
+        {() => (
+          <DashboardLayout>
+            <Notifications />
           </DashboardLayout>
         )}
       </Route>

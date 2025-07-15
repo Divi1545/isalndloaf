@@ -8,54 +8,93 @@ import UpcomingBookings from "@/components/dashboard/upcoming-bookings";
 import BookingSources from "@/components/dashboard/booking-sources";
 import CalendarOverview from "@/components/dashboard/calendar-overview";
 import { useAuth } from "@/lib/auth";
-
-// Sample data for the dashboard
-const revenueData = [
-  { date: "Jan", revenue: 2400 },
-  { date: "Feb", revenue: 3000 },
-  { date: "Mar", revenue: 2800 },
-  { date: "Apr", revenue: 3600 },
-  { date: "May", revenue: 4200 },
-  { date: "Jun", revenue: 4800 }
-];
-
-const serviceTypes = [
-  {
-    type: "Accommodation",
-    percentage: 45,
-    icon: "building",
-    color: { bg: "bg-blue-100", text: "text-blue-700" }
-  },
-  {
-    type: "Vehicle Rental",
-    percentage: 25,
-    icon: "car",
-    color: { bg: "bg-green-100", text: "text-green-700" }
-  },
-  {
-    type: "Tours",
-    percentage: 18,
-    icon: "map",
-    color: { bg: "bg-amber-100", text: "text-amber-700" }
-  },
-  {
-    type: "Wellness",
-    percentage: 12,
-    icon: "heart",
-    color: { bg: "bg-rose-100", text: "text-rose-700" }
-  }
-];
-
-const bookingSources = [
-  { name: "Direct", percentage: 40, color: "#4f46e5" },
-  { name: "IslandLoaf.com", percentage: 25, color: "#0891b2" },
-  { name: "Partner Sites", percentage: 20, color: "#16a34a" },
-  { name: "Social Media", percentage: 15, color: "#ea580c" }
-];
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Dashboard component
 export default function Dashboard() {
   const { user } = useAuth();
+  
+  // Fetch real booking data for the vendor
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
+    queryKey: ['/api/bookings'],
+    enabled: !!user
+  });
+  
+  // Calculate vendor statistics from real data
+  const vendorStats = React.useMemo(() => {
+    if (!bookings.length) return { totalBookings: 0, totalRevenue: 0, completedBookings: 0, pendingBookings: 0 };
+    
+    const totalBookings = bookings.length;
+    const totalRevenue = bookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
+    const completedBookings = bookings.filter(booking => booking.status === 'completed').length;
+    const pendingBookings = bookings.filter(booking => booking.status === 'pending').length;
+    
+    return { totalBookings, totalRevenue, completedBookings, pendingBookings };
+  }, [bookings]);
+  
+  // Generate revenue chart data from real bookings
+  const revenueData = React.useMemo(() => {
+    if (!bookings.length) return [];
+    
+    const monthlyRevenue = bookings.reduce((acc, booking) => {
+      const month = new Date(booking.createdAt).toLocaleString('default', { month: 'short' });
+      acc[month] = (acc[month] || 0) + booking.totalPrice;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return Object.entries(monthlyRevenue).map(([date, revenue]) => ({ date, revenue }));
+  }, [bookings]);
+  
+  // Get service type breakdown from real data  
+  const serviceTypes = React.useMemo(() => {
+    if (!bookings.length) return [];
+    
+    const serviceCount = bookings.reduce((acc, booking) => {
+      const type = booking.serviceType || 'Other';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const total = Object.values(serviceCount).reduce((a, b) => a + b, 0);
+    const colors = [
+      { bg: "bg-blue-100", text: "text-blue-700" },
+      { bg: "bg-green-100", text: "text-green-700" },
+      { bg: "bg-amber-100", text: "text-amber-700" },
+      { bg: "bg-rose-100", text: "text-rose-700" }
+    ];
+    
+    return Object.entries(serviceCount).map(([type, count], index) => ({
+      type,
+      percentage: Math.round((count / total) * 100),
+      icon: "building",
+      color: colors[index % colors.length]
+    }));
+  }, [bookings]);
+  
+  // Default booking sources for now (could be calculated from real data later)
+  const bookingSources = [
+    { name: "Direct", percentage: 40, color: "#4f46e5" },
+    { name: "IslandLoaf.com", percentage: 25, color: "#0891b2" },
+    { name: "Partner Sites", percentage: 20, color: "#16a34a" },
+    { name: "Social Media", percentage: 15, color: "#ea580c" }
+  ];
+  
+  if (bookingsLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array(4).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -88,7 +127,7 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Total Revenue"
-          value="$12,628"
+          value={`$${vendorStats.totalRevenue.toFixed(2)}`}
           icon="dollar-sign"
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
@@ -97,7 +136,7 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Bookings"
-          value="237"
+          value={vendorStats.totalBookings.toString()}
           icon="calendar"
           iconColor="text-blue-600"
           iconBgColor="bg-blue-100"
@@ -105,8 +144,8 @@ export default function Dashboard() {
           subtitle="vs. last month"
         />
         <StatCard 
-          title="Avg. Rating"
-          value="4.8"
+          title="Completed"
+          value={vendorStats.completedBookings.toString()}
           icon="star"
           iconColor="text-amber-600"
           iconBgColor="bg-amber-100"
@@ -114,9 +153,9 @@ export default function Dashboard() {
           subtitle="vs. last month"
         />
         <StatCard 
-          title="Conversion Rate"
-          value="28.5%"
-          icon="percent"
+          title="Pending"
+          value={vendorStats.pendingBookings.toString()}
+          icon="clock"
           iconColor="text-purple-600"
           iconBgColor="bg-purple-100"
           trend={{ value: "-2.1%", isPositive: false }}
@@ -129,14 +168,22 @@ export default function Dashboard() {
         <Card>
           <CardContent className="pt-6">
             <h3 className="text-lg font-semibold mb-2">Revenue Trend</h3>
-            <RevenueChart data={revenueData} />
+            {revenueData.length > 0 ? (
+              <RevenueChart data={revenueData} />
+            ) : (
+              <p className="text-muted-foreground">No revenue data available</p>
+            )}
           </CardContent>
         </Card>
         
         <Card>
           <CardContent className="pt-6">
             <h3 className="text-lg font-semibold mb-2">Service Breakdown</h3>
-            <ServiceBreakdown services={serviceTypes} />
+            {serviceTypes.length > 0 ? (
+              <ServiceBreakdown services={serviceTypes} />
+            ) : (
+              <p className="text-muted-foreground">No service data available</p>
+            )}
           </CardContent>
         </Card>
       </div>

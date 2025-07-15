@@ -1,7 +1,7 @@
 import { IStorage } from './storage';
 import prisma from './prisma-client';
 import { db } from './db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import {
   User, InsertUser,
   Service, InsertService,
@@ -11,7 +11,7 @@ import {
   Notification, InsertNotification,
   MarketingContent, InsertMarketingContent,
   SupportTicket, InsertSupportTicket,
-  bookings
+  bookings, notifications
 } from '@shared/schema';
 
 /**
@@ -345,34 +345,23 @@ export class DatabaseStorage implements IStorage {
   
   // Notification operations
   async getNotifications(userId: number): Promise<Notification[]> {
-    return await prisma.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
-    });
+    return await db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
   }
   
   async getUnreadNotifications(userId: number): Promise<Notification[]> {
-    return await prisma.notification.findMany({
-      where: { 
-        userId,
-        read: false
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    return await db.select().from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)))
+      .orderBy(desc(notifications.createdAt));
   }
   
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    return await prisma.notification.create({
-      data: notification
-    });
+    const [result] = await db.insert(notifications).values(notification).returning();
+    return result;
   }
   
   async markNotificationRead(id: number): Promise<boolean> {
     try {
-      await prisma.notification.update({
-        where: { id },
-        data: { read: true }
-      });
+      await db.update(notifications).set({ read: true }).where(eq(notifications.id, id));
       return true;
     } catch (error) {
       console.error(`Failed to mark notification ${id} as read:`, error);
@@ -382,9 +371,7 @@ export class DatabaseStorage implements IStorage {
   
   async deleteNotification(id: number): Promise<boolean> {
     try {
-      await prisma.notification.delete({
-        where: { id }
-      });
+      await db.delete(notifications).where(eq(notifications.id, id));
       return true;
     } catch (error) {
       console.error(`Failed to delete notification ${id}:`, error);

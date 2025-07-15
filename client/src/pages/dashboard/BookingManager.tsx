@@ -4,8 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import UpcomingBookings from "@/components/dashboard/upcoming-bookings";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Dialog,
   DialogContent,
@@ -17,11 +19,50 @@ import {
 const BookingManager = () => {
   const [_, setLocation] = useLocation();
   const [showCategorySelector, setShowCategorySelector] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Fetch real bookings data
+  const { data: bookings = [], isLoading, refetch } = useQuery({
+    queryKey: ['/api/bookings']
+  });
 
   // Handle booking category selection
   const handleCategorySelect = (category: string) => {
     setShowCategorySelector(false);
-    setLocation(`/vendor/add-booking/${category}`);
+    setLocation(`/dashboard/add-booking`);
+  };
+
+  // Filter bookings based on search and status
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = 
+      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.id.toString().includes(searchQuery);
+    
+    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  // Get bookings by status
+  const getBookingsByStatus = (status: string) => {
+    if (status === 'upcoming') {
+      return filteredBookings.filter(booking => 
+        booking.status === 'confirmed' && new Date(booking.startDate) > new Date()
+      );
+    }
+    return filteredBookings.filter(booking => booking.status === status);
+  };
+
+  // Status badge styling
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      confirmed: 'bg-green-100 text-green-800',
+      completed: 'bg-blue-100 text-blue-800',
+      cancelled: 'bg-red-100 text-red-800'
+    };
+    return variants[status] || 'bg-gray-100 text-gray-800';
   };
 
   return (
@@ -77,6 +118,8 @@ const BookingManager = () => {
               type="text"
               placeholder="Search by name or booking ID..." 
               className="w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -85,7 +128,7 @@ const BookingManager = () => {
               </svg>
             </div>
           </div>
-          <Select defaultValue="all">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
