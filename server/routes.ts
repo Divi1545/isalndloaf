@@ -960,7 +960,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const user = req.session.user;
       let bookings;
       
-      if (user.role === 'admin') {
+      if (user.userRole === 'admin') {
         // Admin can see all bookings
         const users = await storage.getUsers();
         const allBookings = await Promise.all(
@@ -976,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         bookings = allBookings.flat();
       } else {
         // Vendor can only see their own bookings
-        bookings = await storage.getBookings(user.id);
+        bookings = await storage.getBookings(user.userId);
       }
       
       res.json(bookings);

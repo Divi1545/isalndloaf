@@ -284,8 +284,9 @@ const VendorManagement = () => {
       return;
     }
 
-    // Generate username from email
-    const username = newVendor.email.split('@')[0];
+    // Generate unique username from email + timestamp
+    const baseUsername = newVendor.email.split('@')[0];
+    const username = `${baseUsername}_${Date.now()}`;
     
     // Prepare vendor data for backend
     const vendorData = {
