@@ -29,6 +29,13 @@ import {
 
 export default function PricingEngine() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [promoCodes, setPromoCodes] = useState<any[]>([]);
+  const [blackoutDates, setBlackoutDates] = useState<any[]>([
+    { id: 1, name: "Christmas Season", startDate: "2023-12-23", endDate: "2024-01-02" },
+    { id: 2, name: "Maintenance Period", startDate: "2023-02-15", endDate: "2023-02-20" }
+  ]);
+  const [promoForm, setPromoForm] = useState({ code: '', discount: '', type: 'percentage', validUntil: '' });
+  const [isPromoDialogOpen, setIsPromoDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   
   // Get services data
@@ -87,28 +94,74 @@ export default function PricingEngine() {
 
   // Handle creating promo codes
   const handleCreatePromoCode = () => {
-    // For now, just show a toast notification
+    if (!promoForm.code || !promoForm.discount || !promoForm.validUntil) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all fields to create a promo code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newPromoCode = {
+      id: Date.now(),
+      code: promoForm.code,
+      discount: parseFloat(promoForm.discount),
+      type: promoForm.type,
+      validUntil: promoForm.validUntil,
+    };
+
+    setPromoCodes(prev => [...prev, newPromoCode]);
+    setPromoForm({ code: '', discount: '', type: 'percentage', validUntil: '' });
+    setIsPromoDialogOpen(false);
+    
     toast({
-      title: "Feature coming soon",
-      description: "Promotional codes will be available in a future update.",
+      title: "Promo code created",
+      description: `${newPromoCode.code} has been created successfully.`,
+    });
+  };
+
+  // Handle removing promo codes
+  const handleRemovePromoCode = (promoId: number) => {
+    setPromoCodes(prev => prev.filter(promo => promo.id !== promoId));
+    toast({
+      title: "Promo code removed",
+      description: "The promotional code has been removed.",
     });
   };
 
   // Handle adding blackout dates
   const handleAddBlackoutDate = () => {
-    // For now, just show a toast notification
+    if (!selectedDate) {
+      toast({
+        title: "Select a date",
+        description: "Please select a date to add to blackout dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newBlackoutDate = {
+      id: Date.now(),
+      name: `Blackout Date ${blackoutDates.length + 1}`,
+      startDate: selectedDate.toISOString().split('T')[0],
+      endDate: selectedDate.toISOString().split('T')[0],
+    };
+
+    setBlackoutDates(prev => [...prev, newBlackoutDate]);
+    
     toast({
-      title: "Feature coming soon",
-      description: "Blackout dates will be available in a future update.",
+      title: "Blackout date added",
+      description: `${newBlackoutDate.startDate} has been added to blackout dates.`,
     });
   };
 
   // Handle removing blackout dates
-  const handleRemoveBlackoutDate = () => {
-    // For now, just show a toast notification
+  const handleRemoveBlackoutDate = (dateId: number) => {
+    setBlackoutDates(prev => prev.filter(date => date.id !== dateId));
     toast({
-      title: "Feature coming soon",
-      description: "Blackout dates will be available in a future update.",
+      title: "Blackout date removed",
+      description: "The blackout date has been removed.",
     });
   };
   
@@ -117,9 +170,6 @@ export default function PricingEngine() {
   const [holidaySurcharge, setHolidaySurcharge] = useState(50);
   const [extraGuestFee, setExtraGuestFee] = useState(15);
   const [minStay, setMinStay] = useState(2);
-  
-  // Promotional codes placeholder for future implementation
-  const promoCodes: any[] = [];
 
   return (
     <div>
@@ -310,7 +360,7 @@ export default function PricingEngine() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle>Promotional Codes</CardTitle>
-              <Dialog>
+              <Dialog open={isPromoDialogOpen} onOpenChange={setIsPromoDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <PlusCircle className="h-4 w-4 mr-2" />
@@ -328,13 +378,24 @@ export default function PricingEngine() {
                   <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                       <Label htmlFor="promo-code">Promo Code</Label>
-                      <Input id="promo-code" placeholder="SUMMER20" />
+                      <Input 
+                        id="promo-code" 
+                        placeholder="SUMMER20" 
+                        value={promoForm.code}
+                        onChange={(e) => setPromoForm(prev => ({ ...prev, code: e.target.value }))}
+                      />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="discount-amount">Discount Amount</Label>
-                        <Input id="discount-amount" type="number" placeholder="20" />
+                        <Input 
+                          id="discount-amount" 
+                          type="number" 
+                          placeholder="20" 
+                          value={promoForm.discount}
+                          onChange={(e) => setPromoForm(prev => ({ ...prev, discount: e.target.value }))}
+                        />
                       </div>
                       
                       <div className="space-y-2">
@@ -342,6 +403,8 @@ export default function PricingEngine() {
                         <select
                           id="discount-type"
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={promoForm.type}
+                          onChange={(e) => setPromoForm(prev => ({ ...prev, type: e.target.value }))}
                         >
                           <option value="percentage">Percentage (%)</option>
                           <option value="fixed">Fixed Amount ($)</option>
@@ -351,53 +414,63 @@ export default function PricingEngine() {
                     
                     <div className="space-y-2">
                       <Label htmlFor="valid-until">Valid Until</Label>
-                      <Input id="valid-until" type="date" />
+                      <Input 
+                        id="valid-until" 
+                        type="date" 
+                        value={promoForm.validUntil}
+                        onChange={(e) => setPromoForm(prev => ({ ...prev, validUntil: e.target.value }))}
+                      />
                     </div>
                   </div>
                   
                   <DialogFooter>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogTrigger>
-                    <DialogTrigger asChild>
-                      <Button onClick={handleCreatePromoCode}>Create Promo Code</Button>
-                    </DialogTrigger>
+                    <Button variant="outline" onClick={() => setIsPromoDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreatePromoCode}>Create Promo Code</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {promoCodes.map((promo) => (
-                  <div key={promo.id} className="flex items-center justify-between p-4 border rounded-md">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary">
-                        <Tag className="h-5 w-5" />
+                {promoCodes.length > 0 ? (
+                  promoCodes.map((promo) => (
+                    <div key={promo.id} className="flex items-center justify-between p-4 border rounded-md">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary">
+                          <Tag className="h-5 w-5" />
+                        </div>
+                        <div className="ml-4">
+                          <h3 className="font-medium">{promo.code}</h3>
+                          <p className="text-sm text-neutral-500">
+                            {promo.type === "percentage" ? `${promo.discount}% off` : `$${promo.discount} off`} • 
+                            Valid until {promo.validUntil}
+                          </p>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <h3 className="font-medium">{promo.code}</h3>
-                        <p className="text-sm text-neutral-500">
-                          {promo.type === "percentage" ? `${promo.discount}% off` : `$${promo.discount} off`} • 
-                          Valid until {promo.validUntil}
-                        </p>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm">Edit</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleRemovePromoCode(promo.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">Edit</Button>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center p-8 border rounded-md bg-neutral-50">
+                    <Tag className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
+                    <h3 className="text-lg font-medium mb-1">No promotional codes yet</h3>
+                    <p className="text-neutral-500 mb-4">
+                      Create your first promotional code to attract customers
+                    </p>
                   </div>
-                ))}
-                
-                <div className="text-center p-8 border rounded-md bg-neutral-50">
-                  <Tag className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
-                  <h3 className="text-lg font-medium mb-1">Promotional codes coming soon</h3>
-                  <p className="text-neutral-500 mb-4">
-                    This feature will be available in a future update
-                  </p>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -426,47 +499,46 @@ export default function PricingEngine() {
                 <div>
                   <h3 className="font-medium mb-4">Blocked Date Ranges</h3>
                   
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="item-1">
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-center">
-                          <CalendarIcon className="mr-2 h-4 w-4 text-neutral-500" />
-                          <span>Christmas Season</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="p-2 space-y-2">
-                          <p className="text-sm text-neutral-500">Dec 23, 2023 - Jan 2, 2024</p>
-                          <div className="flex justify-end">
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleRemoveBlackoutDate}>
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Remove
-                            </Button>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                    
-                    <AccordionItem value="item-2">
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-center">
-                          <CalendarIcon className="mr-2 h-4 w-4 text-neutral-500" />
-                          <span>Maintenance Period</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="p-2 space-y-2">
-                          <p className="text-sm text-neutral-500">Feb 15, 2023 - Feb 20, 2023</p>
-                          <div className="flex justify-end">
-                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleRemoveBlackoutDate}>
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Remove
-                            </Button>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                  {blackoutDates.length > 0 ? (
+                    <Accordion type="single" collapsible className="w-full">
+                      {blackoutDates.map((blackoutDate, index) => (
+                        <AccordionItem key={blackoutDate.id} value={`item-${blackoutDate.id}`}>
+                          <AccordionTrigger className="text-left">
+                            <div className="flex items-center">
+                              <CalendarIcon className="mr-2 h-4 w-4 text-neutral-500" />
+                              <span>{blackoutDate.name}</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="p-2 space-y-2">
+                              <p className="text-sm text-neutral-500">
+                                {blackoutDate.startDate} - {blackoutDate.endDate}
+                              </p>
+                              <div className="flex justify-end">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50" 
+                                  onClick={() => handleRemoveBlackoutDate(blackoutDate.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  ) : (
+                    <div className="text-center p-8 border rounded-md bg-neutral-50">
+                      <CalendarIcon className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
+                      <h3 className="text-lg font-medium mb-1">No blackout dates set</h3>
+                      <p className="text-neutral-500 mb-4">
+                        Select dates on the calendar to block availability
+                      </p>
+                    </div>
+                  )}
                   
                   <div className="mt-4">
                     <Button className="w-full" onClick={handleAddBlackoutDate}>
