@@ -2672,27 +2672,43 @@ Format as comprehensive JSON:
   });
 
   // Airtable Integration Endpoints
-  app.get("/api/airtable/test", async (req: Request, res: Response) => {
+  app.get("/api/business/test", async (req: Request, res: Response) => {
     try {
-      const airtableService = await import('./services/airtable.js').then(m => m.default);
-      const result = await airtableService.testConnection();
-      res.json(result);
+      // Test database connection by getting users count
+      const users = await storage.getUsers();
+      res.json({
+        success: true,
+        message: "Database connection successful",
+        recordCount: users.length
+      });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Connection failed'
+        error: error instanceof Error ? error.message : 'Database connection failed'
       });
     }
   });
 
-  app.get("/api/airtable/vendors", async (req: Request, res: Response) => {
+  app.get("/api/business/vendors", async (req: Request, res: Response) => {
     try {
-      const airtableService = await import('./services/airtable.js').then(m => m.default);
-      const vendors = await airtableService.getVendors();
+      const users = await storage.getUsers();
+      const vendors = users.filter(user => user.role === 'vendor');
+      
+      const vendorData = vendors.map(vendor => ({
+        id: vendor.id,
+        name: vendor.businessName || vendor.fullName,
+        category: vendor.businessType,
+        username: vendor.username,
+        email: vendor.email,
+        location: 'Sri Lanka',
+        status: vendor.role,
+        createdAt: vendor.createdAt
+      }));
+      
       res.json({
         success: true,
-        data: vendors,
-        count: vendors.length
+        data: vendorData,
+        count: vendorData.length
       });
     } catch (error) {
       res.status(500).json({
@@ -2702,14 +2718,36 @@ Format as comprehensive JSON:
     }
   });
 
-  app.get("/api/airtable/bookings", async (req: Request, res: Response) => {
+  app.get("/api/business/bookings", async (req: Request, res: Response) => {
     try {
-      const airtableService = await import('./services/airtable.js').then(m => m.default);
-      const bookings = await airtableService.getBookings();
+      const users = await storage.getUsers();
+      const allBookings = [];
+      
+      // Get bookings for all users
+      for (const user of users) {
+        const userBookings = await storage.getBookings(user.id);
+        allBookings.push(...userBookings);
+      }
+      
+      const bookingData = allBookings.map(booking => ({
+        id: booking.id,
+        userId: booking.userId,
+        serviceId: booking.serviceId,
+        customerName: booking.customerName,
+        customerEmail: booking.customerEmail,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        status: booking.status,
+        totalPrice: booking.totalPrice,
+        commission: booking.commission,
+        notes: booking.notes,
+        createdAt: booking.createdAt
+      }));
+      
       res.json({
         success: true,
-        data: bookings,
-        count: bookings.length
+        data: bookingData,
+        count: bookingData.length
       });
     } catch (error) {
       res.status(500).json({
@@ -2719,14 +2757,33 @@ Format as comprehensive JSON:
     }
   });
 
-  app.get("/api/airtable/payments", async (req: Request, res: Response) => {
+  app.get("/api/business/payments", async (req: Request, res: Response) => {
     try {
-      const airtableService = await import('./services/airtable.js').then(m => m.default);
-      const payments = await airtableService.getPayments();
+      const users = await storage.getUsers();
+      const allBookings = [];
+      
+      // Get all bookings to generate payment data
+      for (const user of users) {
+        const userBookings = await storage.getBookings(user.id);
+        allBookings.push(...userBookings);
+      }
+      
+      const paymentData = allBookings.map(booking => ({
+        id: `payment_${booking.id}`,
+        bookingId: booking.id,
+        userId: booking.userId,
+        amount: booking.totalPrice,
+        commission: booking.commission,
+        status: booking.status === 'completed' ? 'paid' : 
+                booking.status === 'confirmed' ? 'due' : 'pending',
+        dueDate: booking.endDate,
+        createdAt: booking.createdAt
+      }));
+      
       res.json({
         success: true,
-        data: payments,
-        count: payments.length
+        data: paymentData,
+        count: paymentData.length
       });
     } catch (error) {
       res.status(500).json({
@@ -2736,23 +2793,112 @@ Format as comprehensive JSON:
     }
   });
 
-  app.get("/api/airtable/reports", async (req: Request, res: Response) => {
+  app.get("/api/business/reports", async (req: Request, res: Response) => {
     try {
-      const airtableService = await import('./services/airtable.js').then(m => m.default);
-      const { startDate, endDate } = req.query;
-      const reports = await airtableService.getDailyReports(
-        startDate as string, 
-        endDate as string
+      const users = await storage.getUsers();
+      const allBookings = [];
+      
+      // Get all bookings for report generation
+      for (const user of users) {
+        const userBookings = await storage.getBookings(user.id);
+        allBookings.push(...userBookings);
+      }
+      
+      // Generate daily reports
+      const dailyReports = {};
+      allBookings.forEach(booking => {
+        const date = new Date(booking.createdAt).toISOString().split('T')[0];
+        if (!dailyReports[date]) {
+          dailyReports[date] = {
+            date,
+            totalBookings: 0,
+            totalRevenue: 0,
+            completedBookings: 0,
+            cancelledBookings: 0
+          };
+        }
+        
+        dailyReports[date].totalBookings++;
+        dailyReports[date].totalRevenue += Number(booking.totalPrice) || 0;
+        
+        if (booking.status === 'completed') {
+          dailyReports[date].completedBookings++;
+        } else if (booking.status === 'cancelled') {
+          dailyReports[date].cancelledBookings++;
+        }
+      });
+      
+      const reportData = Object.values(dailyReports).sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
       );
+      
       res.json({
         success: true,
-        data: reports,
-        count: reports.length
+        data: reportData,
+        count: reportData.length
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch reports'
+      });
+    }
+  });
+
+  app.post("/api/business/sync", async (req: Request, res: Response) => {
+    try {
+      const { syncType } = req.body;
+      let result;
+      
+      switch (syncType) {
+        case 'vendors':
+          const users = await storage.getUsers();
+          const vendors = users.filter(user => user.role === 'vendor');
+          result = { success: true, count: vendors.length, type: 'vendors' };
+          break;
+        case 'bookings':
+          const allUsers = await storage.getUsers();
+          let totalBookings = 0;
+          for (const user of allUsers) {
+            const userBookings = await storage.getBookings(user.id);
+            totalBookings += userBookings.length;
+          }
+          result = { success: true, count: totalBookings, type: 'bookings' };
+          break;
+        case 'payments':
+          const allUsers2 = await storage.getUsers();
+          let totalPayments = 0;
+          for (const user of allUsers2) {
+            const userBookings = await storage.getBookings(user.id);
+            totalPayments += userBookings.length;
+          }
+          result = { success: true, count: totalPayments, type: 'payments' };
+          break;
+        case 'reports':
+          const allUsers3 = await storage.getUsers();
+          let totalReportDays = 0;
+          const dailyReports = {};
+          for (const user of allUsers3) {
+            const userBookings = await storage.getBookings(user.id);
+            userBookings.forEach(booking => {
+              const date = new Date(booking.createdAt).toISOString().split('T')[0];
+              if (!dailyReports[date]) {
+                dailyReports[date] = true;
+                totalReportDays++;
+              }
+            });
+          }
+          result = { success: true, count: totalReportDays, type: 'reports' };
+          break;
+        default:
+          throw new Error('Invalid sync type');
+      }
+
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Sync failed'
       });
     }
   });

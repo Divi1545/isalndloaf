@@ -57,45 +57,45 @@ export default function AirtableManager() {
 
   // Connection test query
   const { data: connectionTest, isLoading: testLoading } = useQuery({
-    queryKey: ["/api/airtable/test"],
+    queryKey: ["/api/business/test"],
     refetchInterval: 30000 // Test connection every 30 seconds
   });
 
   // Data queries
   const { data: vendorsData, isLoading: vendorsLoading } = useQuery({
-    queryKey: ["/api/airtable/vendors"]
+    queryKey: ["/api/business/vendors"]
   });
 
   const { data: bookingsData, isLoading: bookingsLoading } = useQuery({
-    queryKey: ["/api/airtable/bookings"]
+    queryKey: ["/api/business/bookings"]
   });
 
   const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
-    queryKey: ["/api/airtable/payments"]
+    queryKey: ["/api/business/payments"]
   });
 
   const { data: reportsData, isLoading: reportsLoading } = useQuery({
-    queryKey: ["/api/airtable/reports"]
+    queryKey: ["/api/business/reports"]
   });
 
   // Sync mutation
   const syncMutation = useMutation({
     mutationFn: async (syncType: string) => {
-      const response = await apiRequest("POST", "/api/airtable/sync", { syncType });
+      const response = await apiRequest("POST", "/api/business/sync", { syncType });
       return response.json();
     },
     onSuccess: (data, syncType) => {
       toast({
-        title: "Sync Successful",
-        description: `${syncType} data synchronized with ${data.count} records`,
+        title: "Data Refreshed",
+        description: `${syncType} data refreshed with ${data.count} records`,
       });
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: [`/api/airtable/${syncType}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/business/${syncType}`] });
     },
     onError: (error) => {
       toast({
-        title: "Sync Failed",
-        description: error instanceof Error ? error.message : "Failed to sync data",
+        title: "Refresh Failed",
+        description: error instanceof Error ? error.message : "Failed to refresh data",
         variant: "destructive",
       });
     },
@@ -110,7 +110,7 @@ export default function AirtableManager() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />
-          Airtable Connection Status
+          Database Connection Status
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -156,7 +156,7 @@ export default function AirtableManager() {
             onClick={() => handleSync('vendors')}
             disabled={syncMutation.isPending}
           >
-            {syncMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Sync'}
+            {syncMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Refresh'}
           </Button>
         </CardContent>
       </Card>
@@ -177,7 +177,7 @@ export default function AirtableManager() {
             onClick={() => handleSync('bookings')}
             disabled={syncMutation.isPending}
           >
-            {syncMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Sync'}
+            {syncMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Refresh'}
           </Button>
         </CardContent>
       </Card>
@@ -198,7 +198,7 @@ export default function AirtableManager() {
             onClick={() => handleSync('payments')}
             disabled={syncMutation.isPending}
           >
-            {syncMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Sync'}
+            {syncMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Refresh'}
           </Button>
         </CardContent>
       </Card>
@@ -219,7 +219,7 @@ export default function AirtableManager() {
             onClick={() => handleSync('reports')}
             disabled={syncMutation.isPending}
           >
-            {syncMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Sync'}
+            {syncMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Refresh'}
           </Button>
         </CardContent>
       </Card>
@@ -274,7 +274,7 @@ export default function AirtableManager() {
   const BookingsTable = () => (
     <Card>
       <CardHeader>
-        <CardTitle>Bookings from Airtable</CardTitle>
+        <CardTitle>Bookings from Database</CardTitle>
         <CardDescription>
           Live booking data with customer details and status tracking
         </CardDescription>
@@ -332,7 +332,7 @@ export default function AirtableManager() {
   const PaymentsTable = () => (
     <Card>
       <CardHeader>
-        <CardTitle>Payments from Airtable</CardTitle>
+        <CardTitle>Payments from Database</CardTitle>
         <CardDescription>
           Financial transactions and payment status tracking
         </CardDescription>
@@ -385,7 +385,7 @@ export default function AirtableManager() {
   const ReportsTable = () => (
     <Card>
       <CardHeader>
-        <CardTitle>Daily Reports from Airtable</CardTitle>
+        <CardTitle>Daily Reports from Database</CardTitle>
         <CardDescription>
           Business intelligence and performance metrics
         </CardDescription>
@@ -429,14 +429,14 @@ export default function AirtableManager() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Airtable Data Manager</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Business Data Manager</h1>
           <p className="text-muted-foreground">
-            Real-time synchronization with your Airtable business data
+            Real-time business data from your PostgreSQL database
           </p>
         </div>
         <Button
           onClick={() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/airtable"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/business"] });
             toast({ title: "Refreshing all data..." });
           }}
           disabled={syncMutation.isPending}
