@@ -127,6 +127,50 @@ export default function AiMarketing() {
     },
   });
 
+  // Export content function
+  function exportContent() {
+    if (!generatedContent) return;
+    
+    const blob = new Blob([generatedContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `marketing-content-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    toast({
+      title: "Content exported",
+      description: "Marketing content has been exported successfully.",
+    });
+  }
+
+  // Export all content function
+  function exportAllContent() {
+    if (!marketingContents || marketingContents.length === 0) return;
+    
+    const allContent = marketingContents.map((content: any) => 
+      `${content.title}\n${new Date(content.createdAt).toLocaleDateString()}\n\n${content.content}\n\n---\n\n`
+    ).join('');
+    
+    const blob = new Blob([allContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `all-marketing-content-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    toast({
+      title: "All content exported",
+      description: "All marketing content has been exported successfully.",
+    });
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-6">AI Marketing Tools</h1>
@@ -284,7 +328,11 @@ export default function AiMarketing() {
                           <Clipboard className="h-4 w-4 mr-2" />
                           Copy
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={exportContent}
+                        >
                           <Download className="h-4 w-4 mr-2" />
                           Export
                         </Button>
@@ -318,7 +366,19 @@ export default function AiMarketing() {
         <TabsContent value="history" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Previously Generated Content</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>Previously Generated Content</CardTitle>
+                {marketingContents && marketingContents.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={exportAllContent}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export All
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
