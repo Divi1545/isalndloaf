@@ -326,8 +326,8 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Dashboard Statistics API
-  app.get("/api/dashboard/stats", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+  // Dashboard Statistics API (Legacy - keeping for compatibility)
+  app.get("/api/dashboard/stats-legacy", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
     try {
       const users = await storage.getUsers();
       
@@ -640,8 +640,8 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Export revenue report
-  app.get("/api/revenue/export", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+  // Export revenue report (Legacy - keeping for compatibility)
+  app.get("/api/revenue/export-legacy", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
     try {
       const { format = 'csv', timeframe = 'thisMonth' } = req.query;
       
