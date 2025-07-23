@@ -132,6 +132,15 @@ export const supportTickets = pgTable("support_tickets", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// API Keys for external access
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  label: text("label").notNull(),
+  key: text("key").notNull().unique(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true });
@@ -141,6 +150,7 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true,
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertMarketingContentSchema = createInsertSchema(marketingContents).omit({ id: true, createdAt: true });
 export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({ id: true, createdAt: true });
 
 // Auth schema
 export const loginSchema = z.object({
@@ -172,6 +182,9 @@ export type MarketingContent = typeof marketingContents.$inferSelect;
 
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type SupportTicket = typeof supportTickets.$inferSelect;
+
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = typeof apiKeys.$inferSelect;
 
 export type BusinessType = typeof businessTypes[number];
 export type BookingStatus = typeof bookingStatuses[number];

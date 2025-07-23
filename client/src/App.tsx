@@ -32,6 +32,7 @@ import TransactionHistory from "@/pages/admin/TransactionHistory";
 import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
 import SupportDashboard from "@/pages/admin/SupportDashboard";
 import Settings from "@/pages/admin/Settings";
+import ApiKeys from "@/pages/admin/api-keys";
 import { useAuth } from "@/lib/auth";
 import { useEffect } from "react";
 
@@ -123,6 +124,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <Settings />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/api-keys">
+        {() => (
+          <DashboardLayout>
+            <ApiKeys />
           </DashboardLayout>
         )}
       </Route>

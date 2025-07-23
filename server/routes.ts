@@ -3,9 +3,11 @@ import { Server } from "http";
 import { z } from "zod";
 import path from "path";
 import { storage } from "./storage";
-import { bookingStatuses, loginSchema, insertUserSchema } from "@shared/schema";
+import { bookingStatuses, loginSchema, insertUserSchema, insertApiKeySchema } from "@shared/schema";
 import OpenAI from "openai";
 import vendorAuthRouter from "./vendor-auth";
+import { generatePrefixedApiKey } from "./utils/crypto";
+import { verifyApiKey } from "./middleware/api-key-auth";
 
 interface SessionData {
   userId: number;
@@ -4034,6 +4036,102 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
     } catch (error) {
       console.error("Error changing password:", error);
       res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
+  // API Key Management Routes (Admin only)
+  
+  // Generate new API key
+  app.post("/api/keys/generate", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const { label } = req.body;
+      
+      if (!label || label.trim().length < 3) {
+        return res.status(400).json({ error: "Label must be at least 3 characters long" });
+      }
+      
+      // Generate secure API key
+      const apiKey = generatePrefixedApiKey();
+      
+      // Store in database
+      const keyRecord = await storage.createApiKey({
+        label: label.trim(),
+        key: apiKey,
+        active: true
+      });
+      
+      res.json({
+        success: true,
+        apiKey: keyRecord,
+        message: "API key generated successfully"
+      });
+      
+    } catch (error) {
+      console.error("Failed to generate API key:", error);
+      res.status(500).json({ error: "Failed to generate API key" });
+    }
+  });
+  
+  // List all API keys
+  app.get("/api/keys/list", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const apiKeys = await storage.getApiKeys();
+      res.json(apiKeys);
+    } catch (error) {
+      console.error("Failed to fetch API keys:", error);
+      res.status(500).json({ error: "Failed to fetch API keys" });
+    }
+  });
+  
+  // Revoke API key
+  app.post("/api/keys/revoke", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ error: "API key ID is required" });
+      }
+      
+      const success = await storage.revokeApiKey(parseInt(id));
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: "API key revoked successfully" 
+        });
+      } else {
+        res.status(404).json({ error: "API key not found" });
+      }
+      
+    } catch (error) {
+      console.error("Failed to revoke API key:", error);
+      res.status(500).json({ error: "Failed to revoke API key" });
+    }
+  });
+
+  // Example protected API endpoint using API key authentication
+  app.get("/api/external/bookings", verifyApiKey, async (req: Request, res: Response) => {
+    try {
+      // This endpoint can be accessed with a valid API key
+      const bookings = await storage.getAllBookings();
+      
+      // Log API usage for monitoring
+      console.log(`API key used: ${req.apiKey?.label} (${req.apiKey?.id})`);
+      
+      res.json({
+        bookings: bookings.map(booking => ({
+          id: booking.id,
+          customerName: booking.customerName,
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          status: booking.status,
+          totalPrice: booking.totalPrice
+        }))
+      });
+      
+    } catch (error) {
+      console.error("Failed to fetch bookings via API:", error);
+      res.status(500).json({ error: "Failed to fetch bookings" });
     }
   });
 

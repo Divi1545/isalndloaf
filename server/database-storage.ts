@@ -11,7 +11,8 @@ import {
   Notification, InsertNotification,
   MarketingContent, InsertMarketingContent,
   SupportTicket, InsertSupportTicket,
-  bookings, notifications, marketingContents
+  ApiKey, InsertApiKey,
+  bookings, notifications, marketingContents, apiKeys
 } from '@shared/schema';
 
 /**
@@ -459,6 +460,46 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error(`Failed to delete support ticket ${id}:`, error);
+      return false;
+    }
+  }
+
+  // API Key operations
+  async getApiKeys(): Promise<ApiKey[]> {
+    return await db.select().from(apiKeys).orderBy(desc(apiKeys.createdAt));
+  }
+
+  async getApiKeyByKey(key: string): Promise<ApiKey | undefined> {
+    const [result] = await db.select().from(apiKeys).where(eq(apiKeys.key, key));
+    return result || undefined;
+  }
+
+  async getApiKeyById(id: number): Promise<ApiKey | undefined> {
+    const [result] = await db.select().from(apiKeys).where(eq(apiKeys.id, id));
+    return result || undefined;
+  }
+
+  async createApiKey(apiKey: InsertApiKey): Promise<ApiKey> {
+    const [result] = await db.insert(apiKeys).values(apiKey).returning();
+    return result;
+  }
+
+  async updateApiKey(id: number, apiKeyUpdate: Partial<InsertApiKey>): Promise<ApiKey | undefined> {
+    try {
+      const [result] = await db.update(apiKeys).set(apiKeyUpdate).where(eq(apiKeys.id, id)).returning();
+      return result;
+    } catch (error) {
+      console.error(`Failed to update API key ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  async revokeApiKey(id: number): Promise<boolean> {
+    try {
+      await db.update(apiKeys).set({ active: false }).where(eq(apiKeys.id, id));
+      return true;
+    } catch (error) {
+      console.error(`Failed to revoke API key ${id}:`, error);
       return false;
     }
   }
