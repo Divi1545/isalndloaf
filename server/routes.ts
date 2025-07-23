@@ -4135,6 +4135,123 @@ Format as actionable prompt engineering advice for a ${agent} agent in a Sri Lan
     }
   });
 
+  // Room Management API Routes
+  // Get room types for a vendor
+  app.get("/api/vendors/:vendorId/room-types", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const vendorId = parseInt(req.params.vendorId);
+      const user = req.session.user;
+      
+      // Check permissions - vendor can access their own rooms, admin can access all
+      if (user.userRole !== 'admin' && user.userId !== vendorId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const roomTypes = await storage.getRoomTypes(vendorId);
+      res.json(roomTypes);
+    } catch (error) {
+      console.error("Error fetching room types:", error);
+      res.status(500).json({ error: "Failed to fetch room types" });
+    }
+  });
+
+  // Create room types for a vendor
+  app.post("/api/vendors/:vendorId/room-types", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const vendorId = parseInt(req.params.vendorId);
+      const user = req.session.user;
+      const { roomTypes: roomTypesData } = req.body;
+      
+      // Check permissions
+      if (user.userRole !== 'admin' && user.userId !== vendorId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      if (!roomTypesData || !Array.isArray(roomTypesData)) {
+        return res.status(400).json({ error: "Room types data is required" });
+      }
+      
+      // Create each room type
+      const createdRoomTypes = [];
+      for (const roomTypeData of roomTypesData) {
+        const roomType = await storage.createRoomType({
+          vendorId,
+          roomTypeName: roomTypeData.roomTypeName,
+          bedTypes: roomTypeData.bedTypes,
+          numberOfRooms: roomTypeData.numberOfRooms,
+          amenities: roomTypeData.amenities,
+          description: roomTypeData.description,
+          priceModifier: roomTypeData.priceModifier || 1.0
+        });
+        createdRoomTypes.push(roomType);
+      }
+      
+      res.status(201).json(createdRoomTypes);
+    } catch (error) {
+      console.error("Error creating room types:", error);
+      res.status(500).json({ error: "Failed to create room types" });
+    }
+  });
+
+  // Update a room type
+  app.put("/api/room-types/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const roomTypeId = parseInt(req.params.id);
+      const user = req.session.user;
+      const updateData = req.body;
+      
+      // Get existing room type to check ownership
+      const existingRoomType = await storage.getRoomType(roomTypeId);
+      if (!existingRoomType) {
+        return res.status(404).json({ error: "Room type not found" });
+      }
+      
+      // Check permissions
+      if (user.userRole !== 'admin' && user.userId !== existingRoomType.vendorId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const updatedRoomType = await storage.updateRoomType(roomTypeId, updateData);
+      if (!updatedRoomType) {
+        return res.status(500).json({ error: "Failed to update room type" });
+      }
+      
+      res.json(updatedRoomType);
+    } catch (error) {
+      console.error("Error updating room type:", error);
+      res.status(500).json({ error: "Failed to update room type" });
+    }
+  });
+
+  // Delete a room type
+  app.delete("/api/room-types/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const roomTypeId = parseInt(req.params.id);
+      const user = req.session.user;
+      
+      // Get existing room type to check ownership
+      const existingRoomType = await storage.getRoomType(roomTypeId);
+      if (!existingRoomType) {
+        return res.status(404).json({ error: "Room type not found" });
+      }
+      
+      // Check permissions
+      if (user.userRole !== 'admin' && user.userId !== existingRoomType.vendorId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const deleted = await storage.deleteRoomType(roomTypeId);
+      if (!deleted) {
+        return res.status(500).json({ error: "Failed to delete room type" });
+      }
+      
+      res.json({ success: true, message: "Room type deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting room type:", error);
+      res.status(500).json({ error: "Failed to delete room type" });
+    }
+  });
+
   // For handling errors
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack);

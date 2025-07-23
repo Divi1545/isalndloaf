@@ -34,6 +34,38 @@ export const bookingStatuses = [
   "refunded",
 ] as const;
 
+// Room and accommodation options
+export const bedTypes = [
+  "single",
+  "double", 
+  "twin",
+  "king",
+  "queen",
+  "sofa_bed",
+  "bunk_bed",
+] as const;
+
+export const amenityOptions = [
+  "wifi",
+  "ac",
+  "pool",
+  "breakfast",
+  "sea_view",
+  "mountain_view",
+  "balcony",
+  "parking",
+  "gym",
+  "spa",
+  "restaurant",
+  "bar",
+  "room_service",
+  "laundry",
+  "concierge",
+  "beach_access",
+  "airport_shuttle",
+  "pet_friendly",
+] as const;
+
 // Service schema
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
@@ -141,6 +173,31 @@ export const apiKeys = pgTable("api_keys", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Room Types for Accommodation Vendors
+export const roomTypes = pgTable("room_types", {
+  id: serial("id").primaryKey(),
+  vendorId: integer("vendor_id").notNull().references(() => users.id),
+  roomTypeName: text("room_type_name").notNull(),
+  bedTypes: jsonb("bed_types").notNull().default([]), // Array of bed types: ["double", "twin", "king"]
+  numberOfRooms: integer("number_of_rooms").notNull(),
+  amenities: jsonb("amenities").notNull().default([]), // Array of amenities: ["wifi", "ac", "pool"]
+  description: text("description"),
+  priceModifier: real("price_modifier").notNull().default(1.0), // Multiplier for service base price
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Booking room details - links bookings to specific room types
+export const bookingRooms = pgTable("booking_rooms", {
+  id: serial("id").primaryKey(),
+  bookingId: integer("booking_id").notNull().references(() => bookings.id),
+  roomTypeId: integer("room_type_id").notNull().references(() => roomTypes.id),
+  roomsBooked: integer("rooms_booked").notNull().default(1),
+  guestCount: integer("guest_count").notNull().default(1),
+  specialRequests: text("special_requests"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true });
@@ -151,6 +208,8 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 export const insertMarketingContentSchema = createInsertSchema(marketingContents).omit({ id: true, createdAt: true });
 export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertApiKeySchema = createInsertSchema(apiKeys).omit({ id: true, createdAt: true });
+export const insertRoomTypeSchema = createInsertSchema(roomTypes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBookingRoomSchema = createInsertSchema(bookingRooms).omit({ id: true, createdAt: true });
 
 // Auth schema
 export const loginSchema = z.object({
@@ -186,7 +245,15 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type ApiKey = typeof apiKeys.$inferSelect;
 
+export type InsertRoomType = z.infer<typeof insertRoomTypeSchema>;
+export type RoomType = typeof roomTypes.$inferSelect;
+
+export type InsertBookingRoom = z.infer<typeof insertBookingRoomSchema>;
+export type BookingRoom = typeof bookingRooms.$inferSelect;
+
 export type BusinessType = typeof businessTypes[number];
 export type BookingStatus = typeof bookingStatuses[number];
+export type BedType = typeof bedTypes[number];
+export type AmenityOption = typeof amenityOptions[number];
 
 export type LoginCredentials = z.infer<typeof loginSchema>;

@@ -1,0 +1,105 @@
+You are **absolutely right**—for accommodations (hotels, villas, guesthouses, etc.), you NEED a way to capture and manage the **room types and bed/amenity details** so you can:
+
+* Display the right options to guests (in your chatbot or booking engine)
+* Avoid confusion or wrong bookings (e.g., someone booking a single when they wanted a double)
+* Power smart recommendations, filtering, and AI replies
+
+---
+
+## 🟩 **Here’s the Best Way to Set It Up**
+
+### 1. **Vendor Onboarding (Accommodation Only)**
+
+When a vendor signs up (adds a new accommodation), show extra options for:
+
+* **Room Types:** (e.g., Deluxe Double, Twin, Family Suite)
+* **Beds:** (Single, Double, Twin, King, etc.)
+* **Amenities:** (AC, WiFi, Pool, Breakfast, Sea View, etc.)
+* **Number of Rooms:** How many of each room type available
+
+### 2. **Where to Put This**
+
+* **Vendor Onboarding/Edit Form:**
+  When they choose `Business Type = Accommodation`, display the extra section for “Room Details & Amenities.”
+* **Database:**
+  Store this info in a `rooms` or `accommodation_options` table linked to the property/vendor.
+* **Booking Flow:**
+  When a customer is booking, they can choose their **room type and beds** (and see what’s available on their dates).
+
+---
+
+## 🛠️ **What to Build on Replit / What to Tell Your Dev/Agent**
+
+**Here’s exactly what to ask for:**
+
+---
+
+### 📝 **Prompt for Replit Agent or Developer**
+
+> Update the Vendor Management system in IslandLoaf so that when a new vendor is added and the business type is set to “Accommodation”, the admin or vendor must also fill in room and amenity details.
+>
+> **Requirements:**
+>
+> * When `Business Type = Accommodation`, show an additional section in the vendor form:
+>
+>   * **Room Types:** (Text, with “Add Room Type” button to add multiple types)
+>   * **Beds per Room:** (Dropdown or checkboxes: Single, Double, Twin, King, etc.)
+>   * **Number of Rooms:** (Numeric input per room type)
+>   * **Amenities:** (Multi-select: WiFi, AC, Pool, Breakfast, etc.)
+>   * **Room Description:** (Optional text field)
+> * All room data must be saved in the database and linked to the vendor/property.
+> * In the Booking flow, users should be able to:
+>
+>   * See available room types, bed options, and amenities
+>   * Choose their desired option before confirming booking
+> * Room availability must be tracked by type (if there are 3 “Deluxe Double”, you can only book up to 3 at a time)
+> * This should be editable by the admin and (optionally) by the vendor after onboarding.
+> * Add a “Rooms & Amenities” tab in Vendor Management for editing/adding room data for accommodations.
+
+---
+
+### 🧩 **Database Changes**
+
+* **New Table:** `rooms`
+
+  ```
+  id | vendor_id | room_type | beds | num_rooms | amenities | description
+  ```
+* **Link to Vendor:** Each accommodation can have multiple room types.
+
+---
+
+### 💡 **How it Looks in the Admin/Vendor Dashboard**
+
+**Onboarding or Edit Vendor:**
+
+```
+[Add Room Type]
+Room Type: [Deluxe Double]
+Beds: [Double] [Twin] [King]
+Number of Rooms: [3]
+Amenities: [WiFi] [AC] [Pool]
+Room Description: [Sea view, with balcony...]
+
+[Add Another Room Type]
+```
+
+---
+
+### 🟦 **What to Code in React/Frontend**
+
+* When the business type is “Accommodation”, display a **dynamic section** for room types.
+* Allow multiple room types to be added/edited.
+* Save all data together with the vendor profile.
+
+---
+
+### ✅ **Result**
+
+* Your booking engine and chatbot will be able to **filter/search by room type, bed type, amenities**.
+* You can offer accurate options to guests and power up recommendations or AI responses.
+
+---
+
+If you want, I can write a **sample JSON structure** for your backend, or a **starter React form** code for the “Room Types & Amenities” section.
+**Let me know how detailed you want the solution!**

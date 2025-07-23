@@ -12,7 +12,9 @@ import {
   MarketingContent, InsertMarketingContent,
   SupportTicket, InsertSupportTicket,
   ApiKey, InsertApiKey,
-  bookings, notifications, marketingContents, apiKeys
+  RoomType, InsertRoomType,
+  BookingRoom, InsertBookingRoom,
+  bookings, notifications, marketingContents, apiKeys, roomTypes, bookingRooms
 } from '@shared/schema';
 
 /**
@@ -500,6 +502,103 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error(`Failed to revoke API key ${id}:`, error);
+      return false;
+    }
+  }
+
+  // Room type operations
+  async getRoomTypes(vendorId: number): Promise<RoomType[]> {
+    try {
+      const result = await db
+        .select()
+        .from(roomTypes)
+        .where(eq(roomTypes.vendorId, vendorId));
+      return result;
+    } catch (error) {
+      console.error("Error getting room types:", error);
+      return [];
+    }
+  }
+
+  async getRoomType(id: number): Promise<RoomType | undefined> {
+    try {
+      const [roomType] = await db
+        .select()
+        .from(roomTypes)
+        .where(eq(roomTypes.id, id));
+      return roomType || undefined;
+    } catch (error) {
+      console.error("Error getting room type:", error);
+      return undefined;
+    }
+  }
+
+  async createRoomType(roomType: InsertRoomType): Promise<RoomType> {
+    const [newRoomType] = await db
+      .insert(roomTypes)
+      .values(roomType)
+      .returning();
+    return newRoomType;
+  }
+
+  async updateRoomType(id: number, roomType: Partial<InsertRoomType>): Promise<RoomType | undefined> {
+    try {
+      const [updatedRoomType] = await db
+        .update(roomTypes)
+        .set(roomType)
+        .where(eq(roomTypes.id, id))
+        .returning();
+      return updatedRoomType || undefined;
+    } catch (error) {
+      console.error("Error updating room type:", error);
+      return undefined;
+    }
+  }
+
+  async deleteRoomType(id: number): Promise<boolean> {
+    try {
+      const [deleted] = await db
+        .delete(roomTypes)
+        .where(eq(roomTypes.id, id))
+        .returning();
+      return !!deleted;
+    } catch (error) {
+      console.error("Error deleting room type:", error);
+      return false;
+    }
+  }
+
+  // Booking room operations
+  async getBookingRooms(bookingId: number): Promise<BookingRoom[]> {
+    try {
+      const result = await db
+        .select()
+        .from(bookingRooms)
+        .where(eq(bookingRooms.bookingId, bookingId));
+      return result;
+    } catch (error) {
+      console.error("Error getting booking rooms:", error);
+      return [];
+    }
+  }
+
+  async createBookingRoom(bookingRoom: InsertBookingRoom): Promise<BookingRoom> {
+    const [newBookingRoom] = await db
+      .insert(bookingRooms)
+      .values(bookingRoom)
+      .returning();
+    return newBookingRoom;
+  }
+
+  async deleteBookingRoom(id: number): Promise<boolean> {
+    try {
+      const [deleted] = await db
+        .delete(bookingRooms)
+        .where(eq(bookingRooms.id, id))
+        .returning();
+      return !!deleted;
+    } catch (error) {
+      console.error("Error deleting booking room:", error);
       return false;
     }
   }

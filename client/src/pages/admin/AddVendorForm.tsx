@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import RoomManagementForm from "@/components/forms/RoomManagementForm";
 
 const AddVendorForm = () => {
   const [formData, setFormData] = useState({
@@ -34,6 +35,9 @@ const AddVendorForm = () => {
       products: false
     }
   });
+
+  const [roomData, setRoomData] = useState(null);
+  const [showRoomManagement, setShowRoomManagement] = useState(false);
   
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
@@ -74,6 +78,14 @@ const AddVendorForm = () => {
       ...prev,
       [name]: value
     }));
+    
+    // Show room management if business type is accommodation (stays)
+    if (name === 'businessType' && value === 'stays') {
+      setShowRoomManagement(true);
+    } else if (name === 'businessType') {
+      setShowRoomManagement(false);
+      setRoomData(null);
+    }
   };
   
   const handleCategoryChange = (category: string, checked: boolean) => {
@@ -86,8 +98,8 @@ const AddVendorForm = () => {
     }));
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     
     // Validate required fields
     if (!formData.username || !formData.password || !formData.fullName || !formData.businessName || !formData.email) {
@@ -111,7 +123,8 @@ const AddVendorForm = () => {
       businessName: formData.businessName,
       email: formData.email,
       businessType: formData.businessType,
-      categoriesAllowed
+      categoriesAllowed,
+      roomData: showRoomManagement ? roomData : null
     };
     
     createVendorMutation.mutate(vendorData);
@@ -209,12 +222,12 @@ const AddVendorForm = () => {
                     <SelectValue placeholder="Select business type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="hotel">Hotel / Resort</SelectItem>
-                    <SelectItem value="villa">Villa / Homestay</SelectItem>
-                    <SelectItem value="transport">Transport Company</SelectItem>
-                    <SelectItem value="tour">Tour Operator</SelectItem>
+                    <SelectItem value="stays">Hotel / Resort / Villa</SelectItem>
+                    <SelectItem value="vehicles">Transport Company</SelectItem>
+                    <SelectItem value="tours">Tour Operator</SelectItem>
                     <SelectItem value="wellness">Wellness Center</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="tickets">Tickets & Events</SelectItem>
+                    <SelectItem value="products">Products & Retail</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -320,28 +333,57 @@ const AddVendorForm = () => {
                 </div>
               </div>
             </div>
-            
-            <div className="flex justify-end space-x-4 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setLocation("/admin/vendors")}
-                disabled={createVendorMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createVendorMutation.isPending}>
-                {createVendorMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Vendor"
-                )}
-              </Button>
-            </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Room Management Section for Accommodation Types */}
+      {showRoomManagement && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Room Types & Amenities</CardTitle>
+            <p className="text-sm text-gray-600">
+              Configure room types, bed options, and amenities for your accommodation business.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <RoomManagementForm
+              onSave={(data) => setRoomData(data)}
+              onCancel={() => {
+                setShowRoomManagement(false);
+                setRoomData(null);
+              }}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Form Actions */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setLocation("/admin/vendors")}
+              disabled={createVendorMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={createVendorMutation.isPending || (showRoomManagement && !roomData)}
+            >
+              {createVendorMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Vendor"
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

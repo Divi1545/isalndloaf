@@ -6,7 +6,9 @@ import {
   bookings, type Booking, type InsertBooking,
   notifications, type Notification, type InsertNotification,
   marketingContents, type MarketingContent, type InsertMarketingContent,
-  supportTickets, type SupportTicket, type InsertSupportTicket
+  supportTickets, type SupportTicket, type InsertSupportTicket,
+  roomTypes, type RoomType, type InsertRoomType,
+  bookingRooms, type BookingRoom, type InsertBookingRoom
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -69,6 +71,18 @@ export interface IStorage {
   createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
   updateSupportTicket(id: number, ticket: Partial<InsertSupportTicket>): Promise<SupportTicket | undefined>;
   deleteSupportTicket(id: number): Promise<boolean>;
+  
+  // Room type operations
+  getRoomTypes(vendorId: number): Promise<RoomType[]>;
+  getRoomType(id: number): Promise<RoomType | undefined>;
+  createRoomType(roomType: InsertRoomType): Promise<RoomType>;
+  updateRoomType(id: number, roomType: Partial<InsertRoomType>): Promise<RoomType | undefined>;
+  deleteRoomType(id: number): Promise<boolean>;
+  
+  // Booking room operations
+  getBookingRooms(bookingId: number): Promise<BookingRoom[]>;
+  createBookingRoom(bookingRoom: InsertBookingRoom): Promise<BookingRoom>;
+  deleteBookingRoom(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
