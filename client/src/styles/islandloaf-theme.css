@@ -131,23 +131,41 @@
 
 /* Sidebar styling */
 .sidebar-islandloaf {
-  background: linear-gradient(180deg, var(--color-primary) 0%, #4a4b4d 100%);
+  background: var(--color-accent) !important; /* Soft pink background */
   border-right: 3px solid var(--color-secondary);
+  color: #222 !important; /* Black text */
 }
 
 .sidebar-islandloaf .nav-item {
-  color: var(--color-background);
+  color: #222 !important; /* Black text */
   transition: all 0.2s ease;
+  font-family: var(--font-body);
+  font-size: 1.12rem;
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.4rem;
+  border-radius: 0.9rem;
+  background: none;
 }
 
-.sidebar-islandloaf .nav-item:hover {
-  background: var(--color-secondary);
-  color: var(--color-primary);
-  border-radius: 0.5rem;
+.sidebar-islandloaf .nav-item:hover:not(.active) {
+  background: #ea6d92 !important; /* Deeper pink on hover */
+  color: #222 !important; /* Keep black text */
 }
 
 .sidebar-islandloaf .nav-item.active {
-  background: var(--color-accent);
-  color: var(--color-background);
-  border-radius: 0.5rem;
+  background: var(--color-secondary) !important; /* Aqua blue for active */
+  color: #222 !important; /* Black text */
+  font-weight: 600;
+  border-radius: 0.9rem;
+}
+
+/* Sidebar header styling */
+.sidebar-islandloaf .sidebar-header {
+  font-family: var(--font-heading) !important;
+  font-size: 2rem;
+  letter-spacing: 2px;
+  color: #222 !important; /* Black text */
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding-top: 2rem;
 }

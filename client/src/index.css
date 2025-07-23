@@ -33,12 +33,12 @@
   --chart-5: 0 84% 60%;
   
   /* IslandLoaf Sidebar colors */
-  --sidebar-background: 210 11% 36%; /* Charcoal */
-  --sidebar-foreground: 0 0% 100%;
+  --sidebar-background: 346 77% 80%; /* Soft pink */
+  --sidebar-foreground: 210 11% 15%; /* Black text */
   --sidebar-primary: 177 25% 65%; /* Aqua blue */
-  --sidebar-primary-foreground: 210 11% 36%;
-  --sidebar-accent: 346 77% 80%; /* Soft pink */
-  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-primary-foreground: 210 11% 15%; /* Black text */
+  --sidebar-accent: 346 77% 76%; /* Deeper pink for hover */
+  --sidebar-accent-foreground: 210 11% 15%; /* Black text */
   --sidebar-border: 177 25% 65%;
   --sidebar-ring: 177 25% 65%;
 }

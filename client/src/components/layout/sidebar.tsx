@@ -52,29 +52,29 @@ export default function Sidebar({ isOpen, onOpenChange, user }: SidebarProps) {
   return (
     <div 
       className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-sidebar text-sidebar-foreground transition-transform duration-300 ease-in-out transform",
+        "fixed inset-y-0 left-0 z-40 w-64 bg-sidebar text-sidebar-foreground transition-transform duration-300 ease-in-out transform sidebar-islandloaf",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
-      <div className="px-6 pt-8 pb-4 flex items-center border-b border-sidebar-border">
+      <div className="px-6 pt-8 pb-4 flex items-center border-b border-sidebar-border sidebar-header">
         <img 
           src={logoImage} 
           alt="IslandLoaf Logo" 
           className="h-8 w-auto mr-3"
         />
-        <h1 className="text-xl font-bold">IslandLoaf</h1>
+        <h1 className="text-xl font-bold" style={{fontFamily: 'Fredoka One, cursive', color: '#222'}}>IslandLoaf</h1>
       </div>
       
       <div className="px-4 py-6">
         <div className="flex items-center mb-6 px-2">
-          <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-white font-medium">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{background: '#8AC3C1'}}>
+            <span className="font-medium" style={{color: '#222'}}>
               {user.fullName ? getInitials(user.fullName) : "U"}
             </span>
           </div>
           <div className="ml-3">
-            <p className="font-medium">{user.fullName}</p>
-            <p className="text-xs text-sidebar-foreground/70">{user.businessName}</p>
+            <p className="font-medium" style={{color: '#222'}}>{user.fullName}</p>
+            <p className="text-xs" style={{color: '#222', opacity: 0.7}}>{user.businessName}</p>
           </div>
         </div>
         
@@ -90,9 +90,9 @@ export default function Sidebar({ isOpen, onOpenChange, user }: SidebarProps) {
               >
                 <a 
                   className={cn(
-                    "flex items-center px-3 py-2 rounded-md",
+                    "flex items-center px-3 py-2 rounded-md nav-item",
                     isActive 
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground" 
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground active" 
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
@@ -105,10 +105,11 @@ export default function Sidebar({ isOpen, onOpenChange, user }: SidebarProps) {
         </nav>
       </div>
       
-      <div className="mt-auto border-t border-sidebar-border px-4 py-4">
+      <div className="mt-auto border-t px-4 py-4" style={{borderColor: '#8AC3C1'}}>
         <button 
           onClick={logout}
-          className="flex items-center px-3 py-2 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md w-full"
+          className="flex items-center w-full px-3 py-2 rounded-md nav-item"
+          style={{color: '#222'}}
         >
           <i className="ri-logout-box-line mr-3"></i>
           <span>Logout</span>

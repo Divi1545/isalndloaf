@@ -1,0 +1,155 @@
+Perfect! Here’s your new sidebar color scheme:
+
+* **Sidebar background:** Soft Pink (`#F498AC`)
+* **Sidebar text:** Black (`#222` for best contrast)
+* **Active/highlighted item:** Aqua/Turquoise (`#8AC3C1`)
+* **Other hover/active (optional):** Slightly deeper pink for hover, if you want a second shade.
+
+---
+
+## 🟦 **Prompt for Replit AI**
+
+```
+Change my IslandLoaf admin dashboard sidebar style:
+
+- Sidebar background: #F498AC (soft pink from theme)
+- Sidebar text: Black (#222 or #000)
+- Active menu item: #8AC3C1 (aqua blue)
+- On hover: use a slightly deeper pink (#ea6d92)
+- Headings: Fredoka One; rest: Poppins
+
+Provide a React sidebar component and the CSS.
+```
+
+---
+
+## 🟩 **React Sidebar + CSS (Ready to Paste!)**
+
+### **Sidebar Component**
+
+```jsx
+// Sidebar.js
+
+import React from 'react';
+import './islandloaf-theme.css';
+
+const menuItems = [
+  { label: "Overview" },
+  { label: "Booking Manager" },
+  { label: "Calendar Sync", active: true },
+  { label: "Pricing Engine" },
+  { label: "AI Marketing" },
+  { label: "AI Features" },
+  { label: "AI Agent Trainer" },
+  { label: "Business Data" },
+  { label: "Analytics & Reports" },
+  { label: "Profile Settings" },
+  { label: "Notifications & Logs" },
+];
+
+export default function Sidebar() {
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-header">IslandLoaf</div>
+      <ul className="sidebar-menu">
+        {menuItems.map((item, idx) => (
+          <li
+            key={idx}
+            className={`sidebar-menu-item${item.active ? ' active' : ''}`}
+          >
+            {item.label}
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+```
+
+---
+
+### **CSS (`islandloaf-theme.css`)**
+
+```css
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;500;600&display=swap');
+
+:root {
+  --color-primary: #5B5C5E;      /* Charcoal */
+  --color-secondary: #8AC3C1;    /* Aqua blue */
+  --color-accent: #F498AC;       /* Soft pink */
+  --color-accent-dark: #ea6d92;  /* Deeper pink for hover */
+  --color-background: #FFFFFF;   /* White */
+  --font-heading: 'Fredoka One', cursive;
+  --font-body: 'Poppins', sans-serif;
+  --color-text: #222;            /* Black text for sidebar */
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-background);
+}
+
+.sidebar {
+  width: 270px;
+  height: 100vh;
+  background: var(--color-accent); /* Pink */
+  color: var(--color-text);
+  padding-top: 2rem;
+  font-family: var(--font-body);
+  position: fixed;
+  left: 0;
+  top: 0;
+  box-shadow: 1px 0 20px rgba(90, 90, 90, 0.08);
+}
+
+.sidebar-header {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  letter-spacing: 2px;
+  margin-bottom: 2.5rem;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0 1.5rem;
+}
+
+.sidebar-menu-item {
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.4rem;
+  border-radius: 0.9rem;
+  cursor: pointer;
+  color: var(--color-text);         /* Black */
+  background: none;
+  font-size: 1.12rem;
+  transition: background 0.14s, color 0.14s;
+}
+
+.sidebar-menu-item.active {
+  background: var(--color-secondary); /* Aqua for active */
+  color: var(--color-text);           /* Black for text */
+  font-weight: 600;
+}
+
+.sidebar-menu-item:hover:not(.active) {
+  background: var(--color-accent-dark); /* Deeper pink on hover */
+  color: var(--color-text);
+  opacity: 0.98;
+}
+```
+
+---
+
+## **How it will look:**
+
+* **Sidebar background:** Soft pink
+* **Sidebar text:** Black
+* **Active menu item:** Aqua blue highlight
+* **Hover:** Deeper pink
+* **Font:** Fredoka One for headings, Poppins for everything else
+
+---
+
+Let me know if you want any *animation* or *icon styling* added! If you want to tweak the shade of pink or blue, just tell me the hex code or upload a color sample.
