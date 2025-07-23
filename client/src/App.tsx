@@ -276,7 +276,16 @@ function Router() {
 }
 
 function App() {
-  return <Router />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <div className="islandloaf-theme">
+          <Toaster />
+          <Router />
+        </div>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
 }
 
 export default App;

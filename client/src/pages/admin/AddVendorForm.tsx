@@ -124,9 +124,17 @@ const AddVendorForm = () => {
       email: formData.email,
       businessType: formData.businessType,
       categoriesAllowed,
-      roomData: showRoomManagement ? roomData : null
+      roomData: showRoomManagement && roomData?.roomTypes?.[0] ? {
+        name: roomData.roomTypes[0].roomTypeName,
+        bedType: roomData.roomTypes[0].bedTypes[0] || 'single',
+        maxOccupancy: roomData.roomTypes[0].numberOfRooms,
+        amenities: roomData.roomTypes[0].amenities,
+        basePrice: 100,
+        description: roomData.roomTypes[0].description || 'Standard room'
+      } : null
     };
     
+    console.log("Submitting vendor data:", vendorData);
     createVendorMutation.mutate(vendorData);
   };
   
@@ -140,12 +148,12 @@ const AddVendorForm = () => {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Add New Vendor</h1>
+        <h1 className="text-3xl font-bold tracking-tight heading-islandloaf">Add New Vendor</h1>
       </div>
       
-      <Card>
+      <Card className="card-islandloaf">
         <CardHeader>
-          <CardTitle>Vendor Information</CardTitle>
+          <CardTitle className="heading-islandloaf">Vendor Information</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -375,6 +383,7 @@ const AddVendorForm = () => {
             <Button 
               onClick={handleSubmit}
               disabled={createVendorMutation.isPending || (showRoomManagement && !roomData)}
+              className="btn-islandloaf"
             >
               {createVendorMutation.isPending ? (
                 <>
