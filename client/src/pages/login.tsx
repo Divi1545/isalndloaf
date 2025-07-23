@@ -2,6 +2,7 @@ import LoginForm from "@/components/auth/login-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import logoImage from "@assets/output-onlinepngtools_1753247305728.png";
 
 export default function Login() {
   return (
@@ -11,7 +12,11 @@ export default function Login() {
           <CardContent className="p-8">
             <div className="text-center mb-8">
               <div className="flex items-center justify-center mb-4">
-                <i className="ri-island-line text-5xl text-primary"></i>
+                <img 
+                  src={logoImage} 
+                  alt="IslandLoaf Logo" 
+                  className="h-16 w-auto"
+                />
               </div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">IslandLoaf</h1>
               <p className="text-gray-600">Tourism Management Platform</p>

@@ -39,6 +39,8 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
         return "Analytics Dashboard";
       case "/admin/support":
         return "Support Dashboard";
+      case "/admin/api-keys":
+        return "API Keys";
       case "/admin/settings":
         return "Settings";
       // Vendor routes

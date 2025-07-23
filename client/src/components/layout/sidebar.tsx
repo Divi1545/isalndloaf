@@ -2,6 +2,7 @@ import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { User } from "@shared/schema";
 import { useAuth } from "@/lib/auth";
+import logoImage from "@assets/output-onlinepngtools_1753247305728.png";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -56,7 +57,11 @@ export default function Sidebar({ isOpen, onOpenChange, user }: SidebarProps) {
       )}
     >
       <div className="px-6 pt-8 pb-4 flex items-center border-b border-sidebar-border">
-        <i className="ri-island-line text-3xl mr-2"></i>
+        <img 
+          src={logoImage} 
+          alt="IslandLoaf Logo" 
+          className="h-8 w-auto mr-3"
+        />
         <h1 className="text-xl font-bold">IslandLoaf</h1>
       </div>
       
