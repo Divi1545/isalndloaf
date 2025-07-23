@@ -148,12 +148,12 @@ const AddVendorForm = () => {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight heading-islandloaf">Add New Vendor</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Add New Vendor</h1>
       </div>
       
-      <Card className="card-islandloaf">
+      <Card>
         <CardHeader>
-          <CardTitle className="heading-islandloaf">Vendor Information</CardTitle>
+          <CardTitle>Vendor Information</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -383,7 +383,6 @@ const AddVendorForm = () => {
             <Button 
               onClick={handleSubmit}
               disabled={createVendorMutation.isPending || (showRoomManagement && !roomData)}
-              className="btn-islandloaf"
             >
               {createVendorMutation.isPending ? (
                 <>
