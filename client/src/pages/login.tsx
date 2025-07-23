@@ -11,14 +11,13 @@ export default function Login() {
         <Card className="shadow-xl">
           <CardContent className="p-8">
             <div className="text-center mb-8">
-              <div className="flex items-center justify-center mb-4">
+              <div className="flex items-center justify-center mb-6">
                 <img 
                   src={logoImage} 
-                  alt="IslandLoaf Logo" 
-                  className="h-16 w-auto"
+                  alt="Logo" 
+                  className="h-96 w-auto max-w-full"
                 />
               </div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">IslandLoaf</h1>
               <p className="text-gray-600">Tourism Management Platform</p>
             </div>
             
@@ -39,7 +38,7 @@ export default function Login() {
         {/* Vendor Signup Call-to-Action */}
         <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-xl">
           <CardContent className="p-6 text-center">
-            <h3 className="text-lg font-semibold mb-2">Join IslandLoaf as a Vendor</h3>
+            <h3 className="text-lg font-semibold mb-2">Join as a Vendor</h3>
             <p className="text-green-100 mb-4 text-sm">
               List your business and connect with travelers across Sri Lanka
             </p>
