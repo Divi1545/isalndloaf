@@ -33,6 +33,7 @@ import AnalyticsDashboard from "@/pages/admin/AnalyticsDashboard";
 import SupportDashboard from "@/pages/admin/SupportDashboard";
 import Settings from "@/pages/admin/Settings";
 import ApiKeys from "@/pages/admin/api-keys";
+import AddVendorForm from "@/pages/admin/AddVendorForm";
 import { useAuth } from "@/lib/auth";
 import { useEffect } from "react";
 
@@ -131,6 +132,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <ApiKeys />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin/add-vendor">
+        {() => (
+          <DashboardLayout>
+            <AddVendorForm />
           </DashboardLayout>
         )}
       </Route>

@@ -73,75 +73,36 @@ const VendorDetailDialog = ({ vendor, onVerify, onDeactivate, onEdit }: { vendor
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <span>{vendor.businessName || vendor.fullName}</span>
-            <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
-              {vendor.role}
+            <Badge variant={vendor.role === 'vendor' ? 'default' : vendor.role === 'pending' ? 'secondary' : 'destructive'} className="ml-2">
+              {vendor.role === 'vendor' ? 'Active' : vendor.role === 'pending' ? 'Pending' : 'Inactive'}
             </Badge>
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Business Information</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-500">ID</p>
-                <p className="text-sm font-medium">#{vendor.id}</p>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-medium text-sm text-muted-foreground">Contact Information</h4>
+              <div className="space-y-2 mt-2">
+                <p><span className="font-medium">Email:</span> {vendor.email}</p>
+                <p><span className="font-medium">Username:</span> {vendor.username}</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Business Name</p>
-                <p className="text-sm font-medium">{vendor.businessName || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Business Type</p>
-                <p className="text-sm font-medium">{vendor.businessType || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Join Date</p>
-                <p className="text-sm font-medium">{new Date(vendor.createdAt).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Categories</p>
-                <p className="text-sm font-medium">{vendor.categoriesAllowed?.join(', ') || 'None'}</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-sm text-muted-foreground">Business Details</h4>
+              <div className="space-y-2 mt-2">
+                <p><span className="font-medium">Type:</span> {vendor.businessType || 'N/A'}</p>
+                <p><span className="font-medium">Categories:</span> {(vendor.categoriesAllowed || []).join(', ') || 'N/A'}</p>
               </div>
             </div>
           </div>
-          
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Contact Information</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-500">Owner</p>
-                <p className="text-sm font-medium">{vendor.fullName}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Email</p>
-                <p className="text-sm font-medium">{vendor.email}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Username</p>
-                <p className="text-sm font-medium">{vendor.username}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex justify-between mt-6">
-          <div className="space-x-2">
-            <Button variant="outline" size="sm">Message</Button>
-            <Button variant="outline" size="sm" onClick={onVerify}>
-              Verify Vendor
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" onClick={onEdit}>Edit</Button>
+            <Button variant="outline" onClick={onVerify}>
+              {vendor.role === 'vendor' ? 'Verified' : 'Verify'}
             </Button>
-          </div>
-          <div className="space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className={vendor.role === 'inactive' ? "text-green-600 border-green-200 hover:bg-green-50" : "text-red-600 border-red-200 hover:bg-red-50"} 
-              onClick={onDeactivate}
-            >
-              {vendor.role === 'inactive' ? 'Activate' : 'Deactivate'}
+            <Button variant="destructive" onClick={onDeactivate}>
+              {vendor.role === 'vendor' ? 'Deactivate' : 'Delete'}
             </Button>
-            <Button size="sm" onClick={onEdit}>Edit</Button>
           </div>
         </div>
       </DialogContent>
@@ -149,19 +110,23 @@ const VendorDetailDialog = ({ vendor, onVerify, onDeactivate, onEdit }: { vendor
   );
 };
 
-const VendorManagement = () => {
-  const [, setLocation] = useLocation();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [businessTypeFilter, setBusinessTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
-  const [isEditVendorOpen, setIsEditVendorOpen] = useState(false);
-  const [editingVendor, setEditingVendor] = useState<User | null>(null);
+function VendorManagement() {
+  const [_, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Fetch vendors from database
+  // Fetch vendors
   const { data: vendors = [], isLoading, error, refetch } = useVendors();
+  
+  // Local state for filtering and search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [businessTypeFilter, setBusinessTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Dialog states
+  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
+  const [isEditVendorOpen, setIsEditVendorOpen] = useState(false);
+  const [editingVendor, setEditingVendor] = useState<User | null>(null);
 
   // Delete vendor mutation
   const deleteVendorMutation = useMutation({
@@ -221,88 +186,6 @@ const VendorManagement = () => {
     });
   };
   
-  const [newVendor, setNewVendor] = useState({
-    businessName: '',
-    fullName: '',
-    email: '',
-    phone: '',
-    password: '',
-    businessType: 'accommodation',
-    location: '',
-    description: '',
-    website: '',
-    username: ''
-  });
-
-  // Add vendor mutation
-  const addVendorMutation = useMutation({
-    mutationFn: async (vendorData: any) => {
-      const response = await apiRequest('POST', '/api/vendors', vendorData);
-      return response.json();
-    },
-    onSuccess: (data) => {
-      // Reset form
-      setNewVendor({
-        businessName: '',
-        fullName: '',
-        email: '',
-        phone: '',
-        password: '',
-        businessType: 'accommodation',
-        location: '',
-        description: '',
-        website: '',
-        username: ''
-      });
-      
-      setIsAddVendorOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/vendors'] });
-      refetch();
-      
-      toast({
-        title: "Success",
-        description: `${data.fullName} has been added successfully to the platform.`
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error adding vendor",
-        description: error.message || "Failed to add vendor",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleAddNewVendor = () => {
-    // Validate required fields
-    if (!newVendor.businessName || !newVendor.fullName || !newVendor.email || !newVendor.password) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Generate unique username from email + timestamp
-    const baseUsername = newVendor.email.split('@')[0];
-    const username = `${baseUsername}_${Date.now()}`;
-    
-    // Prepare vendor data for backend
-    const vendorData = {
-      username: username,
-      password: newVendor.password,
-      fullName: newVendor.fullName,
-      businessName: newVendor.businessName,
-      email: newVendor.email,
-      businessType: newVendor.businessType,
-      categoriesAllowed: [newVendor.businessType, 'tours'] // Default categories
-    };
-    
-    console.log('Adding new vendor:', vendorData);
-    addVendorMutation.mutate(vendorData);
-  };
-  
   // Filter vendors based on search query and filters
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = 
@@ -326,263 +209,33 @@ const VendorManagement = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Vendor Management</h1>
-        <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-              Add New Vendor
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Add New Vendor</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Business Name</Label>
-                  <Input 
-                    value={newVendor.businessName}
-                    onChange={(e) => setNewVendor({...newVendor, businessName: e.target.value})}
-                    placeholder="Paradise Beach Resort"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Owner Name</Label>
-                  <Input 
-                    value={newVendor.fullName}
-                    onChange={(e) => setNewVendor({...newVendor, fullName: e.target.value})}
-                    placeholder="John Smith"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input 
-                    type="email"
-                    value={newVendor.email}
-                    onChange={(e) => setNewVendor({...newVendor, email: e.target.value})}
-                    placeholder="owner@business.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Phone</Label>
-                  <Input 
-                    value={newVendor.phone}
-                    onChange={(e) => setNewVendor({...newVendor, phone: e.target.value})}
-                    placeholder="+94 76 123 4567"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Password</Label>
-                <Input 
-                  type="password"
-                  value={newVendor.password}
-                  onChange={(e) => setNewVendor({...newVendor, password: e.target.value})}
-                  placeholder="Set a password for vendor login"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Business Type</Label>
-                  <Select value={newVendor.businessType} onValueChange={(value) => setNewVendor({...newVendor, businessType: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="accommodation">Accommodation</SelectItem>
-                      <SelectItem value="transport">Transport</SelectItem>
-                      <SelectItem value="tours">Tours & Activities</SelectItem>
-                      <SelectItem value="wellness">Wellness</SelectItem>
-                      <SelectItem value="dining">Dining</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Location</Label>
-                  <Input 
-                    value={newVendor.location}
-                    onChange={(e) => setNewVendor({...newVendor, location: e.target.value})}
-                    placeholder="Mirissa, Sri Lanka"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Website (Optional)</Label>
-                <Input 
-                  value={newVendor.website}
-                  onChange={(e) => setNewVendor({...newVendor, website: e.target.value})}
-                  placeholder="https://www.business.com"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Business Description</Label>
-                <Textarea 
-                  value={newVendor.description}
-                  onChange={(e) => setNewVendor({...newVendor, description: e.target.value})}
-                  placeholder="Describe your business services and offerings..."
-                  rows={3}
-                />
-              </div>
-              
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => setIsAddVendorOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddNewVendor} disabled={addVendorMutation.isPending}>
-                  {addVendorMutation.isPending ? 'Adding...' : 'Add Vendor'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-        
-        {/* Edit Vendor Dialog */}
-        <Dialog open={isEditVendorOpen} onOpenChange={setIsEditVendorOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Edit Vendor</DialogTitle>
-            </DialogHeader>
-            {editingVendor && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Business Name</Label>
-                    <Input 
-                      value={editingVendor.businessName || ''}
-                      onChange={(e) => setEditingVendor({...editingVendor, businessName: e.target.value})}
-                      placeholder="Paradise Beach Resort"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Owner Name</Label>
-                    <Input 
-                      value={editingVendor.fullName || ''}
-                      onChange={(e) => setEditingVendor({...editingVendor, fullName: e.target.value})}
-                      placeholder="John Smith"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input 
-                      type="email"
-                      value={editingVendor.email || ''}
-                      onChange={(e) => setEditingVendor({...editingVendor, email: e.target.value})}
-                      placeholder="john@resort.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Username</Label>
-                    <Input 
-                      value={editingVendor.username || ''}
-                      onChange={(e) => setEditingVendor({...editingVendor, username: e.target.value})}
-                      placeholder="john_resort"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Business Type</Label>
-                    <Select value={editingVendor.businessType} onValueChange={(value) => setEditingVendor({...editingVendor, businessType: value})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="accommodation">Accommodation</SelectItem>
-                        <SelectItem value="transport">Transport</SelectItem>
-                        <SelectItem value="tours">Tours & Activities</SelectItem>
-                        <SelectItem value="wellness">Wellness</SelectItem>
-                        <SelectItem value="dining">Dining</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={editingVendor.role} onValueChange={(value) => setEditingVendor({...editingVendor, role: value})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="vendor">Active</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="outline" onClick={() => setIsEditVendorOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={() => {
-                    updateVendorMutation.mutate({ 
-                      vendorId: editingVendor.id, 
-                      updates: {
-                        businessName: editingVendor.businessName,
-                        fullName: editingVendor.fullName,
-                        email: editingVendor.email,
-                        username: editingVendor.username,
-                        businessType: editingVendor.businessType,
-                        role: editingVendor.role
-                      }
-                    });
-                    setIsEditVendorOpen(false);
-                  }} disabled={updateVendorMutation.isPending}>
-                    {updateVendorMutation.isPending ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setLocation('/admin/add-vendor')}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Add New Vendor
+        </Button>
       </div>
-      
-      <Tabs 
-        defaultValue="all" 
-        className="w-full"
-        value={statusFilter}
-        onValueChange={setStatusFilter}
-      >
-        <TabsList className="w-full max-w-md grid grid-cols-4">
-          <TabsTrigger value="all">All Vendors</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      
+
+      {/* Search and Filter Section */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-            <div className="w-full md:w-auto">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex-1 w-full md:w-auto">
               <Input
-                placeholder="Search vendors..."
+                placeholder="Search vendors by name, email, or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full md:w-[300px]"
+                className="w-full"
               />
             </div>
-            <div className="flex flex-col sm:flex-row items-center w-full md:w-auto gap-4">
+            <div className="flex gap-3 w-full md:w-auto">
               <Select value={businessTypeFilter} onValueChange={setBusinessTypeFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Business Type" />
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
@@ -592,13 +245,12 @@ const VendorManagement = () => {
                   <SelectItem value="wellness">Wellness</SelectItem>
                 </SelectContent>
               </Select>
-              
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Status" />
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
@@ -606,106 +258,107 @@ const VendorManagement = () => {
               </Select>
             </div>
           </div>
-          
+        </CardContent>
+      </Card>
+
+      {/* Vendors List */}
+      <Card>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             {isLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : error ? (
-              <div className="text-center py-8 text-red-600">
-                Failed to load vendors. Please try again.
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
               </div>
             ) : (
               <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-sm">ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Business</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Owner</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Type</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Email</th>
-                    <th className="text-left py-3 px-4 font-medium text-sm">Role</th>
-                    <th className="text-center py-3 px-4 font-medium text-sm">Actions</th>
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Business Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Join Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categories</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredVendors.map((vendor) => (
-                    <tr key={vendor.id} className="border-b">
-                      <td className="py-4 px-4 text-sm">#{vendor.id}</td>
-                      <td className="py-4 px-4 text-sm font-medium">
+                    <tr key={vendor.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          {vendor.businessName || vendor.fullName}
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1 text-blue-500">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="m9 12 2 2 4-4"></path>
-                          </svg>
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                {(vendor.businessName || vendor.fullName || '?').charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {vendor.businessName || vendor.fullName}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              ID: {vendor.id}
+                            </div>
+                          </div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-sm">{vendor.fullName}</td>
-                      <td className="py-4 px-4 text-sm">{vendor.businessType || 'N/A'}</td>
-                      <td className="py-4 px-4 text-sm">{vendor.email}</td>
-                      <td className="py-4 px-4 text-sm">
-                        <Badge className={
-                          vendor.role === 'vendor' ? "bg-green-100 text-green-800" :
-                          vendor.role === 'pending' ? "bg-yellow-100 text-yellow-800" :
-                          vendor.role === 'inactive' ? "bg-gray-100 text-gray-800" :
-                          "bg-blue-100 text-blue-800"
-                        }>
-                          {vendor.role === 'vendor' ? 'Active' : 
-                           vendor.role === 'pending' ? 'Pending' :
-                           vendor.role === 'inactive' ? 'Inactive' : 
-                           vendor.role.charAt(0).toUpperCase() + vendor.role.slice(1)}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">{vendor.email}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">@{vendor.username}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          {vendor.businessType || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant={vendor.role === 'vendor' ? 'default' : vendor.role === 'pending' ? 'secondary' : 'destructive'}>
+                          {vendor.role === 'vendor' ? 'Active' : vendor.role === 'pending' ? 'Pending' : 'Inactive'}
                         </Badge>
                       </td>
-                    <td className="py-4 px-4 text-sm">
-                      <div className="flex justify-center space-x-2">
-                        <VendorDetailDialog 
-                          vendor={vendor} 
-                          onVerify={() => updateVendorStatus(vendor.id, 'verified')}
-                          onDeactivate={() => toggleVendorActive(vendor.id, vendor.role === 'inactive')}
-                          onEdit={() => {
-                            setEditingVendor(vendor);
-                            setIsEditVendorOpen(true);
-                          }}
-                        />
-                        
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            setEditingVendor(vendor);
-                            setIsEditVendorOpen(true);
-                          }}
-                        >
-                          <span className="sr-only">Edit</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path>
-                          </svg>
-                        </Button>
-                        
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-red-500"
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete ${vendor.businessName || vendor.fullName}?`)) {
-                              deleteVendor(vendor.id);
-                            }
-                          }}
-                        >
-                          <span className="sr-only">Delete</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18"></path>
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                          </svg>
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {(vendor.categoriesAllowed || []).join(', ') || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          <VendorDetailDialog 
+                            vendor={vendor}
+                            onVerify={() => updateVendorStatus(vendor.id, 'verified')}
+                            onDeactivate={() => deleteVendor(vendor.id)}
+                            onEdit={() => {
+                              setEditingVendor(vendor);
+                              setIsEditVendorOpen(true);
+                            }}
+                          />
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0"
+                            onClick={() => {
+                              setEditingVendor(vendor);
+                              setIsEditVendorOpen(true);
+                            }}
+                          >
+                            <span className="sr-only">Edit</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                            </svg>
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                            onClick={() => deleteVendor(vendor.id)}
+                          >
+                            <span className="sr-only">Delete</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                   {filteredVendors.length === 0 && (
                     <tr>
@@ -719,7 +372,7 @@ const VendorManagement = () => {
             )}
           </div>
           
-          <div className="flex justify-between items-center mt-4">
+          <div className="flex justify-between items-center mt-4 px-6 pb-4">
             <div className="text-sm text-muted-foreground">Showing {filteredVendors.length} of {vendors.length} vendors</div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled>
@@ -732,8 +385,112 @@ const VendorManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Vendor Dialog */}
+      <Dialog open={isEditVendorOpen} onOpenChange={setIsEditVendorOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Vendor</DialogTitle>
+          </DialogHeader>
+          {editingVendor && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Business Name</Label>
+                  <Input 
+                    value={editingVendor.businessName || ''}
+                    onChange={(e) => setEditingVendor({...editingVendor, businessName: e.target.value})}
+                    placeholder="Paradise Beach Resort"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Owner Name</Label>
+                  <Input 
+                    value={editingVendor.fullName || ''}
+                    onChange={(e) => setEditingVendor({...editingVendor, fullName: e.target.value})}
+                    placeholder="John Smith"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input 
+                    type="email"
+                    value={editingVendor.email || ''}
+                    onChange={(e) => setEditingVendor({...editingVendor, email: e.target.value})}
+                    placeholder="john@resort.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Username</Label>
+                  <Input 
+                    value={editingVendor.username || ''}
+                    onChange={(e) => setEditingVendor({...editingVendor, username: e.target.value})}
+                    placeholder="john_resort"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Business Type</Label>
+                  <Select value={editingVendor.businessType} onValueChange={(value) => setEditingVendor({...editingVendor, businessType: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="accommodation">Accommodation</SelectItem>
+                      <SelectItem value="transport">Transport</SelectItem>
+                      <SelectItem value="tours">Tours & Activities</SelectItem>
+                      <SelectItem value="wellness">Wellness</SelectItem>
+                      <SelectItem value="dining">Dining</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select value={editingVendor.role} onValueChange={(value) => setEditingVendor({...editingVendor, role: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vendor">Active</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setIsEditVendorOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => {
+                  updateVendorMutation.mutate({ 
+                    vendorId: editingVendor.id, 
+                    updates: {
+                      businessName: editingVendor.businessName,
+                      fullName: editingVendor.fullName,
+                      email: editingVendor.email,
+                      username: editingVendor.username,
+                      businessType: editingVendor.businessType,
+                      role: editingVendor.role
+                    }
+                  });
+                  setIsEditVendorOpen(false);
+                }} disabled={updateVendorMutation.isPending}>
+                  {updateVendorMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
+}
 
 export default VendorManagement;
