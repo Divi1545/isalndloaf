@@ -45,7 +45,7 @@ const AddVendorForm = () => {
 
   const createVendorMutation = useMutation({
     mutationFn: async (vendorData: any) => {
-      const response = await apiRequest('POST', '/api/auth/register', vendorData);
+      const response = await apiRequest('POST', '/api/vendors', vendorData);
       return response.json();
     },
     onSuccess: (data) => {
@@ -79,8 +79,8 @@ const AddVendorForm = () => {
       [name]: value
     }));
     
-    // Show room management if business type is accommodation (stays)
-    if (name === 'businessType' && value === 'stays') {
+    // Show room management if business type is accommodation (stays, hotel, accommodation)
+    if (name === 'businessType' && (value === 'stays' || value === 'hotel' || value === 'accommodation')) {
       setShowRoomManagement(true);
     } else if (name === 'businessType') {
       setShowRoomManagement(false);
@@ -223,6 +223,8 @@ const AddVendorForm = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="stays">Hotel / Resort / Villa</SelectItem>
+                    <SelectItem value="hotel">Hotel</SelectItem>
+                    <SelectItem value="accommodation">Accommodation</SelectItem>
                     <SelectItem value="vehicles">Transport Company</SelectItem>
                     <SelectItem value="tours">Tour Operator</SelectItem>
                     <SelectItem value="wellness">Wellness Center</SelectItem>

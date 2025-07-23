@@ -99,36 +99,43 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.get("/api/me", (req: Request, res: Response) => {
-    if (!req.session.user) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-    
-    // Return user data based on session
-    if (req.session.user.userRole === 'admin') {
-      return res.json({
-        id: 1,
-        username: "admin",
-        email: "admin@islandloaf.com",
-        fullName: "Admin User",
-        businessName: "IslandLoaf Admin",
-        businessType: "administration",
-        role: "admin"
-      });
-    }
-    
-    // For vendor users, fetch from database
-    storage.getUser(req.session.user.userId).then(user => {
+  app.get("/api/me", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Return user data based on session
+      if (req.session.user.userRole === 'admin') {
+        return res.json({
+          id: 1,
+          username: "admin",
+          email: "admin@islandloaf.com",
+          fullName: "Admin User",
+          businessName: "IslandLoaf Admin",
+          businessType: "administration",
+          role: "admin"
+        });
+      }
+      
+      // For vendor users, fetch from database
+      const userId = req.session.user.userId;
+      if (!userId) {
+        console.error("No userId in session:", req.session.user);
+        return res.status(401).json({ error: "Invalid session data" });
+      }
+      
+      const user = await storage.getUser(userId);
       if (user) {
         const { password: _, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
       } else {
         res.status(401).json({ error: "User not found" });
       }
-    }).catch(error => {
+    } catch (error) {
       console.error("Failed to fetch user:", error);
       res.status(500).json({ error: "Internal server error" });
-    });
+    }
   });
 
   app.post("/api/logout", (req: Request, res: Response) => {
@@ -284,7 +291,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   app.post("/api/vendors", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
     try {
-      const { username, email, password, fullName, businessName, businessType, categoriesAllowed } = req.body;
+      const { username, email, password, fullName, businessName, businessType, categoriesAllowed, roomData } = req.body;
+      
+      console.log("Creating vendor with data:", { username, email, businessName, businessType, roomData });
       
       // Check if email already exists
       const existingUser = await storage.getUserByEmail(email);
@@ -310,14 +319,41 @@ export async function registerRoutes(app: Express): Promise<void> {
         categoriesAllowed: categoriesAllowed || []
       });
       
+      console.log("Created vendor:", newVendor.id);
+      
+      // If room data is provided (for accommodation vendors), create room types
+      if (roomData && (businessType === 'stays' || businessType === 'hotel' || businessType === 'accommodation')) {
+        try {
+          console.log("Creating room data for vendor:", newVendor.id, roomData);
+          const roomType = await storage.createRoomType({
+            vendorId: newVendor.id,
+            name: roomData.name || 'Standard Room',
+            bedType: roomData.bedType || 'single',
+            maxOccupancy: roomData.maxOccupancy || 2,
+            amenities: roomData.amenities || [],
+            basePrice: roomData.basePrice || 100,
+            description: roomData.description || 'Comfortable room with modern amenities'
+          });
+          console.log("Created room type:", roomType);
+        } catch (roomError) {
+          console.error("Error creating room data:", roomError);
+          // Don't fail vendor creation if room creation fails
+        }
+      }
+      
       // Create notification for new vendor
-      await storage.createNotification({
-        userId: newVendor.id,
-        title: "Welcome to IslandLoaf",
-        message: `Welcome to IslandLoaf, ${newVendor.fullName}! Your vendor account has been created successfully.`,
-        type: "info",
-        read: false
-      });
+      try {
+        await storage.createNotification({
+          userId: newVendor.id,
+          title: "Welcome to IslandLoaf",
+          message: `Welcome to IslandLoaf, ${newVendor.fullName}! Your vendor account has been created successfully.`,
+          type: "info",
+          read: false
+        });
+      } catch (notificationError) {
+        console.error("Error creating notification:", notificationError);
+        // Don't fail vendor creation if notification fails
+      }
       
       // Return vendor data (excluding password)
       const { password: _, ...vendorData } = newVendor;
