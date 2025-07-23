@@ -34,10 +34,8 @@ export default function ApiKeysPage() {
   // Generate new API key
   const generateKeyMutation = useMutation({
     mutationFn: async (label: string) => {
-      return apiRequest('/api/keys/generate', {
-        method: 'POST',
-        body: { label }
-      });
+      const response = await apiRequest('POST', '/api/keys/generate', { label });
+      return response.json();
     },
     onSuccess: (data) => {
       setGeneratedKey(data.apiKey);
@@ -61,10 +59,8 @@ export default function ApiKeysPage() {
   // Revoke API key
   const revokeKeyMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest('/api/keys/revoke', {
-        method: 'POST',
-        body: { id }
-      });
+      const response = await apiRequest('POST', '/api/keys/revoke', { id });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/keys/list"] });
