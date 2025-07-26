@@ -355,6 +355,18 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Helper function to sanitize user input for AI prompts
+  const sanitizePromptInput = (input: string): string => {
+    if (!input || typeof input !== 'string') return '';
+    
+    // Remove potential prompt injection patterns
+    return input
+      .replace(/[\r\n]+/g, ' ') // Replace newlines with spaces
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .slice(0, 500) // Limit length
+      .trim();
+  };
+
   // AI Marketing Routes
   app.post("/api/ai/generate-marketing", requireAuth, async (req: Request, res: Response) => {
     try {
@@ -376,29 +388,36 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(500).json({ error: "AI service is currently unavailable" });
       }
       
+      // Sanitize all user inputs to prevent prompt injection
+      const safeBusinessName = sanitizePromptInput(businessName);
+      const safeBusinessType = sanitizePromptInput(businessType);
+      const safeServiceDescription = sanitizePromptInput(serviceDescription);
+      const safeTargetAudience = sanitizePromptInput(targetAudience);
+      const safeTone = sanitizePromptInput(tone);
+      
       let prompt = "";
       let contentTypeTitle = "";
       
       switch (contentType) {
         case "instagram":
           contentTypeTitle = "Instagram Post";
-          prompt = `Create an engaging Instagram caption for ${businessName || 'my'} ${businessType || 'tourism business'} promoting the following service:\n\n${serviceDescription}\n\nTarget audience: ${targetAudience || 'tourists'}\nTone: ${tone || 'enthusiastic'}\n\nInclude relevant hashtags.`;
+          prompt = `Create an engaging Instagram caption for ${safeBusinessName || 'my'} ${safeBusinessType || 'tourism business'} promoting the following service:\n\n${safeServiceDescription}\n\nTarget audience: ${safeTargetAudience || 'tourists'}\nTone: ${safeTone || 'enthusiastic'}\n\nInclude relevant hashtags.`;
           break;
         case "facebook":
           contentTypeTitle = "Facebook Post";
-          prompt = `Write a compelling Facebook post for ${businessName || 'my'} ${businessType || 'tourism business'} featuring this service:\n\n${serviceDescription}\n\nTarget audience: ${targetAudience || 'tourists'}\nTone: ${tone || 'friendly'}\n\nAim for engagement and shares.`;
+          prompt = `Write a compelling Facebook post for ${safeBusinessName || 'my'} ${safeBusinessType || 'tourism business'} featuring this service:\n\n${safeServiceDescription}\n\nTarget audience: ${safeTargetAudience || 'tourists'}\nTone: ${safeTone || 'friendly'}\n\nAim for engagement and shares.`;
           break;
         case "seo":
           contentTypeTitle = "SEO Description";
-          prompt = `Generate an SEO-optimized description for ${businessName || 'my'} ${businessType || 'tourism business'} offering the following service:\n\n${serviceDescription}\n\nTarget keywords should focus on ${targetAudience || 'tourists'} looking for this type of service in Sri Lanka. Make it informative and persuasive.`;
+          prompt = `Generate an SEO-optimized description for ${safeBusinessName || 'my'} ${safeBusinessType || 'tourism business'} offering the following service:\n\n${safeServiceDescription}\n\nTarget keywords should focus on ${safeTargetAudience || 'tourists'} looking for this type of service in Sri Lanka. Make it informative and persuasive.`;
           break;
         case "email":
           contentTypeTitle = "Email Campaign";
-          prompt = `Compose an email campaign for ${businessName || 'my'} ${businessType || 'tourism business'} featuring:\n\n${serviceDescription}\n\nTarget audience: ${targetAudience || 'tourists'}\nTone: ${tone || 'professional'}\n\nInclude a subject line and call-to-action.`;
+          prompt = `Compose an email campaign for ${safeBusinessName || 'my'} ${safeBusinessType || 'tourism business'} featuring:\n\n${safeServiceDescription}\n\nTarget audience: ${safeTargetAudience || 'tourists'}\nTone: ${safeTone || 'professional'}\n\nInclude a subject line and call-to-action.`;
           break;
         default:
           contentTypeTitle = "Marketing Content";
-          prompt = `Create marketing content for ${businessName || 'my'} ${businessType || 'tourism business'} about:\n\n${serviceDescription}\n\nTarget audience: ${targetAudience || 'tourists'}\nTone: ${tone || 'persuasive'}`;
+          prompt = `Create marketing content for ${safeBusinessName || 'my'} ${safeBusinessType || 'tourism business'} about:\n\n${safeServiceDescription}\n\nTarget audience: ${safeTargetAudience || 'tourists'}\nTone: ${safeTone || 'persuasive'}`;
       }
       
       // Call OpenAI API
@@ -422,9 +441,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         title: `${contentTypeTitle} - ${new Date().toLocaleDateString()}`,
         contentType,
         content: generatedContent,
-        serviceDescription,
-        targetAudience: targetAudience || 'tourists',
-        tone: tone || 'persuasive'
+        serviceDescription: safeServiceDescription,
+        targetAudience: safeTargetAudience || 'tourists',
+        tone: safeTone || 'persuasive'
       });
       
       res.status(200).json({
