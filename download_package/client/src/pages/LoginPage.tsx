@@ -149,10 +149,9 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
       </Card>
 
       <div className="mt-6 text-center text-sm text-slate-600">
-        <div className="mb-2">Demo credentials:</div>
-        <div className="flex flex-col sm:flex-row justify-center gap-3">
-          <code className="bg-slate-200 px-2 py-1 rounded">vendor@beachsidevillas.com / vendor123</code>
-          <code className="bg-slate-200 px-2 py-1 rounded">admin@islandloaf.com / admin123</code>
+        <div className="mb-2">Contact Support:</div>
+        <div className="flex justify-center">
+          <code className="bg-blue-100 px-3 py-2 rounded text-blue-700">info@islandloafvendor.com</code>
         </div>
       </div>
     </div>

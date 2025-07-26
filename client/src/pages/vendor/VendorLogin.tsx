@@ -144,12 +144,12 @@ export default function VendorLogin() {
             </div>
           </div>
 
-          {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-xs font-medium text-gray-700 mb-2">Demo Credentials:</p>
-            <div className="text-xs text-gray-600 space-y-1">
-              <div>Email: vendor@islandloaf.com</div>
-              <div>Password: password123</div>
+          {/* Contact Information */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs font-medium text-blue-700 mb-2">Need Help?</p>
+            <div className="text-xs text-blue-600">
+              <div>Contact: info@islandloafvendor.com</div>
+              <div>Join Sri Lanka's premier tourism platform</div>
             </div>
           </div>
         </CardContent>

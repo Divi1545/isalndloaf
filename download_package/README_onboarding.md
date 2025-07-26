@@ -108,10 +108,9 @@ This starts both the frontend and backend services. The application will be avai
 
 ## 6. Vendor Dashboard Access
 
-1. Login with vendor credentials:
+1. Register as a new vendor or contact support:
    ```
-   Email: vendor@islandloaf.com
-   Password: password123
+   Support: info@islandloafvendor.com
    ```
 
 2. Vendor capabilities:

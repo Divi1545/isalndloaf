@@ -110,6 +110,8 @@ The application uses a flexible storage provider that switches between in-memory
 
 ## Changelog
 
+- July 26, 2025. Removed demo credentials and updated contact to info@islandloafvendor.com for production deployment
+- July 26, 2025. Implemented security fixes for AI prompt injection vulnerability
 - July 13, 2025. Successfully migrated from Replit Agent to Replit environment with PostgreSQL database
 - July 13, 2025. Completed vendor management CRUD operations with real-time UI updates
 - June 17, 2025. Initial setup

@@ -134,15 +134,15 @@ export default function LoginForm() {
           {isLoading ? "Signing in..." : "Sign in"}
         </Button>
         
-        {/* Demo Credentials */}
+        {/* Contact Information */}
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-          <p className="font-medium text-blue-800 mb-2">Demo Accounts:</p>
+          <p className="font-medium text-blue-800 mb-2">Welcome to IslandLoaf</p>
           <div className="space-y-1">
             <p className="text-blue-700">
-              <span className="font-medium">Admin:</span> admin@islandloaf.com / admin123
+              <span className="font-medium">Vendor Support:</span> info@islandloafvendor.com
             </p>
             <p className="text-blue-700">
-              <span className="font-medium">Vendor:</span> vendor@islandloaf.com / password123
+              Sri Lanka's leading tourism booking platform
             </p>
           </div>
         </div>
