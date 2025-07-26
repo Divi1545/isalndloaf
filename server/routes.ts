@@ -3339,7 +3339,29 @@ Format as comprehensive JSON:
   app.put("/api/campaigns/:id", requireAuth, requireRole(['admin']), async (req: Request, res: Response) => {
     try {
       const campaignId = parseInt(req.params.id);
-      const updates = req.body;
+      
+      // Validate and extract only allowed fields from request body
+      const campaignUpdateSchema = z.object({
+        title: z.string().optional(),
+        type: z.enum(['email', 'sms', 'push', 'social']).optional(),
+        status: z.enum(['draft', 'scheduled', 'active', 'completed', 'paused']).optional(),
+        message: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        targetAudience: z.enum(['all', 'vendors', 'customers', 'inactive']).optional(),
+        promoCode: z.string().optional(),
+        discount: z.number().optional()
+      });
+      
+      const validationResult = campaignUpdateSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid input", 
+          details: validationResult.error.errors 
+        });
+      }
+      
+      const updates = validationResult.data;
       
       // Find and update campaign in store
       const campaignIndex = campaignsStore.findIndex(c => c.id === campaignId);
@@ -3347,9 +3369,14 @@ Format as comprehensive JSON:
         return res.status(404).json({ error: "Campaign not found" });
       }
       
+      // Only update the allowed fields explicitly
+      const allowedUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+      );
+      
       campaignsStore[campaignIndex] = {
         ...campaignsStore[campaignIndex],
-        ...updates,
+        ...allowedUpdates,
         updatedAt: new Date().toISOString()
       };
       
