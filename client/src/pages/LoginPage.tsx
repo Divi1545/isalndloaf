@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link, useLocation } from "wouter";
 
 interface LoginPageProps {
   onLoginSuccess: (role: string) => void;
@@ -16,23 +17,52 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('vendor');
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // In a real application, this would make an API call to authenticate
-      // For our demo purposes, we'll use hardcoded credentials
-      if (activeTab === 'vendor' && email === 'vendor@islandloaf.com' && password === 'password123') {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         toast({
-          title: "Vendor login successful",
-          description: "Welcome to IslandLoaf Vendor Dashboard",
+          title: `${result.user.role === 'admin' ? 'Admin' : 'Vendor'} login successful`,
+          description: "Welcome to IslandLoaf Dashboard",
         });
-        onLoginSuccess('vendor');
-      } else if (activeTab === 'admin' && email === 'admin@islandloaf.com' && password === 'admin123') {
+        
+        // Redirect based on user role
+        if (result.user.role === 'admin') {
+          setLocation('/admin');
+        } else {
+          setLocation('/dashboard');
+        }
+        
+        onLoginSuccess(result.user.role);
+      } else {
         toast({
-          title: "Admin login successful",
+          title: "Login Failed",
+          description: result.error || "Invalid email or password. Please register first if you're a vendor.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Login Error",
+        description: "Unable to connect to server. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
           description: "Welcome to IslandLoaf Admin Dashboard",
         });
         onLoginSuccess('admin');
@@ -149,6 +179,14 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
       </Card>
 
       <div className="mt-6 text-center text-sm text-slate-600">
+        <div className="mb-4">
+          <p className="mb-2">Don't have an account?</p>
+          <Link href="/vendor-signup">
+            <Button variant="outline" className="mx-auto">
+              Register as Vendor
+            </Button>
+          </Link>
+        </div>
         <div className="mb-2">Contact Support:</div>
         <div className="flex justify-center">
           <code className="bg-blue-100 px-3 py-2 rounded text-blue-700">info@islandloafvendor.com</code>
